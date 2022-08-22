@@ -6,6 +6,7 @@ export const getStorage = async (key: string) => {
         resolve(result[key]);
       });
     } catch (exception) {
+      console.log("get storage exception");
       reject(exception);
     }
   });

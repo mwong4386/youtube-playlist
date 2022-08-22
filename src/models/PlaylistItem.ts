@@ -1,4 +1,5 @@
 interface MPlaylistItem {
+  id: string;
   title: string;
   channelName: string;
   url: string;

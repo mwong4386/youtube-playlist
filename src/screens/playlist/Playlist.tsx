@@ -4,13 +4,11 @@ import { getStorage } from "../../utils/storage";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
+import MsgType from "../../constants/msgType";
 
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
-  const [tabId, setTabId] = useState<number>();
-  chrome.storage.local.get("tabId", (result) => {
-    setTabId(result["tabId"]);
-  });
+
   useEffect(() => {
     const getPlaylist = async () => {
       const list = ((await getStorage("youtube_list")) ||
@@ -21,26 +19,10 @@ const Playlist = () => {
   }, []);
 
   const onPlay = (item: MPlaylistItem) => {
-    const url = `${item.url}/?v=${item.videoId}${
-      item.timestamp ? "&t=" + item.timestamp : ""
-    }`;
-    console.log(item.videoId);
-    if (tabId == null) {
-      chrome.tabs.create({ url: url }, (tab) => {
-        chrome.storage.local.set({ tabId: tab?.id });
-        setTabId(tab?.id);
-      });
-    } else {
-      chrome.tabs.update(tabId, { url: url }, () => {
-        if (chrome.runtime.lastError) {
-          chrome.tabs.create({ url: url }, (tab) => {
-            chrome.storage.local.set({ tabId: tab?.id });
-            setTabId(tab?.id);
-          });
-        }
-      });
-    }
-    // chrome.runtime.sendMessage({ name: MsgType.PlayVideo });
+    chrome.runtime.sendMessage({ name: MsgType.PlayVideo, item: item });
+  };
+  const onPlayAll = () => {
+    chrome.runtime.sendMessage({ name: MsgType.PlayAll });
   };
 
   const onDeleteAll = () => {
@@ -56,9 +38,9 @@ const Playlist = () => {
         </div>
       ) : (
         <>
-          <PlaylistHeader onDelete={onDeleteAll} />
+          <PlaylistHeader onPlayAll={onPlayAll} onDelete={onDeleteAll} />
           {playlist.map((item) => {
-            return <PlaylistItem item={item} onPlay={onPlay} />;
+            return <PlaylistItem key={item.id} item={item} onPlay={onPlay} />;
           })}
         </>
       )}

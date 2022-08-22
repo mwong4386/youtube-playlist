@@ -1,8 +1,12 @@
 import MsgType from "../constants/msgType";
 import { getStorage } from "../utils/storage";
+import { v4 as uuidv4 } from "uuid";
 
-const onYoutubeVideoPage = (url: string, videoId: string) => {
-  console.log("newVideoLoaded:" + videoId);
+const onYoutubeVideoPage = (
+  url: string,
+  videoId: string,
+  isPlayTab: boolean
+) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
   if (!bookmark) {
     const bookmarkBtn = document.createElement("button");
@@ -21,6 +25,15 @@ const onYoutubeVideoPage = (url: string, videoId: string) => {
   } else {
     bookmark.addEventListener("click", () => onBookmarkBtnClick(url, videoId));
   }
+
+  if (isPlayTab) {
+    const video = document.getElementsByClassName(
+      "video-stream html5-main-video"
+    )[0];
+    video.addEventListener("ended", () => {
+      chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
+    });
+  }
 };
 
 const onBookmarkBtnClick = async (url: string, videoId: string) => {
@@ -38,6 +51,7 @@ const onBookmarkBtnClick = async (url: string, videoId: string) => {
     "#owner #upload-info ytd-channel-name .yt-formatted-string"
   )[0].innerHTML;
   const data = {
+    id: uuidv4(),
     url,
     videoId,
     title,
@@ -52,27 +66,12 @@ const onBookmarkBtnClick = async (url: string, videoId: string) => {
   });
 };
 
-const onPlayVideo = () => {
-  console.log("onPlayVideo");
-};
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type, url, videoId } = request;
-  console.log(videoId);
+  const { type, url, videoId, isPlayTab } = request;
   switch (type) {
     case MsgType.YoutubeVideo:
-      onYoutubeVideoPage(url, videoId);
-      break;
-    case MsgType.PlayVideo:
-      onPlayVideo();
+      onYoutubeVideoPage(url, videoId, isPlayTab);
       break;
     default:
   }
-  // if(tab.url && tab.url.includes("youtube.com/watch"))
-  // {
-  //     const query:string = tab.url.split("?")[1];
-  //     const params:URLSearchParams = new URLSearchParams(query);
-  //     console.log("new 1");
-  //     newVideoLoaded(params.get("v") || "")
-  //     //console.log(params.get("v"));
-  // }
 });
