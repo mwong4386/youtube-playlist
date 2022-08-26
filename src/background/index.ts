@@ -7,22 +7,9 @@ let playlist: MPlaylistItem[];
 let isPlayAll: boolean = false;
 let isPlaying: boolean = false;
 let playingIndex: string | undefined;
-
+console.log("background");
 chrome.storage.local.get("tabId", (result) => {
   tabId = result["tabId"];
-});
-
-chrome.tabs.onUpdated.addListener((tabId1, tab) => {
-  if (tab.url && tab.url.includes("youtube.com/watch")) {
-    const query: string = tab.url.split("?")[1];
-    const params: URLSearchParams = new URLSearchParams(query);
-    chrome.tabs.sendMessage(tabId1, {
-      type: MsgType.YoutubeVideo,
-      url: tab.url.split("?")[0],
-      videoId: params.get("v"),
-      isPlayTab: tabId === tabId1,
-    });
-  }
 });
 
 const onPlayVideo = (item: MPlaylistItem) => {
@@ -96,5 +83,25 @@ chrome.runtime.onMessage.addListener(function (message) {
       onVideoEnd();
       break;
     default:
+  }
+});
+
+chrome.tabs.onUpdated.addListener((tabId1, tab) => {
+  if (tab.url && tab.url.includes("youtube.com/watch")) {
+    const query: string = tab.url.split("?")[1];
+    const params: URLSearchParams = new URLSearchParams(query);
+    chrome.tabs.sendMessage(
+      tabId1,
+      {
+        type: MsgType.YoutubeVideo,
+        url: tab.url.split("?")[0],
+        videoId: params.get("v"),
+        isPlayTab: tabId === tabId1,
+      },
+      () => {
+        console.log(chrome.runtime.lastError);
+      }
+    );
+    console.log("end");
   }
 });

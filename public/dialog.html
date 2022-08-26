@@ -1,0 +1,93 @@
+<style>
+    .cs-start-time {
+        border: 2.5px solid #000;
+        padding:4px;
+    }
+    .cs-start-time input {
+        border: 0;
+        text-align: center;
+        outline: 0; /* remove if you want input highlight */
+    }
+    .cs-dialog-button{
+        padding:8px 12px;
+        background-color: white
+    }
+    .cs-cross-button{
+        height: 40px;
+        width: 40px;
+        text-align: center;
+        font-size: 26px;
+        line-height: 26px;
+        border-width:0px;
+    }
+    .cs-semicolon{
+        font-size: 20px;
+        font-weight:bold;
+        background-color: white;
+    }
+    .cs-start-time-inputgroup{
+        font-size: 20px;
+    }
+    .cs-dialog-container{
+        max-width:550px;
+        display:flex;
+        flex-direction:column;
+    }
+    .cs-dialog-header{
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+    .cs-button-group{
+        display: flex;
+        justify-content: center;
+        margin-top: 24px;
+    }
+    .cs-confirm-button{
+        font-size: 20px;
+        border-width:1.5px;
+    }
+    .cs-channel-name{
+        color:gray; 
+        font-size:20px;
+        margin-bottom: 24px;
+        margin-top: 0px;
+    }
+    .cs-video-title{
+        font-size:24px;
+        margin-bottom: 12px;
+    }
+    .cs-start-time-container{
+        margin:0;
+    }
+    .cs-start-time-label{
+        font-size: 20px;
+    }
+    .cs-dialog-content{
+        padding: 12px 24px;
+    }
+</style>
+<dialog id="cs-dialog" >
+    <form method="dialog" class="cs-dialog-container">
+        <div class="cs-dialog-header">
+            <button class="cs-dialog-button cs-cross-button" value="cancel">x</button>
+        </div>
+        <div class="cs-dialog-content">
+			<p id="cs-video-title" class="cs-video-title"></p>
+			<p id="cs-channel-name" class="cs-channel-name"></p>
+            <div class="cs-start-time-container">
+                <label class="cs-start-time-label">Starting Time:</label>		
+                <span class="cs-start-time">
+                    <input id="cs-start-hour" class="cs-start-time-inputgroup" type="text" name="cs-start-hour" value="00" placeholder="HH" maxlength="2" size="2" pattern="[0-9]{0,2}" />
+                    <span class="cs-semicolon">:</span>
+                    <input id="cs-start-minute" class="cs-start-time-inputgroup" type="text" name="cs-start-minute" value="00" placeholder="mm" maxlength="2" size="2" pattern="[0-5]?[0-9]" />
+                    <span class="cs-semicolon">:</span>
+                    <input id="cs-start-second" class="cs-start-time-inputgroup" type="text" name="cs-start-second" value="00" placeholder="ss" maxlength="2" size="2" pattern="[0-5]?[0-9]" />
+                </span>
+            </div>
+            <div class="cs-button-group">
+                <button class="cs-dialog-button cs-confirm-button" id="cs-confirm-button" value="default">Confirm</button>
+            </div>
+        </div>
+    </form>
+</dialog>
