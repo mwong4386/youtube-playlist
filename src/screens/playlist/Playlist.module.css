@@ -33,12 +33,17 @@
 }
 
 .play-button{
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border: 0;
   background-color: red;
+  padding: 3px 4px;
+  border-radius: 4px;
 }
 .header-button{
   border: 0;
-  background-color: black;
+  background-color: white;
   width: 100%;
 }
 .header-button-icon{
@@ -66,4 +71,8 @@
 .empty-message{
   font-size: 16px;
   font-weight: bold;
+}
+
+.playlist-container{
+  padding: 8px 0
 }

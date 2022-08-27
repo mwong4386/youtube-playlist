@@ -7,7 +7,7 @@ let playlist: MPlaylistItem[];
 let isPlayAll: boolean = false;
 let isPlaying: boolean = false;
 let playingIndex: string | undefined;
-console.log("background");
+
 chrome.storage.local.get("tabId", (result) => {
   tabId = result["tabId"];
 });
@@ -102,6 +102,5 @@ chrome.tabs.onUpdated.addListener((tabId1, tab) => {
         console.log(chrome.runtime.lastError);
       }
     );
-    console.log("end");
   }
 });

@@ -37,12 +37,12 @@ const Playlist = () => {
           <p className={styles["empty-message"]}>The playlist is empty</p>
         </div>
       ) : (
-        <>
+        <div className={styles["playlist-container"]}>
           <PlaylistHeader onPlayAll={onPlayAll} onDelete={onDeleteAll} />
           {playlist.map((item) => {
             return <PlaylistItem key={item.id} item={item} onPlay={onPlay} />;
           })}
-        </>
+        </div>
       )}
     </>
   );

@@ -20,6 +20,21 @@ const onYoutubeVideoPage = (
         (
           document.getElementById("cs-confirm-button") as HTMLButtonElement
         ).addEventListener("click", onCSConfirm);
+        (
+          document.getElementById("cs-dialog") as HTMLDialogElement
+        ).addEventListener("click", (event) => {
+          if ((event.target as HTMLElement).id === "cs-dialog") {
+            (event.target as HTMLDialogElement).close();
+          }
+        });
+        const items = document.getElementsByClassName(
+          "cs-start-time-inputgroup"
+        );
+        for (const item of items) {
+          item.addEventListener("focus", (event) =>
+            (event?.target as HTMLInputElement)?.select()
+          );
+        }
       });
     const bookmarkBtn = document.createElement("button");
     bookmarkBtn.style.cssText =
@@ -28,13 +43,13 @@ const onYoutubeVideoPage = (
     bookmarkBtn.innerText = "+";
     bookmarkBtn.title = "Click to bookmark current timestamp";
 
-    bookmarkBtn.addEventListener("click", onClickHandler);
+    bookmarkBtn.addEventListener("click", onCSOpenDialogClickHandler);
     const rightControls = document.getElementsByClassName("ytp-right-controls");
     for (let rightControl of rightControls) {
       rightControl.prepend(bookmarkBtn);
     }
   } else {
-    bookmark.addEventListener("click", onClickHandler);
+    bookmark.addEventListener("click", onCSOpenDialogClickHandler);
 
     (
       document.getElementById("cs-confirm-button") as HTMLButtonElement
@@ -58,7 +73,7 @@ const onYoutubeVideoPage = (
     });
   }
 };
-const onClickHandler = () => {
+const onCSOpenDialogClickHandler = () => {
   const title = document.title
     .replace(/^\(.+?\)/, "")
     .replace(/- youtube$/i, "")
@@ -72,10 +87,16 @@ const onClickHandler = () => {
   (document.getElementById("cs-channel-name") as HTMLElement).innerHTML =
     channelName;
 
-  const youtubePlayer = document.querySelectorAll(
-    "#columns #primary .video-stream"
+  const fullscreenPlayer = document.querySelectorAll(
+    "#player-theater-container .video-stream"
   )[0] as HTMLVideoElement;
-  const timestamp = Math.floor(youtubePlayer.currentTime);
+
+  const youtubePlayer = document.querySelectorAll(
+    "#player-container .video-stream"
+  )[0] as HTMLVideoElement;
+  const timestamp = Math.floor(
+    youtubePlayer?.currentTime | fullscreenPlayer?.currentTime
+  );
   const hours = Math.floor(timestamp / 3600);
   const minutes = Math.floor(timestamp / 60) % 60;
   const seconds = timestamp % 60;
@@ -127,7 +148,6 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     }
     const list = result["youtube_list"] || [];
     list.push(data);
-    console.log(list);
     chrome.storage.sync.set({
       youtube_list: list,
     });
