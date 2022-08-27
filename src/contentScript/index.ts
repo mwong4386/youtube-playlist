@@ -92,7 +92,7 @@ const onCSOpenDialogClickHandler = () => {
   )[0] as HTMLVideoElement;
 
   const youtubePlayer = document.querySelectorAll(
-    "#player-container .video-stream"
+    "#columns #primary .video-stream"
   )[0] as HTMLVideoElement;
   const timestamp = Math.floor(
     youtubePlayer?.currentTime | fullscreenPlayer?.currentTime

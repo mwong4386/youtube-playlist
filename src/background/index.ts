@@ -7,7 +7,6 @@ let playlist: MPlaylistItem[];
 let isPlayAll: boolean = false;
 let isPlaying: boolean = false;
 let playingIndex: string | undefined;
-
 chrome.storage.local.get("tabId", (result) => {
   tabId = result["tabId"];
 });
@@ -55,11 +54,10 @@ const playNext = () => {
     onPlayVideo(item);
   });
 };
+
 const onPlayAll = () => {
-  console.log("onPlayAll:" + isPlaying);
   isPlayAll = true;
-  if (true || !isPlaying) {
-    //TODO: delete the true condition after adding event for run/pause etc
+  if (!isPlaying) {
     playNext();
   }
 };
