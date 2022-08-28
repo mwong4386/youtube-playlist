@@ -67,12 +67,23 @@ const onYoutubeVideoPage = (
   if (isPlayTab) {
     const video = document.getElementsByClassName(
       "video-stream html5-main-video"
-    )[0];
+    )[0] as HTMLVideoElement;
     video.addEventListener("ended", () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     });
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if ("isPlayAll" in changes) {
+        if (!!changes["isPlayAll"].newValue) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      }
+    });
   }
 };
+
 const onCSOpenDialogClickHandler = () => {
   const title = document.title
     .replace(/^\(.+?\)/, "")

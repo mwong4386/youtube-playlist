@@ -10,6 +10,9 @@ let playingIndex: string | undefined;
 chrome.storage.local.get("tabId", (result) => {
   tabId = result["tabId"];
 });
+chrome.storage.local.get("isPlayAll", (result) => {
+  isPlayAll = result["isPlayAll"];
+});
 
 const onPlayVideo = (item: MPlaylistItem) => {
   isPlaying = true;
@@ -39,6 +42,7 @@ const playNext = () => {
     playlist = (items || []) as MPlaylistItem[];
     if (playlist.length === 0) {
       isPlayAll = false;
+      chrome.storage.local.set({ isPlayAll: false });
       return;
     }
     let item;
@@ -57,9 +61,15 @@ const playNext = () => {
 
 const onPlayAll = () => {
   isPlayAll = true;
+  chrome.storage.local.set({ isPlayAll: true });
   if (!isPlaying) {
     playNext();
   }
+};
+
+const onPauseAll = () => {
+  isPlayAll = false;
+  chrome.storage.local.set({ isPlayAll: false });
 };
 
 const onVideoEnd = () => {
@@ -76,6 +86,9 @@ chrome.runtime.onMessage.addListener(function (message) {
       break;
     case MsgType.PlayAll:
       onPlayAll();
+      break;
+    case MsgType.PauseAll:
+      onPauseAll();
       break;
     case MsgType.VideoEnd:
       onVideoEnd();

@@ -21,9 +21,6 @@ const Playlist = () => {
   const onPlay = (item: MPlaylistItem) => {
     chrome.runtime.sendMessage({ name: MsgType.PlayVideo, item: item });
   };
-  const onPlayAll = () => {
-    chrome.runtime.sendMessage({ name: MsgType.PlayAll });
-  };
 
   const onDeleteAll = () => {
     chrome.storage.sync.remove("youtube_list");
@@ -38,7 +35,7 @@ const Playlist = () => {
         </div>
       ) : (
         <div className={styles["playlist-container"]}>
-          <PlaylistHeader onPlayAll={onPlayAll} onDelete={onDeleteAll} />
+          <PlaylistHeader onDelete={onDeleteAll} />
           {playlist.map((item) => {
             return <PlaylistItem key={item.id} item={item} onPlay={onPlay} />;
           })}
