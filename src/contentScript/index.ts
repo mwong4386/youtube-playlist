@@ -1,5 +1,6 @@
 import MsgType from "../constants/msgType";
 import { v4 as uuidv4 } from "uuid";
+import csMsgType from "../constants/csMsgType";
 
 let onCSConfirm: () => any;
 const onYoutubeVideoPage = (
@@ -71,15 +72,15 @@ const onYoutubeVideoPage = (
     video.addEventListener("ended", () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     });
-
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if ("isPlayAll" in changes) {
-        if (!!changes["isPlayAll"].newValue) {
-          video.play();
-        } else {
-          video.pause();
-        }
-      }
+    video.addEventListener("play", () => {
+      chrome.storage.local.set({
+        isPlaying: true,
+      });
+    });
+    video.addEventListener("pause", () => {
+      chrome.storage.local.set({
+        isPlaying: false,
+      });
     });
   }
 };
@@ -165,15 +166,35 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
   });
 };
 
+const onPlayVideo = () => {
+  const video = document.getElementsByClassName(
+    "video-stream html5-main-video"
+  )[0] as HTMLVideoElement;
+  video.play();
+};
+
+const onPauseVideo = () => {
+  const video = document.getElementsByClassName(
+    "video-stream html5-main-video"
+  )[0] as HTMLVideoElement;
+  video.pause();
+};
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { type, url, videoId, isPlayTab } = request;
   switch (type) {
-    case MsgType.YoutubeVideo:
+    case csMsgType.OnYoutubeVideoPage:
       onYoutubeVideoPage(url, videoId, isPlayTab);
-      sendResponse({ state: "ok" });
+      break;
+    case csMsgType.PlayYoutubeVideo:
+      onPlayVideo();
+      break;
+    case csMsgType.PauseYoutubeVideo:
+      onPauseVideo();
       break;
     default:
   }
+  sendResponse({ state: "ok" });
 });
 
 (function () {

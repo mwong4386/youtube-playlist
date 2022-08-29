@@ -1,17 +1,12 @@
-# Getting Started with Create React App
+# Incentive
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. The youtube playlist sometime suggest something which is not on playlist
+1. Skip the long intro, e.g. the First take and some mv sometimes contains a long intro
 
-## Available Scripts
+# To Start
 
 In the project directory, you can run:
 
-### `npm run build`
+## `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Builds the app to the `build` folder.
