@@ -3,7 +3,10 @@ const enum MsgType {
   PauseVideo,
   PlayAll,
   PauseAll,
+  VideoPlayEvent,
+  VideoPauseEvent,
   VideoEnd,
+  DeleteVideo,
 }
 
 export default MsgType;

@@ -14,10 +14,36 @@ const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
       chrome.runtime.sendMessage({ name: MsgType.PlayVideo, item: item });
     }
   };
+
+  const onDelete = () => {
+    chrome.runtime.sendMessage({ name: MsgType.DeleteVideo, item: item });
+  };
+
   return (
-    <div className={styles["playlist-item-container"]}>
+    <div
+      className={`${styles["playlist-item-container"]} ${
+        IPlaying && styles["playlist-item-highlight"]
+      }`}
+    >
       <div className={styles["state-container"]}>
-        {IPlaying && <img src="./assets/audio16.png" />}
+        <svg
+          onClick={onDelete}
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 24 24"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M6.758 17.243L12.001 12m5.243-5.243L12 12m0 0L6.758 6.757M12.001 12l5.243 5.243"
+          />
+        </svg>
+        {/* <button className={styles["delete-button"]}>x</button> */}
       </div>
       <div className={styles["info-container"]}>
         <div className={styles["title-container"]}>
@@ -27,13 +53,33 @@ const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
       </div>
       <div className={styles["play-container"]}>
         <button className={styles["play-button"]} onClick={onPlay}>
-          <img
-            src={
-              isPlaying && IPlaying
-                ? "./assets/pause30.png"
-                : "./assets/play30.png"
-            }
-          />
+          {isPlaying && IPlaying ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 32 32"
+            >
+              <path
+                fill="white"
+                d="M12 6h-2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm10 0h-2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              preserveAspectRatio="xMidYMid meet"
+              viewBox="0 0 384 512"
+            >
+              <path
+                fill="white"
+                d="M361 215c14.3 8.8 23 24.3 23 41s-8.7 32.2-23 40.1l-287.97 176c-14.82 9.9-33.37 10.3-48.51 1.8A48.02 48.02 0 0 1 0 432V80a48.02 48.02 0 0 1 24.52-41.87a48.019 48.019 0 0 1 48.51.91L361 215z"
+              />
+            </svg>
+          )}
         </button>
       </div>
     </div>

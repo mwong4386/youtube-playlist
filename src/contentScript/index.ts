@@ -18,9 +18,11 @@ const onYoutubeVideoPage = (
       .then((r) => r.text())
       .then((html) => {
         document.body.insertAdjacentHTML("beforeend", html);
+        // Add confirm button handler
         (
           document.getElementById("cs-confirm-button") as HTMLButtonElement
         ).addEventListener("click", onCSConfirm);
+        // Close the dialog when click the backdrop
         (
           document.getElementById("cs-dialog") as HTMLDialogElement
         ).addEventListener("click", (event) => {
@@ -32,6 +34,7 @@ const onYoutubeVideoPage = (
           "cs-start-time-inputgroup"
         );
         for (const item of items) {
+          //Select the full text when focus the inputbox
           item.addEventListener("focus", (event) =>
             (event?.target as HTMLInputElement)?.select()
           );
@@ -42,7 +45,7 @@ const onYoutubeVideoPage = (
       "position: relative; font-size: 36px; height: 100%; text-align: center;top:calc(36px - 100%);left:0;";
     bookmarkBtn.className = "ytp-button bookmark-button";
     bookmarkBtn.innerText = "+";
-    bookmarkBtn.title = "Click to bookmark current timestamp";
+    bookmarkBtn.title = "Click to open bookmark dialog";
 
     bookmarkBtn.addEventListener("click", onCSOpenDialogClickHandler);
     const rightControls = document.getElementsByClassName("ytp-right-controls");
@@ -50,8 +53,8 @@ const onYoutubeVideoPage = (
       rightControl.prepend(bookmarkBtn);
     }
   } else {
-    bookmark.addEventListener("click", onCSOpenDialogClickHandler);
-
+    //bookmark.addEventListener("click", onCSOpenDialogClickHandler);
+    // Rebind the confirm handler with new url and video id
     (
       document.getElementById("cs-confirm-button") as HTMLButtonElement
     ).removeEventListener("click", onCSConfirm);
@@ -73,14 +76,10 @@ const onYoutubeVideoPage = (
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     });
     video.addEventListener("play", () => {
-      chrome.storage.local.set({
-        isPlaying: true,
-      });
+      chrome.runtime.sendMessage({ name: MsgType.VideoPlayEvent });
     });
     video.addEventListener("pause", () => {
-      chrome.storage.local.set({
-        isPlaying: false,
-      });
+      chrome.runtime.sendMessage({ name: MsgType.VideoPauseEvent });
     });
   }
 };
@@ -137,7 +136,6 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
 
   const timestamp = hour * 3600 + minute * 60 + second;
 
-  //const title = document.title.replace(/^\(.+\)/, "");
   const title = (document.getElementById("cs-video-title") as HTMLElement)
     .innerHTML;
   const channelName = (

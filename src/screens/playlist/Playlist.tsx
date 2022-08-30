@@ -37,6 +37,9 @@ const Playlist = () => {
       if ("isPlaying" in changes) {
         setPlaying(changes["isPlaying"].newValue);
       }
+      if ("youtube_list" in changes) {
+        setPlaylist(changes["youtube_list"].newValue);
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => {

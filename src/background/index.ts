@@ -129,6 +129,19 @@ const updateStateToLocalStorage = () => {
   });
 };
 
+const deleteVideo = (id: string) => {
+  chrome.storage.sync.get("youtube_list", (result) => {
+    if (chrome.runtime.lastError) {
+      console.log(chrome.runtime.lastError);
+      return;
+    }
+    const playlist = (result["youtube_list"] || []) as MPlaylistItem[];
+    const newPlaylist = playlist.filter((item) => item.id !== id);
+    chrome.storage.sync.set({
+      youtube_list: newPlaylist,
+    });
+  });
+};
 const onMessageHandler = async (message: any) => {
   switch (message.name) {
     case MsgType.PlayVideo:
@@ -143,8 +156,17 @@ const onMessageHandler = async (message: any) => {
     case MsgType.PauseAll:
       onPauseAll();
       break;
+    case MsgType.VideoPlayEvent:
+      isPlaying = true;
+      break;
+    case MsgType.VideoPauseEvent:
+      isPlaying = false;
+      break;
     case MsgType.VideoEnd:
       await onVideoEnd();
+      break;
+    case MsgType.DeleteVideo:
+      deleteVideo(message.item.id);
       break;
     default:
   }
