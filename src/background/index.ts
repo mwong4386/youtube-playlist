@@ -109,6 +109,8 @@ const sendSignal = (type: csMsgType, fallback?: () => void) => {
         }
       }
     );
+  } else {
+    if (fallback) fallback();
   }
 };
 
@@ -120,7 +122,6 @@ const onVideoEnd = async () => {
 };
 
 const updateStateToLocalStorage = () => {
-  console.log(isPlaying, isPlayAll);
   chrome.storage.local.set({
     tabId: tabId,
     playingIndex: playingIndex,

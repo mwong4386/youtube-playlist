@@ -28,17 +28,6 @@ const PlaylistHeader = ({ onDelete }: props) => {
       if ("isPlayAll" in changes) {
         setIsPlayAll(!!changes["isPlayAll"].newValue);
       }
-      // for (let key in changes) {
-      //   var storageChange = changes[key];
-      //   console.log(
-      //     'Storage key "%s" in namespace "%s" changed. ' +
-      //       'Old value was "%s", new value is "%s".',
-      //     key,
-      //     namespace,
-      //     storageChange.oldValue,
-      //     storageChange.newValue
-      //   );
-      // }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => {
