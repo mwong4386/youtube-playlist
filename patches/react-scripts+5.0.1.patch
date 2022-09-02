@@ -1,0 +1,12 @@
+diff --git a/node_modules/react-scripts/config/webpack.config.js b/node_modules/react-scripts/config/webpack.config.js
+index e465d8e..251cca2 100644
+--- a/node_modules/react-scripts/config/webpack.config.js
++++ b/node_modules/react-scripts/config/webpack.config.js
+@@ -611,6 +611,7 @@ module.exports = function (webpackEnv) {
+           {
+             inject: true,
+             template: paths.appHtml,
++            chunks : ['main'],
+           },
+           isEnvProduction
+             ? {

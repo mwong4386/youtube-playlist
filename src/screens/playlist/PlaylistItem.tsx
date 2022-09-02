@@ -8,6 +8,7 @@ interface props {
 }
 const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
   const onPlay = () => {
+    console.log("onPlay");
     if (isPlaying && IPlaying) {
       chrome.runtime.sendMessage({ name: MsgType.PauseVideo });
     } else {
@@ -16,6 +17,7 @@ const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
   };
 
   const onDelete = () => {
+    console.log("onDelete");
     chrome.runtime.sendMessage({ name: MsgType.DeleteVideo, item: item });
   };
 
@@ -43,7 +45,6 @@ const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
             d="M6.758 17.243L12.001 12m5.243-5.243L12 12m0 0L6.758 6.757M12.001 12l5.243 5.243"
           />
         </svg>
-        {/* <button className={styles["delete-button"]}>x</button> */}
       </div>
       <div className={styles["info-container"]}>
         <div className={styles["title-container"]}>

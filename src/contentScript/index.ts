@@ -190,6 +190,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case csMsgType.PauseYoutubeVideo:
       onPauseVideo();
       break;
+    case csMsgType.CheckExists:
+      break;
     default:
   }
   sendResponse({ state: "ok" });

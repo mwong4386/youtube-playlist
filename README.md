@@ -2,6 +2,7 @@
 
 1. The youtube playlist sometime suggest something which is not on playlist
 1. Skip the long intro, e.g. the First take and some mv sometimes contains a long intro
+1. Suggest to use with adblock
 
 # To Start
 

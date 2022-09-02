@@ -9,6 +9,7 @@ const PlaylistHeader = ({ onDelete }: props) => {
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
 
   const onPlayAll = () => {
+    console.log("onPlayAll");
     if (isPlayAll) {
       chrome.runtime.sendMessage({ name: MsgType.PauseAll });
     } else {
@@ -16,7 +17,9 @@ const PlaylistHeader = ({ onDelete }: props) => {
     }
   };
   useEffect(() => {
+    console.log("isPlayAll");
     chrome.storage.local.get("isPlayAll", (result) => {
+      console.log("isPlayAll", result);
       setIsPlayAll(!!result["isPlayAll"]);
     });
   }, []);
