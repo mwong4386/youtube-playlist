@@ -2,16 +2,21 @@ import MsgType from "../constants/msgType";
 import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
 
-let onCSConfirm: () => any;
+let onCSConfirm: (e: Event) => any;
 const onYoutubeVideoPage = (
   url: string,
   videoId: string,
-  isPlayTab: boolean
+  isPlayTab: boolean,
+  endTimestamp: number | undefined
 ) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
 
   if (!bookmark) {
-    onCSConfirm = () => {
+    onCSConfirm = (e) => {
+      e.preventDefault();
+      (
+        document.getElementById("cs-confirm-button") as HTMLButtonElement
+      ).disabled = true;
       onBookmarkBtnClick(url, videoId);
     };
     fetch(chrome.runtime.getURL("/dialog.html"))
@@ -29,6 +34,13 @@ const onYoutubeVideoPage = (
           if ((event.target as HTMLElement).id === "cs-dialog") {
             (event.target as HTMLDialogElement).close();
           }
+        });
+        (
+          document.getElementById("cs-untilEnd") as HTMLInputElement
+        ).addEventListener("change", (event: Event) => {
+          const element = event.currentTarget as HTMLInputElement;
+          const checked = element.checked;
+          disableEndTimeGroup(checked);
         });
         const items = document.getElementsByClassName(
           "cs-start-time-inputgroup"
@@ -59,7 +71,11 @@ const onYoutubeVideoPage = (
       document.getElementById("cs-confirm-button") as HTMLButtonElement
     ).removeEventListener("click", onCSConfirm);
 
-    onCSConfirm = () => {
+    onCSConfirm = (e) => {
+      e.preventDefault();
+      (
+        document.getElementById("cs-confirm-button") as HTMLButtonElement
+      ).disabled = true;
       onBookmarkBtnClick(url, videoId);
     };
 
@@ -72,6 +88,15 @@ const onYoutubeVideoPage = (
     const video = document.getElementsByClassName(
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;
+    if (endTimestamp) {
+      let isEnd = false;
+      video.addEventListener("timeupdate", () => {
+        if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
+          isEnd = true;
+          chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
+        }
+      });
+    }
     video.addEventListener("ended", () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     });
@@ -85,6 +110,7 @@ const onYoutubeVideoPage = (
 };
 
 const onCSOpenDialogClickHandler = () => {
+  clearErrorMsg();
   const title = document.title
     .replace(/^\(.+?\)/, "")
     .replace(/- youtube$/i, "")
@@ -105,9 +131,10 @@ const onCSOpenDialogClickHandler = () => {
   const youtubePlayer = document.querySelectorAll(
     "#columns #primary .video-stream"
   )[0] as HTMLVideoElement;
-  const timestamp = Math.floor(
-    youtubePlayer?.currentTime | fullscreenPlayer?.currentTime
-  );
+
+  const video: HTMLVideoElement | undefined = youtubePlayer || fullscreenPlayer;
+
+  const timestamp = Math.floor(video?.currentTime);
   const hours = Math.floor(timestamp / 3600);
   const minutes = Math.floor(timestamp / 60) % 60;
   const seconds = timestamp % 60;
@@ -119,11 +146,28 @@ const onCSOpenDialogClickHandler = () => {
   (document.getElementById("cs-start-second") as HTMLInputElement).value =
     seconds.toString();
 
+  const duration = Math.floor(video?.duration);
+  const end_hours = Math.floor(duration / 3600);
+  const end_minutes = Math.floor(duration / 60) % 60;
+  const end_seconds = duration % 60;
+
+  (document.getElementById("cs-end-hour") as HTMLInputElement).value =
+    end_hours.toString();
+  (document.getElementById("cs-end-minute") as HTMLInputElement).value =
+    end_minutes.toString();
+  (document.getElementById("cs-end-second") as HTMLInputElement).value =
+    end_seconds.toString();
+
   const dialog = document.getElementById("cs-dialog") as HTMLDialogElement;
+  (document.getElementById("cs-confirm-button") as HTMLButtonElement).disabled =
+    false;
+  (document.getElementById("cs-untilEnd") as HTMLInputElement).checked = true;
+  disableEndTimeGroup(true);
   dialog.showModal();
 };
 
 const onBookmarkBtnClick = (url: string, videoId: string) => {
+  clearErrorMsg();
   const hour: number = parseFloat(
     (document.getElementById("cs-start-hour") as HTMLInputElement).value
   );
@@ -142,6 +186,42 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     document.getElementById("cs-channel-name") as HTMLElement
   ).innerHTML;
 
+  const untilEnd = (document.getElementById("cs-untilEnd") as HTMLInputElement)
+    .checked;
+  let endTimestamp: number | undefined = undefined;
+  if (!untilEnd) {
+    const endHour: number = parseFloat(
+      (document.getElementById("cs-end-hour") as HTMLInputElement).value
+    );
+    const endMinute: number = parseFloat(
+      (document.getElementById("cs-end-minute") as HTMLInputElement).value
+    );
+    const endSecond: number = parseFloat(
+      (document.getElementById("cs-end-second") as HTMLInputElement).value
+    );
+    endTimestamp = endHour * 3600 + endMinute * 60 + endSecond;
+    const fullscreenPlayer = document.querySelectorAll(
+      "#player-theater-container .video-stream"
+    )[0] as HTMLVideoElement;
+
+    const youtubePlayer = document.querySelectorAll(
+      "#columns #primary .video-stream"
+    )[0] as HTMLVideoElement;
+
+    const maxDuration = fullscreenPlayer?.duration | youtubePlayer?.duration;
+
+    if (endTimestamp >= maxDuration) endTimestamp = undefined; // assume it until end
+  }
+
+  if (endTimestamp !== undefined && endTimestamp <= timestamp) {
+    addErrorMsg(
+      "End Time either check the until end or it should larger than start time"
+    );
+    (
+      document.getElementById("cs-confirm-button") as HTMLButtonElement
+    ).disabled = false;
+    return;
+  }
   const data = {
     id: uuidv4(),
     url,
@@ -149,8 +229,9 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     title,
     channelName,
     timestamp,
+    endTimestamp, // undefined mean until to end
   };
-
+  console.log(data);
   chrome.storage.sync.get("youtube_list", (result) => {
     if (chrome.runtime.lastError) {
       console.log(chrome.runtime.lastError);
@@ -162,6 +243,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
       youtube_list: list,
     });
   });
+  (document.getElementById("cs-dialog") as HTMLDialogElement).close();
 };
 
 const onPlayVideo = () => {
@@ -177,12 +259,31 @@ const onPauseVideo = () => {
   )[0] as HTMLVideoElement;
   video.pause();
 };
+const clearErrorMsg = () => {
+  const errorContainer = document.getElementsByClassName("cs-error-container");
+  errorContainer[0].replaceChildren();
+};
+const addErrorMsg = (error: string) => {
+  const message = document.createElement("p");
+  message.innerHTML = error;
+  const errorContainer = document.getElementsByClassName("cs-error-container");
+  errorContainer[0].append(message);
+};
+const disableEndTimeGroup = (disable: boolean) => {
+  console.log("enable", disable);
+  (document.getElementById("cs-end-hour") as HTMLInputElement).disabled =
+    disable;
+  (document.getElementById("cs-end-minute") as HTMLInputElement).disabled =
+    disable;
+  (document.getElementById("cs-end-second") as HTMLInputElement).disabled =
+    disable;
+};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type, url, videoId, isPlayTab } = request;
+  const { type, url, videoId, isPlayTab, endTimestamp } = request;
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
-      onYoutubeVideoPage(url, videoId, isPlayTab);
+      onYoutubeVideoPage(url, videoId, isPlayTab, endTimestamp);
       break;
     case csMsgType.PlayYoutubeVideo:
       onPlayVideo();
@@ -204,5 +305,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const videoId = params.get("v");
   if (!videoId) return;
   const url = href.split("?")[0];
-  onYoutubeVideoPage(url, videoId || "", false);
+  onYoutubeVideoPage(url, videoId || "", false, undefined);
 })();

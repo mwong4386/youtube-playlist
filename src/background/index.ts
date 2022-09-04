@@ -6,7 +6,7 @@ import { getStorage } from "../utils/syncStorage";
 let tabId: number | undefined = undefined; // store the youtube player tab
 let isPlaying: boolean = false; // indicate is the player playing / pause
 let isPlayAll: boolean = false; // If true, looping playlist
-let playingIndex: string | null = null; // store the playing item id
+let playingItem: MPlaylistItem | null = null;
 
 const openTab = async (url: string) => {
   if (!tabId) {
@@ -26,8 +26,8 @@ const onPlayVideo = async (item: MPlaylistItem) => {
   const url = `${item.url}/?v=${item.videoId}${
     item.timestamp ? "&t=" + item.timestamp : ""
   }`;
-  console.log("onPlayVideo", playingIndex);
-  if (item.id === playingIndex) {
+  console.log("onPlayVideo", playingItem?.id);
+  if (item.id === playingItem?.id) {
     await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
       //if cannot resume the video, restart the page again
       console.log("onPlayVideo 1");
@@ -42,9 +42,8 @@ const onPlayVideo = async (item: MPlaylistItem) => {
   await openTab(url);
   console.log(3);
   isPlaying = true;
-  playingIndex = item.id;
+  playingItem = item;
   console.log("onPlayVideo1", item);
-  console.log("onPlayVideo1", playingIndex);
 };
 
 const playNext = async () => {
@@ -57,8 +56,10 @@ const playNext = async () => {
     return;
   }
   let item;
-  if (!!playingIndex) {
-    const currentIndex = playlist.findIndex((item) => item.id === playingIndex);
+  if (!!playingItem) {
+    const currentIndex = playlist.findIndex(
+      (item) => item.id === playingItem?.id
+    );
     const nextIndex = (currentIndex + 1) % playlist.length;
     item = playlist[nextIndex];
   } else {
@@ -70,11 +71,11 @@ const playNext = async () => {
 
 const onPlayAll = async () => {
   isPlayAll = true;
-  console.log("playingIndex", playingIndex);
+  console.log("playingIndex", playingItem?.id);
   if (!isPlaying) {
     await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
       console.log("fallback");
-      if (!playingIndex) {
+      if (!playingItem) {
         console.log("fallback1");
         await playNext();
         console.log("fallback2");
@@ -88,13 +89,13 @@ const onPlayAll = async () => {
       }
       let item;
       const currentIndex = playlist.findIndex(
-        (item) => item.id === playingIndex
+        (item) => item.id === playingItem?.id
       );
       item = currentIndex === -1 ? playlist[0] : playlist[currentIndex];
       onPlayVideo(item);
     });
     isPlaying = true;
-    console.log("onPlayAll E", playingIndex);
+    console.log("onPlayAll E", playingItem?.id);
   }
 };
 
@@ -173,10 +174,15 @@ const onVideoEnd = async () => {
 };
 
 const updateStateToLocalStorage = () => {
-  console.log("updateStateToLocalStorage", playingIndex, isPlaying, isPlayAll);
+  console.log(
+    "updateStateToLocalStorage",
+    playingItem?.id,
+    isPlaying,
+    isPlayAll
+  );
   chrome.storage.local.set({
     tabId: tabId,
-    playingIndex: playingIndex,
+    playingItem: playingItem,
     isPlaying: isPlaying,
     isPlayAll: isPlayAll,
   });
@@ -232,7 +238,7 @@ const onMessageHandler = async (message: any) => {
 };
 
 const resetInitial = async () => {
-  playingIndex = null;
+  playingItem = null;
   tabId = undefined;
   isPlayAll = false;
   isPlaying = false;
@@ -242,12 +248,12 @@ const resetInitial = async () => {
   // In case the background script restart, it will detect whether the tab still exist,
   // if no, reset the state
   chrome.storage.local.get(
-    ["tabId", "isPlaying", "isPlayAll", "playingIndex"],
+    ["tabId", "isPlaying", "isPlayAll", "playingItem"],
     (result) => {
       tabId = result["tabId"];
       isPlaying = result["isPlaying"];
       isPlayAll = result["isPlayAll"];
-      playingIndex = result["playingIndex"];
+      playingItem = result["playingItem"];
       if (!tabId) {
         resetInitial();
         updateStateToLocalStorage();
@@ -288,6 +294,7 @@ const resetInitial = async () => {
           url: tab.url.split("?")[0],
           videoId: params.get("v"),
           isPlayTab: tabId === tabId1,
+          endTimestamp: tabId === tabId1 && playingItem?.endTimestamp,
         },
         () => {
           console.log(chrome.runtime.lastError);

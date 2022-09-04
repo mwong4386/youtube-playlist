@@ -13,6 +13,7 @@ const Playlist = () => {
     const getPlaylist = async () => {
       const list = ((await getStorage("youtube_list")) ||
         []) as MPlaylistItem[];
+      console.log(list);
       setPlaylist(list);
     };
     getPlaylist();
@@ -20,9 +21,9 @@ const Playlist = () => {
 
   useEffect(() => {
     console.log("on loaded");
-    chrome.storage.local.get(["isPlaying", "playingIndex"], (result) => {
+    chrome.storage.local.get(["isPlaying", "playingItem"], (result) => {
       console.log(result);
-      if (result["playingIndex"]) setPlayingIndex(result["playingIndex"]);
+      if (result["playingItem"]) setPlayingIndex(result["playingItem"]?.id);
       if (result["isPlaying"]) setPlaying(result["isPlaying"]);
     });
   }, []);
@@ -34,14 +35,14 @@ const Playlist = () => {
     ) => {
       console.log("changes");
       console.log(changes);
-      if ("playingIndex" in changes) {
-        setPlayingIndex(changes["playingIndex"].newValue);
+      if ("playingItem" in changes) {
+        setPlayingIndex(changes["playingItem"].newValue?.id);
       }
       if ("isPlaying" in changes) {
         setPlaying(changes["isPlaying"].newValue);
       }
       if ("youtube_list" in changes) {
-        setPlaylist(changes["youtube_list"].newValue);
+        setPlaylist(changes["youtube_list"].newValue || []);
       }
     };
     chrome.storage.onChanged.addListener(listener);
@@ -54,7 +55,6 @@ const Playlist = () => {
     chrome.storage.sync.remove("youtube_list");
     setPlaylist([]);
   };
-
   return (
     <>
       {playlist.length === 0 ? (
