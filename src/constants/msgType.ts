@@ -7,6 +7,8 @@ const enum MsgType {
   VideoPauseEvent,
   VideoEnd,
   DeleteVideo,
+  OpenPictureInWindow,
+  ClosePictureInWindow,
 }
 
 export default MsgType;

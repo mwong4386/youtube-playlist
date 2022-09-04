@@ -16,6 +16,9 @@ const PlaylistHeader = ({ onDelete }: props) => {
       chrome.runtime.sendMessage({ name: MsgType.PlayAll });
     }
   };
+  const onPlayInPicture = () => {
+    chrome.runtime.sendMessage({ name: MsgType.OpenPictureInWindow });
+  };
   useEffect(() => {
     console.log("isPlayAll");
     chrome.storage.local.get("isPlayAll", (result) => {
@@ -49,10 +52,10 @@ const PlaylistHeader = ({ onDelete }: props) => {
         </button>
       </div>
       <div className={styles["header-right-container"]}>
-        <button onClick={onDelete} className={styles["header-button"]}>
+        <button onClick={onPlayInPicture} className={styles["header-button"]}>
           <img
             className={styles["header-button-icon"]}
-            src="./assets/trash.svg"
+            src="./assets/picture-in-picture30.svg"
           />
         </button>
       </div>

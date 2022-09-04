@@ -142,29 +142,6 @@ const sendSignalAsync = async (
   }
 };
 
-const sendSignal = (type: csMsgType, fallback?: () => void) => {
-  if (tabId) {
-    console.log("sendSignal");
-    chrome.tabs.sendMessage(
-      tabId,
-      {
-        type: type,
-      },
-      () => {
-        console.log("sendSignal 1");
-        if (chrome.runtime.lastError) {
-          if (fallback) {
-            fallback();
-          }
-        }
-      }
-    );
-    console.log("sendSignal 2");
-  } else {
-    if (fallback) fallback();
-  }
-};
-
 const onVideoEnd = async () => {
   console.log("onVideoEnd");
   isPlaying = false;
@@ -198,8 +175,8 @@ const deleteVideo = async (id: string) => {
   });
   console.log("deleteVideo 2");
 };
-
 const onMessageHandler = async (message: any) => {
+  console.log(message.name);
   switch (message.name) {
     case MsgType.PlayVideo:
       console.log("PlayVideo: ", message.item);
@@ -232,6 +209,14 @@ const onMessageHandler = async (message: any) => {
     case MsgType.DeleteVideo:
       console.log("DeleteVideo");
       await deleteVideo(message.item.id);
+      break;
+    case MsgType.OpenPictureInWindow:
+      if (tabId) {
+        chrome.scripting.executeScript({
+          files: ["/openPictureInWindow.js"],
+          target: { tabId: tabId, allFrames: true },
+        });
+      }
       break;
     default:
   }

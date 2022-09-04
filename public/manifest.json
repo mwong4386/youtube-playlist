@@ -3,7 +3,7 @@
     "description": "This extension is made for demonstration purposes",
     "version": "1.0",
     "manifest_version": 3,
-    "permissions": ["storage", "tabs"],
+    "permissions": ["storage", "tabs","scripting"],
     "action": {
         "default_popup": "index.html",
         "default_title":"Youtube playlist"
@@ -23,5 +23,8 @@
         "matches": [ "https://www.youtube.com/*" ]
       }
       
+    ],
+    "host_permissions": [
+      "https://www.youtube.com/*"
     ]
 }
