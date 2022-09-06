@@ -7,7 +7,7 @@ let tabId: number | undefined = undefined; // store the youtube player tab
 let isPlaying: boolean = false; // indicate is the player playing / pause
 let isPlayAll: boolean = false; // If true, looping playlist
 let playingItem: MPlaylistItem | null = null;
-
+let isPIP: boolean = false;
 const openTab = async (url: string) => {
   if (!tabId) {
     const tab = await chrome.tabs.create({ url: url });
@@ -20,6 +20,7 @@ const openTab = async (url: string) => {
       tabId = tab?.id;
     }
   }
+  isPIP = false;
 };
 
 const onPlayVideo = async (item: MPlaylistItem) => {
@@ -151,17 +152,13 @@ const onVideoEnd = async () => {
 };
 
 const updateStateToLocalStorage = () => {
-  console.log(
-    "updateStateToLocalStorage",
-    playingItem?.id,
-    isPlaying,
-    isPlayAll
-  );
+  console.log("updateStateToLocalStorage", isPIP);
   chrome.storage.local.set({
     tabId: tabId,
     playingItem: playingItem,
     isPlaying: isPlaying,
     isPlayAll: isPlayAll,
+    isPIP: isPIP,
   });
 };
 
@@ -216,6 +213,7 @@ const onMessageHandler = async (message: any) => {
           files: ["/openPictureInWindow.js"],
           target: { tabId: tabId, allFrames: true },
         });
+        isPIP = !isPIP;
       }
       break;
     default:
@@ -227,18 +225,20 @@ const resetInitial = async () => {
   tabId = undefined;
   isPlayAll = false;
   isPlaying = false;
+  isPIP = false;
 };
 
 (function () {
   // In case the background script restart, it will detect whether the tab still exist,
   // if no, reset the state
   chrome.storage.local.get(
-    ["tabId", "isPlaying", "isPlayAll", "playingItem"],
+    ["tabId", "isPlaying", "isPlayAll", "playingItem", "isPIP"],
     (result) => {
       tabId = result["tabId"];
       isPlaying = result["isPlaying"];
       isPlayAll = result["isPlayAll"];
       playingItem = result["playingItem"];
+      isPIP = result["isPIP"];
       if (!tabId) {
         resetInitial();
         updateStateToLocalStorage();
@@ -282,7 +282,9 @@ const resetInitial = async () => {
           endTimestamp: tabId === tabId1 && playingItem?.endTimestamp,
         },
         () => {
-          console.log(chrome.runtime.lastError);
+          if (chrome.runtime.lastError) {
+            console.log(chrome.runtime.lastError);
+          }
         }
       );
     }

@@ -7,7 +7,7 @@ interface props {
 }
 const PlaylistHeader = ({ onDelete }: props) => {
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
-
+  const [isPIP, setIsPIP] = useState<boolean>(false);
   const onPlayAll = () => {
     console.log("onPlayAll");
     if (isPlayAll) {
@@ -21,9 +21,9 @@ const PlaylistHeader = ({ onDelete }: props) => {
   };
   useEffect(() => {
     console.log("isPlayAll");
-    chrome.storage.local.get("isPlayAll", (result) => {
-      console.log("isPlayAll", result);
+    chrome.storage.local.get(["isPlayAll", "isPIP"], (result) => {
       setIsPlayAll(!!result["isPlayAll"]);
+      setIsPIP(!!result["isPIP"]);
     });
   }, []);
   useEffect(() => {
@@ -33,6 +33,9 @@ const PlaylistHeader = ({ onDelete }: props) => {
     ) => {
       if ("isPlayAll" in changes) {
         setIsPlayAll(!!changes["isPlayAll"].newValue);
+      }
+      if ("isPIP" in changes) {
+        setIsPIP(!!changes["isPIP"].newValue);
       }
     };
     chrome.storage.onChanged.addListener(listener);
@@ -55,7 +58,11 @@ const PlaylistHeader = ({ onDelete }: props) => {
         <button onClick={onPlayInPicture} className={styles["header-button"]}>
           <img
             className={styles["header-button-icon"]}
-            src="./assets/picture-in-picture30.svg"
+            src={
+              isPIP
+                ? "./assets/picture-in-window30.svg"
+                : "./assets/picture-in-picture30.svg"
+            }
           />
         </button>
       </div>
