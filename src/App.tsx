@@ -1,10 +1,13 @@
-import './App.css';
-import Playlist from './screens/playlist/Playlist';
+import "./App.css";
+import Playlist from "./screens/playlist/Playlist";
+import { ActionSheetProvider } from "./screens/actionSheet/ActionSheetContext";
 
 function App() {
   return (
     <div className="App">
-      <Playlist />
+      <ActionSheetProvider>
+        <Playlist />
+      </ActionSheetProvider>
     </div>
   );
 }

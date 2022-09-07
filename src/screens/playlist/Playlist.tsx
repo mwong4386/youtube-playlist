@@ -64,16 +64,18 @@ const Playlist = () => {
       ) : (
         <div className={styles["playlist-container"]}>
           <PlaylistHeader onDelete={onDeleteAll} />
-          {playlist.map((item) => {
-            return (
-              <PlaylistItem
-                key={item.id}
-                item={item}
-                isPlaying={playing}
-                IPlaying={playingIndex === item.id}
-              />
-            );
-          })}
+          <div>
+            {playlist.map((item) => {
+              return (
+                <PlaylistItem
+                  key={item.id}
+                  item={item}
+                  isPlaying={playing}
+                  IPlaying={playingIndex === item.id}
+                />
+              );
+            })}
+          </div>
         </div>
       )}
     </>

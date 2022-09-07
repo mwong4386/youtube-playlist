@@ -1,11 +1,13 @@
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
 import MPlaylistItem from "../models/PlaylistItem";
+import { getRandomInt } from "../utils/math";
 import { getStorage } from "../utils/syncStorage";
 
 let tabId: number | undefined = undefined; // store the youtube player tab
 let isPlaying: boolean = false; // indicate is the player playing / pause
 let isPlayAll: boolean = false; // If true, looping playlist
+let isRandom: boolean = false; // If true, looping with random
 let playingItem: MPlaylistItem | null = null;
 let isPIP: boolean = false;
 const openTab = async (url: string) => {
@@ -57,7 +59,9 @@ const playNext = async () => {
     return;
   }
   let item;
-  if (!!playingItem) {
+  if (isRandom) {
+    item = playlist[getRandomInt(playlist.length)];
+  } else if (!!playingItem) {
     const currentIndex = playlist.findIndex(
       (item) => item.id === playingItem?.id
     );
@@ -82,10 +86,12 @@ const onPlayAll = async () => {
         console.log("fallback2");
         return;
       }
+      console.log("is this possible");
       const items = await getStorage("youtube_list");
       const playlist = (items || []) as MPlaylistItem[];
       if (playlist.length === 0) {
         isPlayAll = false;
+        isRandom = false;
         return;
       }
       let item;
@@ -109,6 +115,7 @@ const onPauseVideo = async () => {
 
 const onPauseAll = async () => {
   isPlayAll = false;
+  isRandom = false;
   await onPauseVideo();
 };
 
@@ -152,13 +159,13 @@ const onVideoEnd = async () => {
 };
 
 const updateStateToLocalStorage = () => {
-  console.log("updateStateToLocalStorage", isPIP);
   chrome.storage.local.set({
     tabId: tabId,
     playingItem: playingItem,
     isPlaying: isPlaying,
     isPlayAll: isPlayAll,
     isPIP: isPIP,
+    isRandom: isRandom,
   });
 };
 
@@ -185,6 +192,12 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.PlayAll:
       console.log("PlayAll");
+      isRandom = false;
+      await onPlayAll();
+      break;
+    case MsgType.PlayAllRandom:
+      console.log("PlayAll");
+      isRandom = true;
       await onPlayAll();
       break;
     case MsgType.PauseAll:
@@ -226,19 +239,21 @@ const resetInitial = async () => {
   isPlayAll = false;
   isPlaying = false;
   isPIP = false;
+  isRandom = false;
 };
 
 (function () {
   // In case the background script restart, it will detect whether the tab still exist,
   // if no, reset the state
   chrome.storage.local.get(
-    ["tabId", "isPlaying", "isPlayAll", "playingItem", "isPIP"],
+    ["tabId", "isPlaying", "isPlayAll", "playingItem", "isPIP", "isRandom"],
     (result) => {
       tabId = result["tabId"];
       isPlaying = result["isPlaying"];
       isPlayAll = result["isPlayAll"];
       playingItem = result["playingItem"];
       isPIP = result["isPIP"];
+      isRandom = result["isRandom"];
       if (!tabId) {
         resetInitial();
         updateStateToLocalStorage();
