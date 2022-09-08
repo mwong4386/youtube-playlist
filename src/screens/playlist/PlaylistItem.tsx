@@ -1,5 +1,5 @@
 import MsgType from "../../constants/msgType";
-import MPlaylistItem from "../../models/PlaylistItem";
+import MPlaylistItem from "../../models/MPlaylistItem";
 import styles from "./Playlist.module.css";
 interface props {
   item: MPlaylistItem;

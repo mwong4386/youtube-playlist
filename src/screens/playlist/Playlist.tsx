@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import MPlaylistItem from "../../models/PlaylistItem";
+import MPlaylistItem from "../../models/MPlaylistItem";
 import { getStorage } from "../../utils/syncStorage";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
-
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
   const [playing, setPlaying] = useState<boolean>(false);
@@ -53,17 +52,17 @@ const Playlist = () => {
 
   const onDeleteAll = () => {
     chrome.storage.sync.remove("youtube_list");
-    setPlaylist([]);
   };
+
   return (
     <>
+      <PlaylistHeader playlist={playlist} onDelete={onDeleteAll} />
       {playlist.length === 0 ? (
         <div className={styles["empty-container"]}>
           <p className={styles["empty-message"]}>The playlist is empty</p>
         </div>
       ) : (
         <div className={styles["playlist-container"]}>
-          <PlaylistHeader onDelete={onDeleteAll} />
           <div>
             {playlist.map((item) => {
               return (

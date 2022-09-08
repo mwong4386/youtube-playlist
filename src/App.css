@@ -2,8 +2,9 @@
   position: relative;
   text-align: center;
   width: 350px;
-  height: 100px;
-  min-height: 100px;
+  min-height: 250px;
+  max-height: 600px; 
+  padding: 8px 0;
 }
 
 .App-logo {

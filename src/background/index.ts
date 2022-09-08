@@ -1,6 +1,6 @@
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
-import MPlaylistItem from "../models/PlaylistItem";
+import MPlaylistItem from "../models/MPlaylistItem";
 import { getRandomInt } from "../utils/math";
 import { getStorage } from "../utils/syncStorage";
 

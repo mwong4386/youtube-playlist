@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import MsgType from "../../constants/msgType";
+import MPlaylistItem from "../../models/MPlaylistItem";
+import { getCurrentTimestamp } from "../../utils/date";
 import useActionSheet from "../actionSheet/useActionSheet";
 import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
+  playlist: MPlaylistItem[];
 }
-const PlaylistHeader = ({ onDelete }: props) => {
+const PlaylistHeader = ({ playlist, onDelete }: props) => {
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
   const [isPIP, setIsPIP] = useState<boolean>(false);
   const [playing, setPlaying] = useState<boolean>(false);
@@ -28,6 +31,7 @@ const PlaylistHeader = ({ onDelete }: props) => {
   const onPlayInPicture = () => {
     chrome.runtime.sendMessage({ name: MsgType.OpenPictureInWindow });
   };
+
   const openPlayMenu = () => {
     ctx.setActionSheet([
       { id: 1, description: "Play Orderly", callback: sendPlayOrderly },
@@ -47,9 +51,24 @@ const PlaylistHeader = ({ onDelete }: props) => {
             },
           ]
         : []),
-      { id: 2, description: "Delete All", callback: onDelete },
+      { id: 2, description: "Import Playlist", callback: onImportJson },
+      { id: 3, description: "Export Playlist", callback: onExportJson },
+      { id: 4, description: "Delete All", callback: onDelete },
     ]);
     ctx.open();
+  };
+  const onExportJson = () => {
+    var result = JSON.stringify(playlist);
+    var file = new Blob([result], { type: "application/json" });
+    var url = URL.createObjectURL(file);
+    chrome.downloads.download({
+      url: url,
+      filename: `playlist_${getCurrentTimestamp()}.json`,
+    });
+  };
+  const onImportJson = () => {
+    const file = document.getElementById("uploadfile");
+    file?.click();
   };
 
   useEffect(() => {
@@ -60,6 +79,7 @@ const PlaylistHeader = ({ onDelete }: props) => {
       setPlaying(!!result["isPlaying"]);
     });
   }, []);
+
   useEffect(() => {
     const listener = (
       changes: { [key: string]: chrome.storage.StorageChange },
@@ -81,10 +101,48 @@ const PlaylistHeader = ({ onDelete }: props) => {
     };
   }, []);
 
+  const onFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.currentTarget.files;
+    if (files && files?.length > 0) {
+      const file = files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+          // this will then display a text file
+          const content = reader.result as string;
+          if (content) {
+            try {
+              const temp: MPlaylistItem[] = JSON.parse(content);
+              if (temp.length > 0) {
+                chrome.storage.sync.set({
+                  youtube_list: temp,
+                });
+              }
+            } catch (exception) {}
+            (document.getElementById("uploadfile") as HTMLInputElement).value =
+              "";
+          }
+        });
+        reader.readAsText(file, "UTF-8");
+      }
+    }
+  };
   return (
     <div className={styles["header-container"]}>
+      <input
+        style={{ display: "none" }}
+        type="file"
+        name="uploadfile"
+        id="uploadfile"
+        accept="application/json"
+        onChange={onFileUpload}
+      ></input>
       <div className={styles["header-left-container"]}>
-        <button onClick={onPlayPauseButton} className={styles["header-button"]}>
+        <button
+          disabled={playlist.length === 0}
+          onClick={onPlayPauseButton}
+          className={styles["header-button"]}
+        >
           <img
             className={styles["header-button-icon"]}
             src={isPlayAll ? "./assets/pause30.png" : "./assets/play30.png"}
