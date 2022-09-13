@@ -4,10 +4,15 @@ import { getStorage } from "../../utils/syncStorage";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
+import Draggable from "../draggable/Draggable";
+
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
   const [playing, setPlaying] = useState<boolean>(false);
   const [playingIndex, setPlayingIndex] = useState<string | null | undefined>();
+  const [draggingElement, setDraggingElement] = useState<string | undefined>(
+    undefined
+  );
   useEffect(() => {
     const getPlaylist = async () => {
       const list = ((await getStorage("youtube_list")) ||
@@ -54,6 +59,21 @@ const Playlist = () => {
     chrome.storage.sync.remove("youtube_list");
   };
 
+  const onMoveTo = (toId: string) => {
+    if (draggingElement && draggingElement !== toId) {
+      // const oldIndex = playlist.findIndex((x) => x.id === draggingElement);
+      const item = playlist.find((x) => x.id === draggingElement);
+      if (!item) return;
+      const newIndex = playlist.findIndex((x) => x.id === toId);
+      const temp = playlist.filter((x) => x.id !== draggingElement);
+      temp.splice(newIndex, 0, item);
+      chrome.storage.sync
+        .set({
+          youtube_list: temp,
+        })
+        .then(() => {});
+    }
+  };
   return (
     <>
       <PlaylistHeader playlist={playlist} onDelete={onDeleteAll} />
@@ -63,18 +83,24 @@ const Playlist = () => {
         </div>
       ) : (
         <div className={styles["playlist-container"]}>
-          <div>
-            {playlist.map((item) => {
-              return (
+          {playlist.map((item) => {
+            return (
+              <Draggable
+                key={item.id}
+                id={item.id}
+                isDragging={draggingElement === item.id}
+                setDraggingElement={setDraggingElement}
+                onMoveTo={onMoveTo}
+              >
                 <PlaylistItem
                   key={item.id}
                   item={item}
                   isPlaying={playing}
                   IPlaying={playingIndex === item.id}
                 />
-              );
-            })}
-          </div>
+              </Draggable>
+            );
+          })}
         </div>
       )}
     </>
