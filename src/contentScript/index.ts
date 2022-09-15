@@ -178,7 +178,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     (document.getElementById("cs-start-second") as HTMLInputElement).value
   );
 
-  const timestamp = hour * 3600 + minute * 60 + second;
+  const timestamp = hour * 3600 + minute * 60 + second * 1;
 
   const title = (document.getElementById("cs-video-title") as HTMLElement)
     .innerHTML;
@@ -210,7 +210,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     const endSecond: number = parseFloat(
       (document.getElementById("cs-end-second") as HTMLInputElement).value
     );
-    endTimestamp = endHour * 3600 + endMinute * 60 + endSecond;
+    endTimestamp = endHour * 3600 + endMinute * 60 + endSecond * 1;
 
     if (endTimestamp >= maxDuration) endTimestamp = undefined; // assume it until end
   }

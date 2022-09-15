@@ -69,10 +69,10 @@ const InfoModal = ({ item, active, save, close }: props) => {
   }, [item]);
 
   const onSubmit = (data: infoModels) => {
-    const timestamp = data.hours * 3600 + data.minutes * 60 + data.seconds;
+    const timestamp = data.hours * 3600 + data.minutes * 60 + data.seconds * 1;
     if (item?.maxDuration && timestamp > item?.maxDuration) return;
     const temp_endtimestamp =
-      data.endHours * 3600 + data.endMinutes * 60 + data.endSeconds;
+      data.endHours * 3600 + data.endMinutes * 60 + data.endSeconds * 1;
     const endtimestamp =
       data.untilEnd || temp_endtimestamp > (item?.maxDuration as number)
         ? undefined
@@ -112,11 +112,14 @@ const InfoModal = ({ item, active, save, close }: props) => {
                 pattern="[0-9]{0,2}"
                 {...register("hours", {
                   required: true,
-                  validate: (value) =>
-                    value * 3600 +
-                      getValues("minutes") * 60 +
-                      getValues("seconds") <
-                    (item?.maxDuration || 0),
+                  validate: (value) => {
+                    return (
+                      value * 3600 +
+                        getValues("minutes") * 60 +
+                        getValues("seconds") * 1 <
+                      (item?.maxDuration || 0)
+                    );
+                  },
                 })}
               />
               <span className={styles["semicolon"]}>:</span>
@@ -156,9 +159,10 @@ const InfoModal = ({ item, active, save, close }: props) => {
                 placeholder="HH"
                 maxLength={2}
                 size={2}
-                pattern="[0-9]{0,2}"
                 {...register("endHours", { required: !watch("untilEnd") })}
-                disabled={watch("untilEnd")}
+                {...(!watch("untilEnd")
+                  ? { pattern: "[0-9]{0,2}" }
+                  : { disabled: true })}
               />
               <span className={styles["semicolon"]}>:</span>
               <input
@@ -168,9 +172,10 @@ const InfoModal = ({ item, active, save, close }: props) => {
                 placeholder="mm"
                 maxLength={2}
                 size={2}
-                pattern="[0-5]?[0-9]"
                 {...register("endMinutes", { required: !watch("untilEnd") })}
-                disabled={watch("untilEnd")}
+                {...(!watch("untilEnd")
+                  ? { pattern: "[0-5]?[0-9]" }
+                  : { disabled: true })}
               />
               <span className={styles["semicolon"]}>:</span>
               <input
@@ -182,8 +187,8 @@ const InfoModal = ({ item, active, save, close }: props) => {
                 size={2}
                 {...register("endSeconds", { required: !watch("untilEnd") })}
                 {...(!watch("untilEnd")
-                  ? { pattern: "[0-5]?[0-9]", disabled: true }
-                  : {})}
+                  ? { pattern: "[0-5]?[0-9]" }
+                  : { disabled: true })}
               />
             </span>
           </div>
