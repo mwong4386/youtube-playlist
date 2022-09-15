@@ -189,6 +189,17 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
   const untilEnd = (document.getElementById("cs-untilEnd") as HTMLInputElement)
     .checked;
   let endTimestamp: number | undefined = undefined;
+
+  const fullscreenPlayer = document.querySelectorAll(
+    "#player-theater-container .video-stream"
+  )[0] as HTMLVideoElement;
+
+  const youtubePlayer = document.querySelectorAll(
+    "#columns #primary .video-stream"
+  )[0] as HTMLVideoElement;
+
+  const maxDuration = fullscreenPlayer?.duration | youtubePlayer?.duration;
+
   if (!untilEnd) {
     const endHour: number = parseFloat(
       (document.getElementById("cs-end-hour") as HTMLInputElement).value
@@ -200,15 +211,6 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
       (document.getElementById("cs-end-second") as HTMLInputElement).value
     );
     endTimestamp = endHour * 3600 + endMinute * 60 + endSecond;
-    const fullscreenPlayer = document.querySelectorAll(
-      "#player-theater-container .video-stream"
-    )[0] as HTMLVideoElement;
-
-    const youtubePlayer = document.querySelectorAll(
-      "#columns #primary .video-stream"
-    )[0] as HTMLVideoElement;
-
-    const maxDuration = fullscreenPlayer?.duration | youtubePlayer?.duration;
 
     if (endTimestamp >= maxDuration) endTimestamp = undefined; // assume it until end
   }
@@ -230,6 +232,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     channelName,
     timestamp,
     endTimestamp, // undefined mean until to end
+    maxDuration,
   };
   console.log(data);
   chrome.storage.sync.get("youtube_list", (result) => {

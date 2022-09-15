@@ -6,6 +6,7 @@ interface MPlaylistItem {
   videoId: string;
   timestamp: number;
   endTimestamp: number | undefined;
+  maxDuration: number;
 }
 
 export default MPlaylistItem;

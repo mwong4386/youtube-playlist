@@ -5,12 +5,16 @@ import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
 import Draggable from "../draggable/Draggable";
+import InfoModal from "../modal/InfoModal";
 
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
   const [playing, setPlaying] = useState<boolean>(false);
   const [playingIndex, setPlayingIndex] = useState<string | null | undefined>();
   const [draggingElement, setDraggingElement] = useState<string | undefined>(
+    undefined
+  );
+  const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   );
   useEffect(() => {
@@ -59,6 +63,21 @@ const Playlist = () => {
     chrome.storage.sync.remove("youtube_list");
   };
 
+  const onSave = (
+    id: string,
+    timestamp: number,
+    endTimestamp: number | undefined
+  ) => {
+    const item = playlist.find((x) => x.id === id);
+    if (!item) return;
+    item.timestamp = timestamp;
+    item.endTimestamp = endTimestamp;
+    chrome.storage.sync
+      .set({
+        youtube_list: playlist,
+      })
+      .then(() => {});
+  };
   const onMoveTo = (toId: string) => {
     if (draggingElement && draggingElement !== toId) {
       // const oldIndex = playlist.findIndex((x) => x.id === draggingElement);
@@ -97,10 +116,19 @@ const Playlist = () => {
                   item={item}
                   isPlaying={playing}
                   IPlaying={playingIndex === item.id}
+                  selectItemId={setSelectItemId}
                 />
               </Draggable>
             );
           })}
+          <InfoModal
+            active={!!selectItemId}
+            close={() => {
+              setSelectItemId(undefined);
+            }}
+            save={onSave}
+            item={playlist.find((x) => x.id === selectItemId)}
+          />
         </div>
       )}
     </>

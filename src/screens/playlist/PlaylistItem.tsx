@@ -5,8 +5,9 @@ interface props {
   item: MPlaylistItem;
   isPlaying: boolean;
   IPlaying: boolean;
+  selectItemId: React.Dispatch<string | undefined>;
 }
-const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
+const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
   const onPlay = () => {
     console.log("onPlay");
     if (isPlaying && IPlaying) {
@@ -20,7 +21,9 @@ const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
     console.log("onDelete");
     chrome.runtime.sendMessage({ name: MsgType.DeleteVideo, item: item });
   };
-
+  const onClick = () => {
+    selectItemId(item.id);
+  };
   return (
     <div
       className={`${styles["playlist-item-container"]} ${
@@ -46,7 +49,7 @@ const PlaylistItem = ({ item, isPlaying, IPlaying }: props) => {
           />
         </svg>
       </div>
-      <div className={styles["info-container"]}>
+      <div className={styles["info-container"]} onClick={onClick}>
         <div className={styles["title-container"]}>
           <p className={`${styles["title"]} line-clamp-2`}>{item.title}</p>
         </div>

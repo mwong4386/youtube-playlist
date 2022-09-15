@@ -1,0 +1,102 @@
+.backdrop{
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    bottom:0;
+    left:0;
+    display: flex;
+    flex-direction: row;
+    justify-items: center;
+    align-items: flex-end;
+    background-color: rgba(0,0,0,0.25);
+    z-index: 1000;
+    margin-bottom: -600px;
+}
+.backdrop.active{
+    margin-bottom: 0;
+}
+.container{
+    width: 100%;
+    background-color: rgba(255,255,255,1);
+    margin-bottom: -600px;
+    transition: .3s ease-in-out;
+}
+.active .container{
+    margin-bottom: 0;
+}
+.header-row{
+    display: flex;
+    flex-direction:row;
+    justify-content: space-between;
+}
+.content{
+    padding: 0 8px;
+}
+.cross-button{
+    padding:9px;
+    background-color: white;
+    height: 40px;
+    width: 40px;
+    text-align: center;
+    font-size: 22px;
+    line-height: 22px;
+    border-width:0px;
+}
+.save-button{
+    background-color: white;
+    color: green;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    height: 40px;
+    border-width:0px;
+}
+.video-title{
+    font-size:16px;
+    margin-bottom: 8px;
+}
+.channel-name{
+    color:gray; 
+    font-size:14px;
+    margin-top: 0px;
+    margin-bottom: 12px;
+}
+.time-container{
+    margin:0;
+    margin-bottom: 4px;
+}
+.time-label{
+    display: inline-block;
+    font-size: 14px;
+    font-weight: bold;
+    width:72px;
+}
+.semicolon{
+    font-size: 16px;
+    font-weight:bold;
+    background-color: white;
+}
+.time-inputgroup{
+    font-size: 16px;
+}
+.time {
+    display: inline-block;
+    border: 2.5px solid #000;
+    padding:4px;
+    height: 32;
+    margin-left: 6px;
+}
+.time input {
+    border: 0;
+    text-align: center;
+    outline: 0; /* remove if you want input highlight */
+}
+.checkbox{
+    margin-left: -20px;
+}
+.error{
+    font-size: 14px;
+    color: red;
+    margin-left: 12px;
+    margin-bottom: 8px;
+}
