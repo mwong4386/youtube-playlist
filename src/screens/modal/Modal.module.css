@@ -4,24 +4,24 @@
     width: 100%;
     bottom:0;
     left:0;
-    display: flex;
-    flex-direction: row;
-    justify-items: center;
-    align-items: flex-end;
-    background-color: rgba(0,0,0,0.25);
-    z-index: 1000;
     margin-bottom: -600px;
+    background-color: rgba(0,0,0,0.25);
+    z-index: 900;
 }
 .backdrop.active{
     margin-bottom: 0;
 }
 .container{
+    position: fixed;
     width: 100%;
+    bottom:0;
+    left:0;
     background-color: rgba(255,255,255,1);
+    z-index: 1000;
     margin-bottom: -600px;
     transition: .3s ease-in-out;
 }
-.active .container{
+.container.active {
     margin-bottom: 0;
 }
 .header-row{

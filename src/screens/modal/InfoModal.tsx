@@ -96,7 +96,9 @@ const InfoModal = ({ item, active, save, close }: props) => {
           </button>
         </div>
         <div className={styles["content"]}>
-          <p className={styles["video-title"]}>{item?.title}</p>
+          <p className={`${styles["video-title"]} line-clamp-4`}>
+            {item?.title}
+          </p>
           <p className={styles["channel-name"]}>{item?.channelName}</p>
           <div className={styles["time-container"]}>
             <label className={styles["time-label"]}>Start Time</label>

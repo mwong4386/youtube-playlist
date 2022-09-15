@@ -10,26 +10,24 @@ interface props {
 const ActionSheet = ({ items, active, close }: props) => {
   const isActive = active && items.length > 0;
   const onClick = (event: React.MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).id === "container") {
-      close();
-    }
+    close();
   };
 
   return (
-    <div
-      id="container"
-      className={`${styles["container"]} ${isActive ? styles["active"] : ""}`}
-      onClick={onClick}
-    >
+    <>
+      <div
+        className={`${styles["backdrop"]} ${isActive ? styles["active"] : ""}`}
+        onClick={onClick}
+      ></div>
       <div
         id="rows"
-        className={`${styles["rows"]} ${isActive ? styles["active"] : ""}`}
+        className={`${styles["container"]} ${isActive ? styles["active"] : ""}`}
       >
         {items.map((item) => {
           return <ActionSheetItem key={item.id} item={item} close={close} />;
         })}
       </div>
-    </div>
+    </>
   );
 };
 

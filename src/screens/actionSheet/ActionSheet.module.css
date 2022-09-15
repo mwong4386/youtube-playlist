@@ -1,31 +1,17 @@
 .container{
     position: fixed;
-    height: 100%;
     width: 100%;
     bottom:0;
     left:0;
-    display: flex;
-    flex-direction: row;
-    justify-items: flex-end;
-    align-items: end;
-    background-color: rgba(0,0,0,0.25);
-    z-index: 1000;
-    margin-bottom: -600px;
-}
-.container.active{
-    margin-bottom: 0;
-}
-
-.rows{
-    width: 100%;
     padding: 0;
     background-color: rgba(255,255,255,1);
     cursor: pointer;
+    z-index: 1000;
     margin-bottom: -600px;
     transition: .3s ease-in-out;
 }
 
-.rows.active{
+.container.active{
     margin-bottom: 0;
 }
 
@@ -33,4 +19,19 @@
     font-size: 16px;
     font-weight: 600;
     padding: 0 10px;
+}
+
+.backdrop{
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    bottom:0;
+    left:0;
+    margin-bottom: -600px;
+    background-color: rgba(0,0,0,0.25);
+    z-index: 900;
+}
+
+.backdrop.active{
+    margin-bottom: 0;
 }
