@@ -62,6 +62,9 @@
         margin-bottom: 12px;
     }
     .cs-time-container{
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
         margin:0;
         margin-bottom: 4px;
     }
@@ -81,11 +84,20 @@
         font-size: 16px;
         color: red;
     }
+    .cs-reset-button{
+        border: 0;
+    }
+    .cs-button:hover{
+        cursor: pointer;
+    }
+    .cs-button:active{
+        background-color: rgba(0, 0, 0, 0.15);
+    }
 </style>
 <dialog id="cs-dialog" class="cs-dialog">
     <form method="dialog" class="cs-dialog-container">
         <div class="cs-dialog-header">
-            <button class="cs-dialog-button cs-cross-button" value="cancel">x</button>
+            <button class="cs-button cs-dialog-button cs-cross-button" value="cancel">x</button>
         </div>
         <div class="cs-dialog-content">
 			<p id="cs-video-title" class="cs-video-title"></p>
@@ -99,6 +111,9 @@
                     <span class="cs-semicolon">:</span>
                     <input id="cs-start-second" class="cs-time-inputgroup" type="text" name="cs-start-second" value="00" placeholder="ss" maxlength="2" size="2" pattern="[0-5]?[0-9]" />
                 </span>
+                <button id="cs-reset-starttime" class="cs-button cs-reset-button" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M10 2h4m-2 12v-4m-8 3a8 8 0 0 1 8-7a8 8 0 1 1-5.3 14L4 17.6"/><path d="M9 17H4v5"/></g></svg>
+                </button>
             </div>
             <div class="cs-time-container">
                 <label class="cs-time-label">End Time</label>		
@@ -115,7 +130,7 @@
             <div class="cs-error-container">
             </div>
             <div class="cs-button-group">
-                <button class="cs-dialog-button cs-confirm-button" id="cs-confirm-button">Confirm</button>
+                <button class="cs-button cs-dialog-button cs-confirm-button" id="cs-confirm-button">Confirm</button>
             </div>
         </div>
     </form>

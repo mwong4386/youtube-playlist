@@ -51,6 +51,9 @@ const onYoutubeVideoPage = (
             (event?.target as HTMLInputElement)?.select()
           );
         }
+        document
+          .getElementById("cs-reset-starttime")
+          ?.addEventListener("click", onResetClick);
       });
     const bookmarkBtn = document.createElement("button");
     bookmarkBtn.style.cssText =
@@ -165,7 +168,12 @@ const onCSOpenDialogClickHandler = () => {
   disableEndTimeGroup(true);
   dialog.showModal();
 };
-
+const onResetClick = () => {
+  console.log("eeee");
+  (document.getElementById("cs-start-hour") as HTMLInputElement).value = "0";
+  (document.getElementById("cs-start-minute") as HTMLInputElement).value = "0";
+  (document.getElementById("cs-start-second") as HTMLInputElement).value = "0";
+};
 const onBookmarkBtnClick = (url: string, videoId: string) => {
   clearErrorMsg();
   const hour: number = parseFloat(
