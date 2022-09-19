@@ -1,0 +1,37 @@
+<style>
+    .csm-marker{
+        position:relative;
+        cursor:pointer;
+    }
+    .csm-marker-background{
+        transform: perspective(60px) rotateX(10deg) rotateZ(-45deg);
+        border-radius: 50% 50% 50% 0;
+        width: 30px;
+        height: 30px;
+        background-color:red;
+    }
+    .csm-marker-text{
+        position:absolute;
+        top:50%;
+        left:50%;
+        transform: translate(-50%,-50%);
+        color:white;
+    }
+    .csm-timer{
+        color: white;
+        height: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+</style>
+
+<div id="csm-start-marker" style="position:absolute; top:-52px; left:-25px; width: 50px; display: flex; flex-direction: column; align-items: center;">
+    <div id="csm-start-timer" class="csm-timer"></div>
+    <div class="csm-marker">
+        <div class="csm-marker-background">
+        </div>
+        <div class="csm-marker-text">				
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" preserveAspectRatio="xMidYMid meet" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="m4.25 3l1.166-.624l8 5.333v1.248l-8 5.334l-1.166-.624V3zm1.5 1.401v7.864l5.898-3.932L5.75 4.401z" clip-rule="evenodd"/></svg>
+        </div>
+    </div>
+</div>

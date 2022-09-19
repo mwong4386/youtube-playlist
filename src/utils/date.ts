@@ -19,3 +19,16 @@ export const getCurrentTimestamp = () => {
   const today = new Date(timeElapsed);
   return getDateString(today);
 };
+
+export const getHourMinuteSecond = (duration: number) => {
+  if (duration === NaN) {
+    return [0, 0, 0];
+  }
+
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor(duration / 60) % 60;
+  const seconds = duration % 60;
+  const secondsWithLeadingZero = seconds < 10 ? "0" + seconds : seconds;
+
+  return [hours, minutes, secondsWithLeadingZero];
+};

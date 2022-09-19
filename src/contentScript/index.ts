@@ -1,8 +1,12 @@
 import MsgType from "../constants/msgType";
 import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
+import { getHourMinuteSecond } from "../utils/date";
 
 let onCSConfirm: (e: Event) => any;
+let duration: number = NaN;
+let starttime: number = 0;
+let maxX: number = NaN;
 const onYoutubeVideoPage = (
   url: string,
   videoId: string,
@@ -10,6 +14,7 @@ const onYoutubeVideoPage = (
   endTimestamp: number | undefined
 ) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
+  starttime = 0;
 
   if (!bookmark) {
     onCSConfirm = (e) => {
@@ -19,6 +24,23 @@ const onYoutubeVideoPage = (
       ).disabled = true;
       onBookmarkBtnClick(url, videoId);
     };
+
+    const video: HTMLVideoElement = getYoutubePlayer();
+    duration = video.duration;
+    video.onloadedmetadata = function (event) {
+      duration = video.duration;
+    };
+
+    const player = document.querySelector("#player .ytp-chrome-bottom");
+    if (player) {
+      new ResizeObserver((e) => {
+        const entry = e[0];
+        if (entry.contentRect) {
+          maxX = entry.contentRect.width;
+        }
+      }).observe(player);
+    }
+
     fetch(chrome.runtime.getURL("/dialog.html"))
       .then((r) => r.text())
       .then((html) => {
@@ -67,6 +89,8 @@ const onYoutubeVideoPage = (
     for (let rightControl of rightControls) {
       rightControl.prepend(bookmarkBtn);
     }
+
+    createPlayMarker();
   } else {
     //bookmark.addEventListener("click", onCSOpenDialogClickHandler);
     // Rebind the confirm handler with new url and video id
@@ -85,14 +109,17 @@ const onYoutubeVideoPage = (
     (
       document.getElementById("cs-confirm-button") as HTMLButtonElement
     ).addEventListener("click", onCSConfirm);
+
+    moveStartPin(starttime);
   }
 
   if (isPlayTab) {
-    const video = document.getElementsByClassName(
+    const video = getYoutubePlayer(); /*document.getElementsByClassName(
       "video-stream html5-main-video"
-    )[0] as HTMLVideoElement;
+    )[0] as HTMLVideoElement;*/
     if (endTimestamp) {
       let isEnd = false;
+      console.log("endTimestamp");
       video.addEventListener("timeupdate", () => {
         if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
           isEnd = true;
@@ -101,6 +128,7 @@ const onYoutubeVideoPage = (
       });
     }
     video.addEventListener("ended", () => {
+      console.log("test");
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     });
     video.addEventListener("play", () => {
@@ -110,6 +138,96 @@ const onYoutubeVideoPage = (
       chrome.runtime.sendMessage({ name: MsgType.VideoPauseEvent });
     });
   }
+};
+
+const getYoutubePlayer = () => {
+  // const fullscreenPlayer1 = document.querySelector(
+  //   "#player-theater-container .video-stream"
+  // ) as HTMLVideoElement;
+
+  // const youtubePlayer1 = document.querySelector(
+  //   "#columns #primary .video-stream"
+  // ) as HTMLVideoElement;
+
+  // const ytdPlayer1 = document.querySelector(
+  //   "video-stream html5-main-video"
+  // ) as HTMLVideoElement;
+
+  // const ytdPlayer2 = document.querySelector(
+  //   "#ytd-player .video-stream"
+  // ) as HTMLVideoElement;
+
+  // const video: HTMLVideoElement | undefined =
+  //   youtubePlayer1 || fullscreenPlayer1 || ytdPlayer1 || ytdPlayer2;
+  const videos = document.getElementsByTagName("video");
+  console.log(videos);
+  return videos[videos.length - 1] as HTMLVideoElement;
+};
+const moveStartPin = (starttime: number) => {
+  const startmarker = document.getElementById(
+    "csm-start-marker"
+  ) as HTMLElement;
+  const startmarkertimer = document.getElementById(
+    "csm-start-timer"
+  ) as HTMLElement;
+  const [hours, minutes, seconds] = getHourMinuteSecond(starttime);
+  if (hours === 0) {
+    startmarkertimer.innerHTML = `${minutes}:${seconds}`;
+  } else {
+    startmarkertimer.innerHTML = `${hours}:${minutes}:${seconds}`;
+  }
+  const position = (starttime / duration) * maxX - 25;
+  startmarker.style.left = `${position}px`;
+};
+const createPlayMarker = () => {
+  return fetch(chrome.runtime.getURL("/marker.html"))
+    .then((r) => r.text())
+    .then((html) => {
+      const player = document.querySelector("#player .ytp-chrome-bottom");
+      if (!player) return;
+      let x: any, startx: any;
+
+      player.insertAdjacentHTML("beforeend", html);
+
+      const startmarker = document.getElementById(
+        "csm-start-marker"
+      ) as HTMLElement;
+      const startmarkertimer = document.getElementById(
+        "csm-start-timer"
+      ) as HTMLElement;
+      const mouseMoveHandler = (event: MouseEvent) => {
+        event.preventDefault();
+        let position = startx + event.pageX - x;
+        position =
+          position < -25 ? -25 : position > maxX - 25 ? maxX - 25 : position;
+        startmarker.style.left = `${position}px`;
+        starttime = Math.floor(((position + 25) / maxX) * duration);
+        const [hours, minutes, seconds] = getHourMinuteSecond(starttime);
+        if (hours === 0) {
+          startmarkertimer.innerHTML = `${minutes}:${seconds}`;
+        } else {
+          startmarkertimer.innerHTML = `${hours}:${minutes}:${seconds}`;
+        }
+      };
+      const mouseUpHandler = () => {
+        document.removeEventListener("mousemove", mouseMoveHandler);
+        document.removeEventListener("mouseup", mouseUpHandler);
+        document.removeEventListener("visibilitychange", focusoutHandler);
+      };
+      const focusoutHandler = () => {
+        document.removeEventListener("mousemove", mouseMoveHandler);
+        document.removeEventListener("mouseup", mouseUpHandler);
+        document.removeEventListener("visibilitychange", focusoutHandler);
+      };
+      const mouseDownHandler = (event: MouseEvent) => {
+        x = event.pageX;
+        startx = parseInt(startmarker.style.left?.replace("px", "")) || 0;
+        document.addEventListener("mousemove", mouseMoveHandler);
+        document.addEventListener("mouseup", mouseUpHandler);
+        document.addEventListener("visibilitychange", focusoutHandler);
+      };
+      startmarker.addEventListener("mousedown", mouseDownHandler);
+    });
 };
 
 const onCSOpenDialogClickHandler = () => {
@@ -127,17 +245,9 @@ const onCSOpenDialogClickHandler = () => {
   (document.getElementById("cs-channel-name") as HTMLElement).innerHTML =
     channelName;
 
-  const fullscreenPlayer = document.querySelectorAll(
-    "#player-theater-container .video-stream"
-  )[0] as HTMLVideoElement;
+  const video: HTMLVideoElement | undefined = getYoutubePlayer();
 
-  const youtubePlayer = document.querySelectorAll(
-    "#columns #primary .video-stream"
-  )[0] as HTMLVideoElement;
-
-  const video: HTMLVideoElement | undefined = youtubePlayer || fullscreenPlayer;
-
-  const timestamp = Math.floor(video?.currentTime);
+  const timestamp = starttime;
   const hours = Math.floor(timestamp / 3600);
   const minutes = Math.floor(timestamp / 60) % 60;
   const seconds = timestamp % 60;
@@ -148,7 +258,7 @@ const onCSOpenDialogClickHandler = () => {
     minutes.toString();
   (document.getElementById("cs-start-second") as HTMLInputElement).value =
     seconds.toString();
-
+  console.log("maxDuration", video?.duration);
   const duration = Math.floor(video?.duration);
   const end_hours = Math.floor(duration / 3600);
   const end_minutes = Math.floor(duration / 60) % 60;
@@ -169,7 +279,6 @@ const onCSOpenDialogClickHandler = () => {
   dialog.showModal();
 };
 const onResetClick = () => {
-  console.log("eeee");
   (document.getElementById("cs-start-hour") as HTMLInputElement).value = "0";
   (document.getElementById("cs-start-minute") as HTMLInputElement).value = "0";
   (document.getElementById("cs-start-second") as HTMLInputElement).value = "0";
@@ -198,16 +307,9 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     .checked;
   let endTimestamp: number | undefined = undefined;
 
-  const fullscreenPlayer = document.querySelectorAll(
-    "#player-theater-container .video-stream"
-  )[0] as HTMLVideoElement;
-
-  const youtubePlayer = document.querySelectorAll(
-    "#columns #primary .video-stream"
-  )[0] as HTMLVideoElement;
-
-  const maxDuration = fullscreenPlayer?.duration | youtubePlayer?.duration;
-
+  const video = getYoutubePlayer();
+  const maxDuration = video?.duration;
+  console.log("maxDuration", maxDuration);
   if (!untilEnd) {
     const endHour: number = parseFloat(
       (document.getElementById("cs-end-hour") as HTMLInputElement).value
