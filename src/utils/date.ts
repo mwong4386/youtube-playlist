@@ -28,7 +28,16 @@ export const getHourMinuteSecond = (duration: number) => {
   const hours = Math.floor(duration / 3600);
   const minutes = Math.floor(duration / 60) % 60;
   const seconds = duration % 60;
-  const secondsWithLeadingZero = seconds < 10 ? "0" + seconds : seconds;
+  const secondsWithLeadingZero = pad(seconds);
 
   return [hours, minutes, secondsWithLeadingZero];
+};
+
+export const formatPlayerTime = (duration: number) => {
+  const [hours, minutes, seconds] = getHourMinuteSecond(duration);
+  if (hours === 0) {
+    return `${minutes}:${seconds}`;
+  } else {
+    return `${hours}:${minutes}:${seconds}`;
+  }
 };

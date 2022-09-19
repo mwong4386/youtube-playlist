@@ -19,7 +19,7 @@
     ],
     "web_accessible_resources": [
       {
-        "resources": [ "dialog.html","marker.html" ],
+        "resources": [ "dialog.html","marker.html","endmarker.html"  ],
         "matches": [ "https://www.youtube.com/*" ]
       }
       
