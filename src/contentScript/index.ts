@@ -1,13 +1,20 @@
 import MsgType from "../constants/msgType";
 import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
-import { formatPlayerTime, getHourMinuteSecond } from "../utils/date";
+import {
+  createStartPin,
+  createStopPin,
+  getEndTime,
+  getStartTime,
+  moveEndPin,
+  moveStartPin,
+  setEndTime,
+  setMaxX,
+  setStartTime,
+} from "./MovingPin";
 
 let onCSConfirm: (e: Event) => any;
-let duration: number = NaN;
-let starttime: number = 0;
-let endtime: number = 0;
-let maxX: number = NaN; //the maximum value in x axis for video playbar
+export let duration: number = NaN;
 const onYoutubeVideoPage = (
   url: string,
   videoId: string,
@@ -15,8 +22,8 @@ const onYoutubeVideoPage = (
   endTimestamp: number | undefined
 ) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
-  starttime = 0;
-  endtime = 0;
+  setStartTime(0);
+  setEndTime(0);
   if (!bookmark) {
     //bookmark will serve as flag
     onCSConfirm = (e) => {
@@ -31,7 +38,8 @@ const onYoutubeVideoPage = (
     duration = video.duration;
     video.onloadedmetadata = function (event) {
       duration = Math.floor(video.duration);
-      endtime = duration;
+      setEndTime(duration);
+      moveEndPin(getEndTime());
     };
 
     const player = document.querySelector("#player .ytp-chrome-bottom");
@@ -39,9 +47,9 @@ const onYoutubeVideoPage = (
       new ResizeObserver((e) => {
         const entry = e[0];
         if (entry.contentRect) {
-          maxX = entry.contentRect.width;
-          moveStartPin(starttime);
-          moveEndPin(endtime);
+          setMaxX(entry.contentRect.width);
+          moveStartPin(getStartTime());
+          moveEndPin(getEndTime());
         }
       }).observe(player);
     }
@@ -111,7 +119,7 @@ const onYoutubeVideoPage = (
       document.getElementById("cs-confirm-button") as HTMLButtonElement
     ).addEventListener("click", onCSConfirm);
 
-    moveStartPin(starttime);
+    moveStartPin(getStartTime());
   }
 
   if (isPlayTab) {
@@ -120,7 +128,6 @@ const onYoutubeVideoPage = (
     )[0] as HTMLVideoElement;*/
     if (endTimestamp) {
       let isEnd = false;
-      console.log("endTimestamp");
       video.addEventListener("timeupdate", () => {
         if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
           isEnd = true;
@@ -129,7 +136,6 @@ const onYoutubeVideoPage = (
       });
     }
     video.addEventListener("ended", () => {
-      console.log("test");
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     });
     video.addEventListener("play", () => {
@@ -164,124 +170,9 @@ const getYoutubePlayer = () => {
   console.log(videos);
   return videos[videos.length - 1] as HTMLVideoElement;
 };
-const moveStartPin = (starttime: number) => {
-  const startmarker = document.getElementById(
-    "csm-start-marker"
-  ) as HTMLElement;
-  const startmarkertimer = document.getElementById(
-    "csm-start-timer"
-  ) as HTMLElement;
-  startmarkertimer.innerHTML = formatPlayerTime(starttime);
-  const position = (starttime / duration) * maxX - 25;
-  startmarker.style.left = `${position}px`;
-};
 
-const moveEndPin = (starttime: number) => {
-  const endmarker = document.getElementById("csm-end-marker") as HTMLElement;
-  const endmarkertimer = document.getElementById(
-    "csm-end-timer"
-  ) as HTMLElement;
-  endmarkertimer.innerHTML = formatPlayerTime(starttime);
-  const position = (starttime / duration) * maxX - 25;
-  console.log(position);
-  endmarker.style.left = `${position}px`;
-};
-
-const getHtmlFromResource = (url: string) => {
+export const getHtmlFromResource = (url: string) => {
   return fetch(chrome.runtime.getURL(url)).then((r) => r.text());
-};
-
-const createStartPin = () => {
-  return getHtmlFromResource("/marker.html").then((html) => {
-    const player = document.querySelector("#player .ytp-chrome-bottom");
-    if (!player) return;
-    let x: any, startx: any;
-
-    player.insertAdjacentHTML("beforeend", html);
-
-    const startmarker = document.getElementById(
-      "csm-start-marker"
-    ) as HTMLElement;
-    const startmarkertimer = document.getElementById(
-      "csm-start-timer"
-    ) as HTMLElement;
-    const mouseMoveHandler = (event: MouseEvent) => {
-      event.preventDefault();
-      //startx is the starting position of this dragging
-      //event.pageX - x is the distance of the dragging
-      //sum of them calculate the updated position
-      let position = startx + event.pageX - x;
-      //25 is the half width of the pin
-      position = bound(position);
-      startmarker.style.left = `${position}px`;
-      //calculate the time
-      starttime = Math.floor(((position + 25) / maxX) * duration);
-      startmarkertimer.innerHTML = formatPlayerTime(starttime);
-    };
-    const mouseUpHandler = () => {
-      document.removeEventListener("mousemove", mouseMoveHandler);
-      document.removeEventListener("mouseup", mouseUpHandler);
-      document.removeEventListener("visibilitychange", focusoutHandler);
-    };
-    const focusoutHandler = () => {
-      document.removeEventListener("mousemove", mouseMoveHandler);
-      document.removeEventListener("mouseup", mouseUpHandler);
-      document.removeEventListener("visibilitychange", focusoutHandler);
-    };
-    const mouseDownHandler = (event: MouseEvent) => {
-      x = event.pageX;
-      startx = parseInt(startmarker.style.left?.replace("px", "")) || 0; //last position in term of x-axis
-      document.addEventListener("mousemove", mouseMoveHandler);
-      document.addEventListener("mouseup", mouseUpHandler);
-      document.addEventListener("visibilitychange", focusoutHandler);
-    };
-    startmarker.addEventListener("mousedown", mouseDownHandler);
-  });
-};
-
-const createStopPin = () => {
-  return getHtmlFromResource("/endmarker.html").then((html) => {
-    const player = document.querySelector("#player .ytp-chrome-bottom");
-    if (!player) return;
-    let x: any, startx: any;
-    player.insertAdjacentHTML("beforeend", html);
-
-    const endmarker = document.getElementById("csm-end-marker") as HTMLElement;
-    const endmarkertimer = document.getElementById(
-      "csm-end-timer"
-    ) as HTMLElement;
-    const mouseMoveHandler = (event: MouseEvent) => {
-      event.preventDefault();
-      //
-      let position = startx + event.pageX - x;
-      position = bound(position);
-      endmarker.style.left = `${position}px`;
-      endtime = Math.floor(((position + 25) / maxX) * duration);
-      endmarkertimer.innerHTML = formatPlayerTime(endtime);
-    };
-    const mouseUpHandler = () => {
-      document.removeEventListener("mousemove", mouseMoveHandler);
-      document.removeEventListener("mouseup", mouseUpHandler);
-      document.removeEventListener("visibilitychange", focusoutHandler);
-    };
-    const focusoutHandler = () => {
-      document.removeEventListener("mousemove", mouseMoveHandler);
-      document.removeEventListener("mouseup", mouseUpHandler);
-      document.removeEventListener("visibilitychange", focusoutHandler);
-    };
-    const mouseDownHandler = (event: MouseEvent) => {
-      x = event.pageX;
-      startx = parseInt(endmarker.style.left?.replace("px", "")) || 0; //last position in term of x-axis
-      document.addEventListener("mousemove", mouseMoveHandler);
-      document.addEventListener("mouseup", mouseUpHandler);
-      document.addEventListener("visibilitychange", focusoutHandler);
-    };
-    endmarker.addEventListener("mousedown", mouseDownHandler);
-  });
-};
-
-const bound = (position: number) => {
-  return position < -25 ? -25 : position > maxX - 25 ? maxX - 25 : position;
 };
 
 const onCSOpenDialogClickHandler = () => {
@@ -301,7 +192,7 @@ const onCSOpenDialogClickHandler = () => {
 
   const video: HTMLVideoElement | undefined = getYoutubePlayer();
 
-  const timestamp = starttime;
+  const timestamp = getStartTime();
   const hours = Math.floor(timestamp / 3600);
   const minutes = Math.floor(timestamp / 60) % 60;
   const seconds = timestamp % 60;
@@ -313,7 +204,7 @@ const onCSOpenDialogClickHandler = () => {
   (document.getElementById("cs-start-second") as HTMLInputElement).value =
     seconds.toString();
 
-  const end_time = Math.floor(endtime);
+  const end_time = Math.floor(getEndTime());
   const end_hours = Math.floor(end_time / 3600);
   const end_minutes = Math.floor(end_time / 60) % 60;
   const end_seconds = end_time % 60;
@@ -328,7 +219,7 @@ const onCSOpenDialogClickHandler = () => {
   const dialog = document.getElementById("cs-dialog") as HTMLDialogElement;
   (document.getElementById("cs-confirm-button") as HTMLButtonElement).disabled =
     false;
-  const isUntilEnd = endtime === duration;
+  const isUntilEnd = getEndTime() === duration;
   (document.getElementById("cs-untilEnd") as HTMLInputElement).checked =
     isUntilEnd;
   disableEndTimeGroup(isUntilEnd);
@@ -366,7 +257,6 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
 
   const video = getYoutubePlayer();
   const maxDuration = video?.duration;
-  console.log("maxDuration", maxDuration);
   if (!untilEnd) {
     const endHour: number = parseFloat(
       (document.getElementById("cs-end-hour") as HTMLInputElement).value
