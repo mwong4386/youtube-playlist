@@ -12,6 +12,7 @@ interface props {
 const PlaylistHeader = ({ playlist, onDelete }: props) => {
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
   const [isPIP, setIsPIP] = useState<boolean>(false);
+  const [enablePin, setEnablePin] = useState<boolean>(false);
   const [playing, setPlaying] = useState<boolean>(false);
   const ctx = useActionSheet();
   const onPlayPauseButton = () => {
@@ -31,7 +32,9 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   const onPlayInPicture = () => {
     chrome.runtime.sendMessage({ name: MsgType.OpenPictureInWindow });
   };
-
+  const onTogglePin = () => {
+    chrome.runtime.sendMessage({ name: MsgType.TogglePin });
+  };
   const openPlayMenu = () => {
     ctx.setActionSheet([
       { id: 1, description: "Play Orderly", callback: sendPlayOrderly },
@@ -51,9 +54,14 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
             },
           ]
         : []),
-      { id: 2, description: "Import Playlist", callback: onImportJson },
-      { id: 3, description: "Export Playlist", callback: onExportJson },
-      { id: 4, description: "Delete All", callback: onDelete },
+      {
+        id: 2,
+        description: `${enablePin ? "Hide" : "Show"} player pin`,
+        callback: onTogglePin,
+      },
+      { id: 3, description: "Import Playlist", callback: onImportJson },
+      { id: 4, description: "Export Playlist", callback: onExportJson },
+      { id: 5, description: "Delete All", callback: onDelete },
     ]);
     ctx.open();
   };
@@ -73,11 +81,15 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
 
   useEffect(() => {
     console.log("isPlayAll");
-    chrome.storage.local.get(["isPlayAll", "isPIP", "isPlaying"], (result) => {
-      setIsPlayAll(!!result["isPlayAll"]);
-      setIsPIP(!!result["isPIP"]);
-      setPlaying(!!result["isPlaying"]);
-    });
+    chrome.storage.local.get(
+      ["isPlayAll", "isPIP", "isPlaying", "enablePin"],
+      (result) => {
+        setIsPlayAll(!!result["isPlayAll"]);
+        setIsPIP(!!result["isPIP"]);
+        setPlaying(!!result["isPlaying"]);
+        setEnablePin(!!result["enablePin"]);
+      }
+    );
   }, []);
 
   useEffect(() => {
@@ -93,6 +105,9 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
       }
       if ("isPlaying" in changes) {
         setPlaying(!!changes["isPlaying"].newValue);
+      }
+      if ("enablePin" in changes) {
+        setEnablePin(!!changes["enablePin"].newValue);
       }
     };
     chrome.storage.onChanged.addListener(listener);

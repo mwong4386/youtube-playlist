@@ -10,20 +10,27 @@ import {
   moveStartPin,
   setEndTime,
   setMaxX,
+  setPinVisibility,
   setStartTime,
 } from "./MovingPin";
-
 let onCSConfirm: (e: Event) => any;
-export let duration: number = NaN;
+export let _duration: number = NaN;
 const onYoutubeVideoPage = (
   url: string,
   videoId: string,
   isPlayTab: boolean,
-  endTimestamp: number | undefined
+  endTimestamp: number | undefined,
+  enablePin: boolean
 ) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
   setStartTime(0);
-  setEndTime(0);
+  let video: HTMLVideoElement = getYoutubePlayer();
+  if (video.duration > 0) {
+    _duration = Math.floor(video.duration);
+    setEndTime(_duration);
+  } else {
+    setEndTime(0);
+  }
   if (!bookmark) {
     //bookmark will serve as flag
     onCSConfirm = (e) => {
@@ -34,11 +41,9 @@ const onYoutubeVideoPage = (
       onBookmarkBtnClick(url, videoId);
     };
 
-    const video: HTMLVideoElement = getYoutubePlayer();
-    duration = video.duration;
     video.onloadedmetadata = function (event) {
-      duration = Math.floor(video.duration);
-      setEndTime(duration);
+      _duration = Math.floor(video.duration);
+      setEndTime(_duration);
       moveEndPin(getEndTime());
     };
 
@@ -97,9 +102,8 @@ const onYoutubeVideoPage = (
     for (let rightControl of rightControls) {
       rightControl.prepend(bookmarkBtn);
     }
-
-    createStartPin();
-    createStopPin();
+    createStartPin(enablePin);
+    createStopPin(enablePin);
   } else {
     //bookmark.addEventListener("click", onCSOpenDialogClickHandler);
     // Rebind the confirm handler with new url and video id
@@ -118,12 +122,12 @@ const onYoutubeVideoPage = (
     (
       document.getElementById("cs-confirm-button") as HTMLButtonElement
     ).addEventListener("click", onCSConfirm);
-
     moveStartPin(getStartTime());
+    setPinVisibility(enablePin);
   }
 
   if (isPlayTab) {
-    const video = getYoutubePlayer(); /*document.getElementsByClassName(
+    video = video || getYoutubePlayer(); /*document.getElementsByClassName(
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;*/
     if (endTimestamp) {
@@ -219,7 +223,7 @@ const onCSOpenDialogClickHandler = () => {
   const dialog = document.getElementById("cs-dialog") as HTMLDialogElement;
   (document.getElementById("cs-confirm-button") as HTMLButtonElement).disabled =
     false;
-  const isUntilEnd = getEndTime() === duration;
+  const isUntilEnd = getEndTime() === _duration;
   (document.getElementById("cs-untilEnd") as HTMLInputElement).checked =
     isUntilEnd;
   disableEndTimeGroup(isUntilEnd);
@@ -330,7 +334,6 @@ const addErrorMsg = (error: string) => {
   errorContainer[0].append(message);
 };
 const disableEndTimeGroup = (disable: boolean) => {
-  console.log("enable", disable);
   (document.getElementById("cs-end-hour") as HTMLInputElement).disabled =
     disable;
   (document.getElementById("cs-end-minute") as HTMLInputElement).disabled =
@@ -340,10 +343,10 @@ const disableEndTimeGroup = (disable: boolean) => {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type, url, videoId, isPlayTab, endTimestamp } = request;
+  const { type, url, videoId, isPlayTab, endTimestamp, enablePin } = request;
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
-      onYoutubeVideoPage(url, videoId, isPlayTab, endTimestamp);
+      onYoutubeVideoPage(url, videoId, isPlayTab, endTimestamp, enablePin);
       break;
     case csMsgType.PlayYoutubeVideo:
       onPlayVideo();
@@ -358,6 +361,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   sendResponse({ state: "ok" });
 });
 
+chrome.storage.onChanged.addListener(
+  (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    namespace: "sync" | "local" | "managed" | "session"
+  ) => {
+    if ("enablePin" in changes) {
+      setPinVisibility(!!changes["enablePin"].newValue);
+    }
+  }
+);
+
+/*
+In case of the browser directly go to the youtube video page, the content script on Message
+event handler has not yet set up when the background script send the event. 
+The self invocation function ensure the page set up properly at that case
+*/
 (function () {
   const href = window.location.href;
   const query: string = href.split("?")[1];
@@ -365,5 +384,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const videoId = params.get("v");
   if (!videoId) return;
   const url = href.split("?")[0];
-  onYoutubeVideoPage(url, videoId || "", false, undefined);
+  chrome.storage.local.get(["enablePin"], (result) => {
+    const enablePin = !!result["enablePin"];
+    onYoutubeVideoPage(url, videoId || "", false, undefined, enablePin);
+  });
 })();

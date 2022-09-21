@@ -10,6 +10,7 @@ let isPlayAll: boolean = false; // If true, looping playlist
 let isRandom: boolean = false; // If true, looping with random
 let playingItem: MPlaylistItem | null = null;
 let isPIP: boolean = false;
+let enablePin: boolean = false;
 const openTab = async (url: string) => {
   if (!tabId) {
     const tab = await chrome.tabs.create({ url: url });
@@ -166,6 +167,7 @@ const updateStateToLocalStorage = () => {
     isPlayAll: isPlayAll,
     isPIP: isPIP,
     isRandom: isRandom,
+    enablePin: enablePin,
   });
 };
 
@@ -229,6 +231,9 @@ const onMessageHandler = async (message: any) => {
         isPIP = !isPIP;
       }
       break;
+    case MsgType.TogglePin:
+      enablePin = !enablePin;
+      break;
     default:
   }
 };
@@ -240,13 +245,22 @@ const resetInitial = async () => {
   isPlaying = false;
   isPIP = false;
   isRandom = false;
+  enablePin = false;
 };
 
 (function () {
   // In case the background script restart, it will detect whether the tab still exist,
   // if no, reset the state
   chrome.storage.local.get(
-    ["tabId", "isPlaying", "isPlayAll", "playingItem", "isPIP", "isRandom"],
+    [
+      "tabId",
+      "isPlaying",
+      "isPlayAll",
+      "playingItem",
+      "isPIP",
+      "isRandom",
+      "enablePin",
+    ],
     (result) => {
       tabId = result["tabId"];
       isPlaying = result["isPlaying"];
@@ -254,6 +268,7 @@ const resetInitial = async () => {
       playingItem = result["playingItem"];
       isPIP = result["isPIP"];
       isRandom = result["isRandom"];
+      enablePin = result["enablePin"];
       if (!tabId) {
         resetInitial();
         updateStateToLocalStorage();
@@ -274,8 +289,6 @@ const resetInitial = async () => {
       );
     }
   );
-  //resetInitial();
-  //updateStateToLocalStorage();
 
   chrome.runtime.onMessage.addListener(function (message) {
     onMessageHandler(message).then(() => {
@@ -295,6 +308,7 @@ const resetInitial = async () => {
           videoId: params.get("v"),
           isPlayTab: tabId === tabId1,
           endTimestamp: tabId === tabId1 && playingItem?.endTimestamp,
+          enablePin: enablePin,
         },
         () => {
           if (chrome.runtime.lastError) {

@@ -1,4 +1,4 @@
-import { duration, getHtmlFromResource } from ".";
+import { _duration, getHtmlFromResource } from ".";
 import { formatPlayerTime } from "../utils/date";
 
 let starttime: number = 0;
@@ -24,26 +24,28 @@ export const moveStartPin = (starttime: number) => {
   const startmarker = document.getElementById(
     "csm-start-marker"
   ) as HTMLElement;
+  if (!startmarker) return;
   const startmarkertimer = document.getElementById(
     "csm-start-timer"
   ) as HTMLElement;
   startmarkertimer.innerHTML = formatPlayerTime(starttime);
-  const position = (starttime / duration) * maxX - 25;
+  const position = (starttime / _duration) * maxX - 25;
   startmarker.style.left = `${position}px`;
 };
 
 export const moveEndPin = (starttime: number) => {
+  console.log(starttime);
   const endmarker = document.getElementById("csm-end-marker") as HTMLElement;
+  if (!endmarker) return;
   const endmarkertimer = document.getElementById(
     "csm-end-timer"
   ) as HTMLElement;
   endmarkertimer.innerHTML = formatPlayerTime(starttime);
-  const position = (starttime / duration) * maxX - 25;
-  console.log(position);
+  const position = (starttime / _duration) * maxX - 25;
   endmarker.style.left = `${position}px`;
 };
 
-export const createStartPin = () => {
+export const createStartPin = (enablePin: boolean) => {
   return getHtmlFromResource("/marker.html").then((html) => {
     const player = document.querySelector("#player .ytp-chrome-bottom");
     if (!player) return;
@@ -54,6 +56,9 @@ export const createStartPin = () => {
     const startmarker = document.getElementById(
       "csm-start-marker"
     ) as HTMLElement;
+    if (!enablePin) {
+      startmarker.style.display = "none";
+    }
     const startmarkertimer = document.getElementById(
       "csm-start-timer"
     ) as HTMLElement;
@@ -67,7 +72,7 @@ export const createStartPin = () => {
       position = bound(position);
       startmarker.style.left = `${position}px`;
       //calculate the time
-      starttime = Math.floor(((position + 25) / maxX) * duration);
+      starttime = Math.floor(((position + 25) / maxX) * _duration);
       startmarkertimer.innerHTML = formatPlayerTime(starttime);
     };
     const mouseUpHandler = () => {
@@ -91,7 +96,7 @@ export const createStartPin = () => {
   });
 };
 
-export const createStopPin = () => {
+export const createStopPin = (enablePin: boolean) => {
   return getHtmlFromResource("/endmarker.html").then((html) => {
     const player = document.querySelector("#player .ytp-chrome-bottom");
     if (!player) return;
@@ -99,6 +104,9 @@ export const createStopPin = () => {
     player.insertAdjacentHTML("beforeend", html);
 
     const endmarker = document.getElementById("csm-end-marker") as HTMLElement;
+    if (!enablePin) {
+      endmarker.style.display = "none";
+    }
     const endmarkertimer = document.getElementById(
       "csm-end-timer"
     ) as HTMLElement;
@@ -108,7 +116,7 @@ export const createStopPin = () => {
       let position = startx + event.pageX - x;
       position = bound(position);
       endmarker.style.left = `${position}px`;
-      endtime = Math.floor(((position + 25) / maxX) * duration);
+      endtime = Math.floor(((position + 25) / maxX) * _duration);
       endmarkertimer.innerHTML = formatPlayerTime(endtime);
     };
     const mouseUpHandler = () => {
@@ -129,7 +137,25 @@ export const createStopPin = () => {
       document.addEventListener("visibilitychange", focusoutHandler);
     };
     endmarker.addEventListener("mousedown", mouseDownHandler);
+    if (endtime > 0) {
+      moveEndPin(endtime);
+    }
   });
+};
+
+export const setPinVisibility = (enablePin: boolean) => {
+  const startmarker = document.getElementById(
+    "csm-start-marker"
+  ) as HTMLElement;
+  const endmarker = document.getElementById("csm-end-marker") as HTMLElement;
+  if (!startmarker || !endmarker) return;
+  if (!enablePin) {
+    startmarker.style.display = "none";
+    endmarker.style.display = "none";
+  } else {
+    startmarker.style.display = "flex";
+    endmarker.style.display = "flex";
+  }
 };
 
 const bound = (position: number) => {

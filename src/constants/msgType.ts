@@ -9,6 +9,7 @@ const enum MsgType {
   VideoEnd,
   DeleteVideo,
   OpenPictureInWindow,
+  TogglePin,
 }
 
 export default MsgType;
