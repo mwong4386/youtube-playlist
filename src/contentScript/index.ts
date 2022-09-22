@@ -20,7 +20,8 @@ const onYoutubeVideoPage = (
   videoId: string,
   isPlayTab: boolean,
   endTimestamp: number | undefined,
-  enablePin: boolean
+  enablePin: boolean,
+  volume: number | undefined
 ) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
   setStartTime(0);
@@ -31,6 +32,7 @@ const onYoutubeVideoPage = (
   } else {
     setEndTime(0);
   }
+
   if (!bookmark) {
     //bookmark will serve as flag
     onCSConfirm = (e) => {
@@ -52,6 +54,7 @@ const onYoutubeVideoPage = (
       new ResizeObserver((e) => {
         const entry = e[0];
         if (entry.contentRect) {
+          console.log("test", video.volume);
           setMaxX(entry.contentRect.width);
           moveStartPin(getStartTime());
           moveEndPin(getEndTime());
@@ -89,6 +92,12 @@ const onYoutubeVideoPage = (
       document
         .getElementById("cs-reset-starttime")
         ?.addEventListener("click", onResetClick);
+      const volume = document.getElementById("cs-volume") as HTMLInputElement;
+      volume.oninput = (event: Event) => {
+        (
+          document.getElementById("cs-volume-text") as HTMLInputElement
+        ).innerHTML = volume.value;
+      };
     });
     const bookmarkBtn = document.createElement("button");
     bookmarkBtn.style.cssText =
@@ -130,6 +139,12 @@ const onYoutubeVideoPage = (
     video = video || getYoutubePlayer(); /*document.getElementsByClassName(
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;*/
+    if (volume != undefined) {
+      setTimeout(() => {
+        //magic number...
+        video.volume = volume / 100;
+      }, 300);
+    }
     if (endTimestamp) {
       let isEnd = false;
       video.addEventListener("timeupdate", () => {
@@ -195,6 +210,10 @@ const onCSOpenDialogClickHandler = () => {
     channelName;
 
   const video: HTMLVideoElement | undefined = getYoutubePlayer();
+  const volumeRate = Math.floor(video.volume * 100).toString();
+  (document.getElementById("cs-volume") as HTMLInputElement).value = volumeRate;
+  (document.getElementById("cs-volume-text") as HTMLInputElement).innerHTML =
+    volumeRate;
 
   const timestamp = getStartTime();
   const hours = Math.floor(timestamp / 3600);
@@ -229,12 +248,14 @@ const onCSOpenDialogClickHandler = () => {
   disableEndTimeGroup(isUntilEnd);
   dialog.showModal();
 };
+
 const onResetClick = () => {
   (document.getElementById("cs-start-hour") as HTMLInputElement).value = "0";
   (document.getElementById("cs-start-minute") as HTMLInputElement).value = "0";
   (document.getElementById("cs-start-second") as HTMLInputElement).value = "0";
   moveStartPin(0);
 };
+
 const onBookmarkBtnClick = (url: string, videoId: string) => {
   clearErrorMsg();
   const hour: number = parseFloat(
@@ -254,7 +275,9 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
   const channelName = (
     document.getElementById("cs-channel-name") as HTMLElement
   ).innerHTML;
-
+  const volume = parseInt(
+    (document.getElementById("cs-volume") as HTMLInputElement).value
+  );
   const untilEnd = (document.getElementById("cs-untilEnd") as HTMLInputElement)
     .checked;
   let endTimestamp: number | undefined = undefined;
@@ -294,6 +317,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
     timestamp,
     endTimestamp, // undefined mean until to end
     maxDuration,
+    volume,
   };
   console.log(data);
   chrome.storage.sync.get("youtube_list", (result) => {
@@ -343,10 +367,18 @@ const disableEndTimeGroup = (disable: boolean) => {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type, url, videoId, isPlayTab, endTimestamp, enablePin } = request;
+  const { type, url, videoId, isPlayTab, endTimestamp, enablePin, volume } =
+    request;
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
-      onYoutubeVideoPage(url, videoId, isPlayTab, endTimestamp, enablePin);
+      onYoutubeVideoPage(
+        url,
+        videoId,
+        isPlayTab,
+        endTimestamp,
+        enablePin,
+        volume
+      );
       break;
     case csMsgType.PlayYoutubeVideo:
       onPlayVideo();
@@ -386,6 +418,13 @@ The self invocation function ensure the page set up properly at that case
   const url = href.split("?")[0];
   chrome.storage.local.get(["enablePin"], (result) => {
     const enablePin = !!result["enablePin"];
-    onYoutubeVideoPage(url, videoId || "", false, undefined, enablePin);
+    onYoutubeVideoPage(
+      url,
+      videoId || "",
+      false,
+      undefined,
+      enablePin,
+      undefined
+    );
   });
 })();

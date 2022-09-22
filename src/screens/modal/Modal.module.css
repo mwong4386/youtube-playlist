@@ -100,3 +100,13 @@
     margin-left: 12px;
     margin-bottom: 8px;
 }
+.volume-label{
+    display: inline-block;
+    font-size: 14px;
+    font-weight: bold;
+    width:72px;
+    margin-left: -36px;
+}
+.volume-text{
+    font-size: 14px;
+}

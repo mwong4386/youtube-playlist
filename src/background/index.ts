@@ -245,7 +245,6 @@ const resetInitial = async () => {
   isPlaying = false;
   isPIP = false;
   isRandom = false;
-  enablePin = false;
 };
 
 (function () {
@@ -309,6 +308,7 @@ const resetInitial = async () => {
           isPlayTab: tabId === tabId1,
           endTimestamp: tabId === tabId1 && playingItem?.endTimestamp,
           enablePin: enablePin,
+          volume: tabId === tabId1 && playingItem?.volume,
         },
         () => {
           if (chrome.runtime.lastError) {

@@ -9,7 +9,8 @@ interface props {
   save: (
     id: string,
     timestamp: number,
-    endTimestamp: number | undefined
+    endTimestamp: number | undefined,
+    volume: number
   ) => void;
   item: MPlaylistItem | undefined;
 }
@@ -21,6 +22,7 @@ interface infoModels {
   endMinutes: number;
   endSeconds: number;
   untilEnd: boolean;
+  volume: number;
 }
 const InfoModal = ({ item, active, save, close }: props) => {
   const {
@@ -39,6 +41,7 @@ const InfoModal = ({ item, active, save, close }: props) => {
       endMinutes: 0,
       endSeconds: 0,
       untilEnd: false,
+      volume: 0,
     },
   });
 
@@ -48,9 +51,9 @@ const InfoModal = ({ item, active, save, close }: props) => {
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor(timestamp / 60) % 60;
       const seconds = timestamp % 60;
-      const endTimestamp = item.endTimestamp
-        ? item.endTimestamp
-        : item.maxDuration;
+      const endTimestamp = Math.floor(
+        item.endTimestamp ? item.endTimestamp : item.maxDuration
+      );
       const endHours = Math.floor(endTimestamp / 3600);
       const endMinutes = Math.floor(endTimestamp / 60) % 60;
       const endSeconds = endTimestamp % 60;
@@ -62,6 +65,7 @@ const InfoModal = ({ item, active, save, close }: props) => {
         endMinutes: endMinutes,
         endSeconds: endSeconds,
         untilEnd: !item.endTimestamp,
+        volume: item.volume,
       });
     } else {
       reset();
@@ -77,7 +81,7 @@ const InfoModal = ({ item, active, save, close }: props) => {
       data.untilEnd || temp_endtimestamp > (item?.maxDuration as number)
         ? undefined
         : temp_endtimestamp;
-    save(item?.id as string, timestamp, endtimestamp);
+    save(item?.id as string, timestamp, endtimestamp, data.volume);
     close();
   };
   return (
@@ -208,6 +212,20 @@ const InfoModal = ({ item, active, save, close }: props) => {
             {(errors.endHours || errors.endMinutes || errors.endSeconds) && (
               <span role="alert">Incorrect end time</span>
             )}
+          </div>
+          <div className="cs-time-container">
+            <label className={styles["volume-label"]}>Volume</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              id="cs-volume"
+              {...register("volume", { required: true })}
+            />
+            <span id="cs-volume-text" className={styles["volume-text"]}>
+              {watch("volume")}
+            </span>
           </div>
         </div>
       </form>

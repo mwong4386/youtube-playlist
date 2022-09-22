@@ -66,17 +66,17 @@ const Playlist = () => {
   const onSave = (
     id: string,
     timestamp: number,
-    endTimestamp: number | undefined
+    endTimestamp: number | undefined,
+    volume: number
   ) => {
     const item = playlist.find((x) => x.id === id);
     if (!item) return;
     item.timestamp = timestamp;
     item.endTimestamp = endTimestamp;
-    chrome.storage.sync
-      .set({
-        youtube_list: playlist,
-      })
-      .then(() => {});
+    item.volume = volume;
+    chrome.storage.sync.set({
+      youtube_list: playlist,
+    });
   };
   const onMoveTo = (toId: string) => {
     if (draggingElement && draggingElement !== toId) {
@@ -86,11 +86,9 @@ const Playlist = () => {
       const newIndex = playlist.findIndex((x) => x.id === toId);
       const temp = playlist.filter((x) => x.id !== draggingElement);
       temp.splice(newIndex, 0, item);
-      chrome.storage.sync
-        .set({
-          youtube_list: temp,
-        })
-        .then(() => {});
+      chrome.storage.sync.set({
+        youtube_list: temp,
+      });
     }
   };
   return (

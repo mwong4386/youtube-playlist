@@ -7,6 +7,7 @@ interface MPlaylistItem {
   timestamp: number;
   endTimestamp: number | undefined;
   maxDuration: number;
+  volume: number;
 }
 
 export default MPlaylistItem;
