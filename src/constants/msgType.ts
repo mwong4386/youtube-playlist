@@ -10,6 +10,7 @@ const enum MsgType {
   DeleteVideo,
   OpenPictureInWindow,
   TogglePin,
+  VolumeChange,
 }
 
 export default MsgType;

@@ -123,7 +123,6 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
       if (file) {
         const reader = new FileReader();
         reader.addEventListener("load", () => {
-          // this will then display a text file
           const content = reader.result as string;
           if (content) {
             try {

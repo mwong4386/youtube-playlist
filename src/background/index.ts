@@ -9,9 +9,12 @@ let isPlaying: boolean = false; // indicate is the player playing / pause
 let isPlayAll: boolean = false; // If true, looping playlist
 let isRandom: boolean = false; // If true, looping with random
 let playingItem: MPlaylistItem | null = null;
-let isPIP: boolean = false;
-let enablePin: boolean = false;
+let isPIP: boolean = false; // If true, show picture in picture for the currently playing item
+let enablePin: boolean = false; // If true, show control time pin on the youtube watch page
 const openTab = async (url: string) => {
+  /*if no playing tab, create one
+    if there is playing tab, try to redirect the tab to new url
+    if the tab has no response, create one instead*/
   if (!tabId) {
     const tab = await chrome.tabs.create({ url: url });
     tabId = tab?.id;
@@ -23,10 +26,12 @@ const openTab = async (url: string) => {
       tabId = tab?.id;
     }
   }
-  isPIP = false;
+  isPIP = false; //stop picture in picture for new video
 };
 
 const onPlayVideo = async (item: MPlaylistItem) => {
+  /* If the item is playing/pause, send it a resume signal,
+     otherwise, open it by new/current tab */
   const url = `${item.url}/?v=${item.videoId}${
     item.timestamp ? "&t=" + item.timestamp : ""
   }`;
@@ -51,9 +56,9 @@ const onPlayVideo = async (item: MPlaylistItem) => {
 };
 
 const playNext = async () => {
-  console.log("playNext 1");
+  /* load the youtube list from youtube storage
+  find next item from the list and pass it to play  */
   const items = await getStorage("youtube_list");
-  console.log("playNext 2");
   const playlist = (items || []) as MPlaylistItem[];
   if (playlist.length === 0) {
     await resetInitial();
@@ -71,28 +76,32 @@ const playNext = async () => {
   } else {
     item = playlist[0];
   }
-  console.log(item);
   await onPlayVideo(item);
 };
 
 const onPlayAll = async () => {
+  /* trigger the play all function
+  if it already playing something, it will update the flag only
+  otherwise, it will signal the page to resume playing
+  if the tab cannot resume (e.g. the tab has been closed), it will run fallback
+  to play the playlist   */
   isPlayAll = true;
   console.log("playingIndex", playingItem?.id);
   if (!isPlaying) {
     await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
       console.log("fallback");
+      //if no playing item record, it will reloop the playlist
       if (!playingItem) {
         console.log("fallback1");
         await playNext();
         console.log("fallback2");
         return;
       }
-      console.log("is this possible");
+      //if there is playing item, it will start playing the playing item again
       const items = await getStorage("youtube_list");
       const playlist = (items || []) as MPlaylistItem[];
       if (playlist.length === 0) {
-        isPlayAll = false;
-        isRandom = false;
+        await resetInitial();
         return;
       }
       let item;
@@ -103,15 +112,12 @@ const onPlayAll = async () => {
       onPlayVideo(item);
     });
     isPlaying = true;
-    console.log("onPlayAll E", playingItem?.id);
   }
 };
 
 const onPauseVideo = async () => {
-  console.log("onPauseVideo");
   isPlaying = false;
   await sendSignalAsync(csMsgType.PauseYoutubeVideo, resetInitial);
-  console.log("onPauseVideo1");
 };
 
 const onPauseAll = async () => {
@@ -124,6 +130,8 @@ const sendSignalAsync = async (
   type: csMsgType,
   fallback?: () => Promise<void>
 ) => {
+  /* if there is tab, try to send it signal
+     if there is no tab id or tab return error, call the fallback method if any */
   const tab_id = tabId;
   if (tab_id) {
     return new Promise((resolve, reject) => {
@@ -233,6 +241,22 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.TogglePin:
       enablePin = !enablePin;
+      break;
+    case MsgType.VolumeChange:
+      if (tabId) {
+        chrome.tabs.sendMessage(
+          tabId,
+          {
+            type: csMsgType.VolumeChange,
+            volume: message.volume,
+          },
+          () => {
+            if (chrome.runtime.lastError) {
+              console.log(chrome.runtime.lastError);
+            }
+          }
+        );
+      }
       break;
     default:
   }

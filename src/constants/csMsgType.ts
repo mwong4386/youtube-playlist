@@ -3,6 +3,7 @@ const enum csMsgType {
   PlayYoutubeVideo,
   PauseYoutubeVideo,
   CheckExists,
+  VolumeChange,
 }
 
 export default csMsgType;

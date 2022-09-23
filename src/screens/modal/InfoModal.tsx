@@ -12,6 +12,7 @@ interface props {
     endTimestamp: number | undefined,
     volume: number
   ) => void;
+  onvolumechange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   item: MPlaylistItem | undefined;
 }
 interface infoModels {
@@ -24,7 +25,7 @@ interface infoModels {
   untilEnd: boolean;
   volume: number;
 }
-const InfoModal = ({ item, active, save, close }: props) => {
+const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
   const {
     register,
     handleSubmit,
@@ -221,7 +222,10 @@ const InfoModal = ({ item, active, save, close }: props) => {
               max="100"
               step="1"
               id="cs-volume"
-              {...register("volume", { required: true })}
+              {...register("volume", {
+                required: true,
+                onChange: onvolumechange,
+              })}
             />
             <span id="cs-volume-text" className={styles["volume-text"]}>
               {watch("volume")}

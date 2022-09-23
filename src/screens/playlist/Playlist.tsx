@@ -6,6 +6,7 @@ import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
 import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
+import MsgType from "../../constants/msgType";
 
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
@@ -91,6 +92,14 @@ const Playlist = () => {
       });
     }
   };
+  const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (playing && selectItemId === playingIndex) {
+      chrome.runtime.sendMessage({
+        name: MsgType.VolumeChange,
+        volume: event.currentTarget.value,
+      });
+    }
+  };
   return (
     <>
       <PlaylistHeader playlist={playlist} onDelete={onDeleteAll} />
@@ -124,6 +133,7 @@ const Playlist = () => {
             close={() => {
               setSelectItemId(undefined);
             }}
+            onvolumechange={onvolumechange}
             save={onSave}
             item={playlist.find((x) => x.id === selectItemId)}
           />

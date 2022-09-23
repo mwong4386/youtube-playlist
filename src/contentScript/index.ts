@@ -97,6 +97,7 @@ const onYoutubeVideoPage = (
         (
           document.getElementById("cs-volume-text") as HTMLInputElement
         ).innerHTML = volume.value;
+        video.volume = parseInt(volume.value) / 100;
       };
     });
     const bookmarkBtn = document.createElement("button");
@@ -140,10 +141,20 @@ const onYoutubeVideoPage = (
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;*/
     if (volume != undefined) {
+      // It need to compete with the youtube own handler
+      const volumeHandler = () => {
+        console.log("volumeHandler", video.volume);
+        video.volume = volume / 100;
+      };
+      video.addEventListener("volumechange", volumeHandler);
+      console.log("normal", video.volume);
+      video.volume = volume / 100;
       setTimeout(() => {
         //magic number...
+        console.log("setTimeout", video.volume);
+        video.removeEventListener("volumechange", volumeHandler);
         video.volume = volume / 100;
-      }, 300);
+      }, 800);
     }
     if (endTimestamp) {
       let isEnd = false;
@@ -167,24 +178,6 @@ const onYoutubeVideoPage = (
 };
 
 const getYoutubePlayer = () => {
-  // const fullscreenPlayer1 = document.querySelector(
-  //   "#player-theater-container .video-stream"
-  // ) as HTMLVideoElement;
-
-  // const youtubePlayer1 = document.querySelector(
-  //   "#columns #primary .video-stream"
-  // ) as HTMLVideoElement;
-
-  // const ytdPlayer1 = document.querySelector(
-  //   "video-stream html5-main-video"
-  // ) as HTMLVideoElement;
-
-  // const ytdPlayer2 = document.querySelector(
-  //   "#ytd-player .video-stream"
-  // ) as HTMLVideoElement;
-
-  // const video: HTMLVideoElement | undefined =
-  //   youtubePlayer1 || fullscreenPlayer1 || ytdPlayer1 || ytdPlayer2;
   const videos = document.getElementsByTagName("video");
   console.log(videos);
   return videos[videos.length - 1] as HTMLVideoElement;
@@ -347,6 +340,10 @@ const onPauseVideo = () => {
   )[0] as HTMLVideoElement;
   video.pause();
 };
+const onVolumeChange = (volume: number) => {
+  const video = getYoutubePlayer();
+  video.volume = volume / 100;
+};
 const clearErrorMsg = () => {
   const errorContainer = document.getElementsByClassName("cs-error-container");
   errorContainer[0].replaceChildren();
@@ -388,6 +385,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case csMsgType.CheckExists:
       break;
+    case csMsgType.VolumeChange:
+      onVolumeChange(volume);
+      break;
     default:
   }
   sendResponse({ state: "ok" });
@@ -407,7 +407,7 @@ chrome.storage.onChanged.addListener(
 /*
 In case of the browser directly go to the youtube video page, the content script on Message
 event handler has not yet set up when the background script send the event. 
-The self invocation function ensure the page set up properly at that case
+The self invocation function ensure those case will still have someone to handle
 */
 (function () {
   const href = window.location.href;
