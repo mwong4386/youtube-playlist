@@ -11,6 +11,8 @@ const enum MsgType {
   OpenPictureInWindow,
   TogglePin,
   VolumeChange,
+  EnterPip,
+  ExitPip,
 }
 
 export default MsgType;

@@ -10,28 +10,27 @@ import MsgType from "../../constants/msgType";
 
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
+  //playing means the video is now playing
+  //playingId is not equal to playing, as the video may currently pause
   const [playing, setPlaying] = useState<boolean>(false);
-  const [playingIndex, setPlayingIndex] = useState<string | null | undefined>();
-  const [draggingElement, setDraggingElement] = useState<string | undefined>(
+  const [playingId, setPlayingIndex] = useState<string | null | undefined>();
+  const [draggingElementId, setDraggingElement] = useState<string | undefined>(
     undefined
   );
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
-  );
+  ); //for opening the info modal
   useEffect(() => {
     const getPlaylist = async () => {
       const list = ((await getStorage("youtube_list")) ||
         []) as MPlaylistItem[];
-      console.log(list);
       setPlaylist(list);
     };
     getPlaylist();
   }, []);
 
   useEffect(() => {
-    console.log("on loaded");
     chrome.storage.local.get(["isPlaying", "playingItem"], (result) => {
-      console.log(result);
       if (result["playingItem"]) setPlayingIndex(result["playingItem"]?.id);
       if (result["isPlaying"]) setPlaying(result["isPlaying"]);
     });
@@ -48,7 +47,7 @@ const Playlist = () => {
         setPlayingIndex(changes["playingItem"].newValue?.id);
       }
       if ("isPlaying" in changes) {
-        setPlaying(changes["isPlaying"].newValue);
+        setPlaying(!!changes["isPlaying"].newValue);
       }
       if ("youtube_list" in changes) {
         setPlaylist(changes["youtube_list"].newValue || []);
@@ -80,12 +79,12 @@ const Playlist = () => {
     });
   };
   const onMoveTo = (toId: string) => {
-    if (draggingElement && draggingElement !== toId) {
+    if (draggingElementId && draggingElementId !== toId) {
       // const oldIndex = playlist.findIndex((x) => x.id === draggingElement);
-      const item = playlist.find((x) => x.id === draggingElement);
+      const item = playlist.find((x) => x.id === draggingElementId);
       if (!item) return;
       const newIndex = playlist.findIndex((x) => x.id === toId);
-      const temp = playlist.filter((x) => x.id !== draggingElement);
+      const temp = playlist.filter((x) => x.id !== draggingElementId);
       temp.splice(newIndex, 0, item);
       chrome.storage.sync.set({
         youtube_list: temp,
@@ -93,7 +92,7 @@ const Playlist = () => {
     }
   };
   const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (playing && selectItemId === playingIndex) {
+    if (playing && selectItemId === playingId) {
       chrome.runtime.sendMessage({
         name: MsgType.VolumeChange,
         volume: event.currentTarget.value,
@@ -114,7 +113,7 @@ const Playlist = () => {
               <Draggable
                 key={item.id}
                 id={item.id}
-                isDragging={draggingElement === item.id}
+                isDragging={draggingElementId === item.id}
                 setDraggingElement={setDraggingElement}
                 onMoveTo={onMoveTo}
               >
@@ -122,7 +121,7 @@ const Playlist = () => {
                   key={item.id}
                   item={item}
                   isPlaying={playing}
-                  IPlaying={playingIndex === item.id}
+                  IPlaying={playingId === item.id}
                   selectItemId={setSelectItemId}
                 />
               </Draggable>

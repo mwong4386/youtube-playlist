@@ -9,7 +9,6 @@ interface props {
 }
 const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
   const onPlay = () => {
-    console.log("onPlay");
     if (isPlaying && IPlaying) {
       chrome.runtime.sendMessage({ name: MsgType.PauseVideo });
     } else {
@@ -18,7 +17,6 @@ const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
   };
 
   const onDelete = () => {
-    console.log("onDelete");
     chrome.runtime.sendMessage({ name: MsgType.DeleteVideo, item: item });
   };
   const onClick = () => {

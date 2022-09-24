@@ -236,8 +236,13 @@ const onMessageHandler = async (message: any) => {
           files: ["/openPictureInWindow.js"],
           target: { tabId: tabId, allFrames: true },
         });
-        isPIP = !isPIP;
       }
+      break;
+    case MsgType.EnterPip:
+      isPIP = true;
+      break;
+    case MsgType.ExitPip:
+      isPIP = false;
       break;
     case MsgType.TogglePin:
       enablePin = !enablePin;

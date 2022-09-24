@@ -1,14 +1,14 @@
 import { _duration, getHtmlFromResource } from ".";
 import { formatPlayerTime } from "../utils/date";
 
-let starttime: number = 0;
+let starttime: number = 0; //the time stored for the start time pin
 export const setStartTime = (time: number) => {
   starttime = time;
 };
 export const getStartTime = () => {
   return starttime;
 };
-let endtime: number = 0;
+let endtime: number = 0; //the time stored for the end time pin
 export const setEndTime = (time: number) => {
   endtime = time;
 };
@@ -20,7 +20,7 @@ export const setMaxX = (x: number) => {
   maxX = x;
 };
 
-export const moveStartPin = (starttime: number) => {
+export const moveStartPin = (time: number) => {
   const startmarker = document.getElementById(
     "csm-start-marker"
   ) as HTMLElement;
@@ -28,23 +28,22 @@ export const moveStartPin = (starttime: number) => {
   const startmarkertimer = document.getElementById(
     "csm-start-timer"
   ) as HTMLElement;
-  startmarkertimer.innerHTML = formatPlayerTime(starttime);
-  const position = (starttime / _duration) * maxX - 25;
+  startmarkertimer.innerHTML = formatPlayerTime(time);
+  const position = (time / _duration) * maxX - 25;
   startmarker.style.left = `${position}px`;
 };
 
-export const moveEndPin = (starttime: number) => {
-  console.log(starttime);
+export const moveEndPin = (time: number) => {
   const endmarker = document.getElementById("csm-end-marker") as HTMLElement;
   if (!endmarker) return;
   const endmarkertimer = document.getElementById(
     "csm-end-timer"
   ) as HTMLElement;
-  endmarkertimer.innerHTML = formatPlayerTime(starttime);
-  const position = (starttime / _duration) * maxX - 25;
+  endmarkertimer.innerHTML = formatPlayerTime(time);
+  const position = (time / _duration) * maxX - 25;
   endmarker.style.left = `${position}px`;
 };
-
+//Hide the pin if enablepin is false, but still create the pin for recording the time
 export const createStartPin = (enablePin: boolean) => {
   return getHtmlFromResource("/marker.html").then((html) => {
     const player = document.querySelector("#player .ytp-chrome-bottom");
@@ -80,6 +79,7 @@ export const createStartPin = (enablePin: boolean) => {
       document.removeEventListener("mouseup", mouseUpHandler);
       document.removeEventListener("visibilitychange", focusoutHandler);
     };
+    //i.e. if user go to other tab, count it end and unregister those handler
     const focusoutHandler = () => {
       document.removeEventListener("mousemove", mouseMoveHandler);
       document.removeEventListener("mouseup", mouseUpHandler);
@@ -96,6 +96,7 @@ export const createStartPin = (enablePin: boolean) => {
   });
 };
 
+//Hide the pin if enablepin is false, but still create the pin for recording the time
 export const createStopPin = (enablePin: boolean) => {
   return getHtmlFromResource("/endmarker.html").then((html) => {
     const player = document.querySelector("#player .ytp-chrome-bottom");
@@ -158,6 +159,7 @@ export const setPinVisibility = (enablePin: boolean) => {
   }
 };
 
+//25 is the half width of the pin, we want the center of the pin pointing to the time frame
 const bound = (position: number) => {
   return position < -25 ? -25 : position > maxX - 25 ? maxX - 25 : position;
 };

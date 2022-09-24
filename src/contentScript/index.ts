@@ -13,6 +13,8 @@ import {
   setPinVisibility,
   setStartTime,
 } from "./MovingPin";
+import { getHourMinuteSecond } from "../utils/date";
+
 let onCSConfirm: (e: Event) => any;
 export let _duration: number = NaN;
 const onYoutubeVideoPage = (
@@ -26,21 +28,21 @@ const onYoutubeVideoPage = (
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
   setStartTime(0);
   let video: HTMLVideoElement = getYoutubePlayer();
+  //The video may not yet have the meta data, those case will be handle later
   if (video.duration > 0) {
     _duration = Math.floor(video.duration);
     setEndTime(_duration);
   } else {
     setEndTime(0);
   }
-
+  //bookmark will serve as flag as well
   if (!bookmark) {
-    //bookmark will serve as flag
     onCSConfirm = (e) => {
       e.preventDefault();
       (
         document.getElementById("cs-confirm-button") as HTMLButtonElement
       ).disabled = true;
-      onBookmarkBtnClick(url, videoId);
+      onBookmarkSave(url, videoId);
     };
 
     video.onloadedmetadata = function (event) {
@@ -51,16 +53,17 @@ const onYoutubeVideoPage = (
 
     const player = document.querySelector("#player .ytp-chrome-bottom");
     if (player) {
+      //Accomodate the pin when resizing the control panel
       new ResizeObserver((e) => {
         const entry = e[0];
         if (entry.contentRect) {
-          console.log("test", video.volume);
           setMaxX(entry.contentRect.width);
           moveStartPin(getStartTime());
           moveEndPin(getEndTime());
         }
       }).observe(player);
     }
+    //Insert the dialog html
     getHtmlFromResource("/dialog.html").then((html) => {
       document.body.insertAdjacentHTML("beforeend", html);
       // Add confirm button handler
@@ -82,7 +85,7 @@ const onYoutubeVideoPage = (
         const checked = element.checked;
         disableEndTimeGroup(checked);
       });
-      const items = document.getElementsByClassName("cs-start-time-inputgroup");
+      const items = document.getElementsByClassName("cs-time-inputgroup");
       for (const item of items) {
         //Select the full text when focus the inputbox
         item.addEventListener("focus", (event) =>
@@ -100,6 +103,7 @@ const onYoutubeVideoPage = (
         video.volume = parseInt(volume.value) / 100;
       };
     });
+    //Add a + button to the youtube control button group, it will open the dialog
     const bookmarkBtn = document.createElement("button");
     bookmarkBtn.style.cssText =
       "position: relative; font-size: 36px; height: 100%; text-align: center;top:calc(36px - 100%);left:0;";
@@ -126,7 +130,7 @@ const onYoutubeVideoPage = (
       (
         document.getElementById("cs-confirm-button") as HTMLButtonElement
       ).disabled = true;
-      onBookmarkBtnClick(url, videoId);
+      onBookmarkSave(url, videoId);
     };
 
     (
@@ -156,9 +160,12 @@ const onYoutubeVideoPage = (
         video.volume = volume / 100;
       }, 800);
     }
+    //Register different event handler to notify the status of the video
     if (endTimestamp) {
       let isEnd = false;
       video.addEventListener("timeupdate", () => {
+        //The comparison use === instead of >=, as i want to keep the video if the user
+        //jump to later video
         if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
           isEnd = true;
           chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
@@ -174,6 +181,12 @@ const onYoutubeVideoPage = (
     video.addEventListener("pause", () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoPauseEvent });
     });
+    video.addEventListener("enterpictureinpicture", () => {
+      chrome.runtime.sendMessage({ name: MsgType.EnterPip });
+    });
+    video.addEventListener("leavepictureinpicture", () => {
+      chrome.runtime.sendMessage({ name: MsgType.ExitPip });
+    });
   }
 };
 
@@ -188,6 +201,7 @@ export const getHtmlFromResource = (url: string) => {
 };
 
 const onCSOpenDialogClickHandler = () => {
+  //Tidy up the information showing on the dialog
   clearErrorMsg();
   const title = document.title
     .replace(/^\(.+?\)/, "")
@@ -209,9 +223,7 @@ const onCSOpenDialogClickHandler = () => {
     volumeRate;
 
   const timestamp = getStartTime();
-  const hours = Math.floor(timestamp / 3600);
-  const minutes = Math.floor(timestamp / 60) % 60;
-  const seconds = timestamp % 60;
+  const [hours, minutes, seconds] = getHourMinuteSecond(timestamp, false);
 
   (document.getElementById("cs-start-hour") as HTMLInputElement).value =
     hours.toString();
@@ -221,9 +233,10 @@ const onCSOpenDialogClickHandler = () => {
     seconds.toString();
 
   const end_time = Math.floor(getEndTime());
-  const end_hours = Math.floor(end_time / 3600);
-  const end_minutes = Math.floor(end_time / 60) % 60;
-  const end_seconds = end_time % 60;
+  const [end_hours, end_minutes, end_seconds] = getHourMinuteSecond(
+    end_time,
+    false
+  );
 
   (document.getElementById("cs-end-hour") as HTMLInputElement).value =
     end_hours.toString();
@@ -249,7 +262,7 @@ const onResetClick = () => {
   moveStartPin(0);
 };
 
-const onBookmarkBtnClick = (url: string, videoId: string) => {
+const onBookmarkSave = (url: string, videoId: string) => {
   clearErrorMsg();
   const hour: number = parseFloat(
     (document.getElementById("cs-start-hour") as HTMLInputElement).value
@@ -277,6 +290,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
 
   const video = getYoutubePlayer();
   const maxDuration = video?.duration;
+  //if until end is checked, the endtime will not save
   if (!untilEnd) {
     const endHour: number = parseFloat(
       (document.getElementById("cs-end-hour") as HTMLInputElement).value
@@ -294,7 +308,7 @@ const onBookmarkBtnClick = (url: string, videoId: string) => {
 
   if (endTimestamp !== undefined && endTimestamp <= timestamp) {
     addErrorMsg(
-      "End Time either check the until end or it should larger than start time"
+      "Either check the until end or end time should larger than start time"
     );
     (
       document.getElementById("cs-confirm-button") as HTMLButtonElement

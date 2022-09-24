@@ -20,7 +20,10 @@ export const getCurrentTimestamp = () => {
   return getDateString(today);
 };
 
-export const getHourMinuteSecond = (duration: number) => {
+export const getHourMinuteSecond = (
+  duration: number,
+  isSecondWithLeadingZero: boolean
+) => {
   if (duration === NaN) {
     return [0, 0, 0];
   }
@@ -28,13 +31,17 @@ export const getHourMinuteSecond = (duration: number) => {
   const hours = Math.floor(duration / 3600);
   const minutes = Math.floor(duration / 60) % 60;
   const seconds = duration % 60;
-  const secondsWithLeadingZero = pad(seconds);
+  if (isSecondWithLeadingZero) {
+    const secondsWithLeadingZero = pad(seconds);
 
-  return [hours, minutes, secondsWithLeadingZero];
+    return [hours, minutes, secondsWithLeadingZero];
+  } else {
+    return [hours, minutes, seconds];
+  }
 };
 
 export const formatPlayerTime = (duration: number) => {
-  const [hours, minutes, seconds] = getHourMinuteSecond(duration);
+  const [hours, minutes, seconds] = getHourMinuteSecond(duration, true);
   if (hours === 0) {
     return `${minutes}:${seconds}`;
   } else {

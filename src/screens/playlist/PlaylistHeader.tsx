@@ -80,7 +80,6 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   };
 
   useEffect(() => {
-    console.log("isPlayAll");
     chrome.storage.local.get(
       ["isPlayAll", "isPIP", "isPlaying", "enablePin"],
       (result) => {
