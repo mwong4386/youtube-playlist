@@ -23,11 +23,12 @@ const onYoutubeVideoPage = (
   isPlayTab: boolean,
   endTimestamp: number | undefined,
   enablePin: boolean,
-  volume: number | undefined
+  volume: number | false | undefined
 ) => {
   const bookmark = document.getElementsByClassName("bookmark-button")[0];
   setStartTime(0);
   let video: HTMLVideoElement = getYoutubePlayer();
+
   //The video may not yet have the meta data, those case will be handle later
   if (video.duration > 0) {
     _duration = Math.floor(video.duration);
@@ -35,20 +36,22 @@ const onYoutubeVideoPage = (
   } else {
     setEndTime(0);
   }
+
   //bookmark will serve as flag as well
   if (!bookmark) {
+    const durationChangeHandler = () => {
+      _duration = Math.floor(video.duration);
+      setEndTime(_duration);
+      moveEndPin(getEndTime());
+    };
+    video.addEventListener("durationchange", durationChangeHandler);
+    video.addEventListener("loadedmetadata", durationChangeHandler);
     onCSConfirm = (e) => {
       e.preventDefault();
       (
         document.getElementById("cs-confirm-button") as HTMLButtonElement
       ).disabled = true;
       onBookmarkSave(url, videoId);
-    };
-
-    video.onloadedmetadata = function (event) {
-      _duration = Math.floor(video.duration);
-      setEndTime(_duration);
-      moveEndPin(getEndTime());
     };
 
     const player = document.querySelector("#player .ytp-chrome-bottom");
@@ -144,18 +147,20 @@ const onYoutubeVideoPage = (
     video = video || getYoutubePlayer(); /*document.getElementsByClassName(
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;*/
-    if (volume != undefined) {
+    if (volume != undefined && volume != false) {
       // It need to compete with the youtube own handler
       const volumeHandler = () => {
         console.log("volumeHandler", video.volume);
         video.volume = volume / 100;
       };
+      const refreshIntervalId = setInterval(volumeHandler, 50);
       video.addEventListener("volumechange", volumeHandler);
       console.log("normal", video.volume);
       video.volume = volume / 100;
       setTimeout(() => {
         //magic number...
         console.log("setTimeout", video.volume);
+        clearInterval(refreshIntervalId);
         video.removeEventListener("volumechange", volumeHandler);
         video.volume = volume / 100;
       }, 800);

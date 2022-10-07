@@ -20,6 +20,7 @@ const Playlist = () => {
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   ); //for opening the info modal
+
   useEffect(() => {
     const getPlaylist = async () => {
       const list = ((await getStorage("youtube_list")) ||

@@ -14,6 +14,8 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   const [isPIP, setIsPIP] = useState<boolean>(false);
   const [enablePin, setEnablePin] = useState<boolean>(false);
   const [playing, setPlaying] = useState<boolean>(false);
+  const [enableAdjustVideoVolume, setEnableAdjustVideoVolume] =
+    useState<boolean>(false);
   const ctx = useActionSheet();
   const onPlayPauseButton = () => {
     console.log("onPlayPauseButton");
@@ -34,6 +36,9 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   };
   const onTogglePin = () => {
     chrome.runtime.sendMessage({ name: MsgType.TogglePin });
+  };
+  const onToggleVolumeAdjust = () => {
+    chrome.runtime.sendMessage({ name: MsgType.ToggleVolumeAdjust });
   };
   const openPlayMenu = () => {
     ctx.setActionSheet([
@@ -59,9 +64,16 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
         description: `${enablePin ? "Hide" : "Show"} player pin`,
         callback: onTogglePin,
       },
-      { id: 3, description: "Import Playlist", callback: onImportJson },
-      { id: 4, description: "Export Playlist", callback: onExportJson },
-      { id: 5, description: "Delete All", callback: onDelete },
+      {
+        id: 3,
+        description: `${
+          enableAdjustVideoVolume ? "Disable" : "Enable"
+        } Volume adjust`,
+        callback: onToggleVolumeAdjust,
+      },
+      { id: 4, description: "Import Playlist", callback: onImportJson },
+      { id: 5, description: "Export Playlist", callback: onExportJson },
+      { id: 6, description: "Delete All", callback: onDelete },
     ]);
     ctx.open();
   };
@@ -81,12 +93,19 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
 
   useEffect(() => {
     chrome.storage.local.get(
-      ["isPlayAll", "isPIP", "isPlaying", "enablePin"],
+      [
+        "isPlayAll",
+        "isPIP",
+        "isPlaying",
+        "enablePin",
+        "enableAdjustVideoVolume",
+      ],
       (result) => {
         setIsPlayAll(!!result["isPlayAll"]);
         setIsPIP(!!result["isPIP"]);
         setPlaying(!!result["isPlaying"]);
         setEnablePin(!!result["enablePin"]);
+        setEnableAdjustVideoVolume(!!result["enableAdjustVideoVolume"]);
       }
     );
   }, []);
@@ -107,6 +126,11 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
       }
       if ("enablePin" in changes) {
         setEnablePin(!!changes["enablePin"].newValue);
+      }
+      if ("enableAdjustVideoVolume" in changes) {
+        setEnableAdjustVideoVolume(
+          !!changes["enableAdjustVideoVolume"].newValue
+        );
       }
     };
     chrome.storage.onChanged.addListener(listener);

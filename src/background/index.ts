@@ -11,6 +11,7 @@ let isRandom: boolean = false; // If true, looping with random
 let playingItem: MPlaylistItem | null = null;
 let isPIP: boolean = false; // If true, show picture in picture for the currently playing item
 let enablePin: boolean = false; // If true, show control time pin on the youtube watch page
+let enableAdjustVideoVolume: boolean = true;
 const openTab = async (url: string) => {
   /*if no playing tab, create one
     if there is playing tab, try to redirect the tab to new url
@@ -176,6 +177,7 @@ const updateStateToLocalStorage = () => {
     isPIP: isPIP,
     isRandom: isRandom,
     enablePin: enablePin,
+    enableAdjustVideoVolume: enableAdjustVideoVolume,
   });
 };
 
@@ -247,6 +249,9 @@ const onMessageHandler = async (message: any) => {
     case MsgType.TogglePin:
       enablePin = !enablePin;
       break;
+    case MsgType.ToggleVolumeAdjust:
+      enableAdjustVideoVolume = !enableAdjustVideoVolume;
+      break;
     case MsgType.VolumeChange:
       if (tabId) {
         chrome.tabs.sendMessage(
@@ -288,6 +293,7 @@ const resetInitial = async () => {
       "isPIP",
       "isRandom",
       "enablePin",
+      "enableAdjustVideoVolume",
     ],
     (result) => {
       tabId = result["tabId"];
@@ -297,6 +303,7 @@ const resetInitial = async () => {
       isPIP = result["isPIP"];
       isRandom = result["isRandom"];
       enablePin = result["enablePin"];
+      enableAdjustVideoVolume = result["enableAdjustVideoVolume"];
       if (!tabId) {
         resetInitial();
         updateStateToLocalStorage();
@@ -337,7 +344,8 @@ const resetInitial = async () => {
           isPlayTab: tabId === tabId1,
           endTimestamp: tabId === tabId1 && playingItem?.endTimestamp,
           enablePin: enablePin,
-          volume: tabId === tabId1 && playingItem?.volume,
+          volume:
+            tabId === tabId1 && enableAdjustVideoVolume && playingItem?.volume,
         },
         () => {
           if (chrome.runtime.lastError) {
