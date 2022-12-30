@@ -18,7 +18,6 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
     useState<boolean>(false);
   const ctx = useActionSheet();
   const onPlayPauseButton = () => {
-    console.log("onPlayPauseButton");
     if (isPlayAll) {
       chrome.runtime.sendMessage({ name: MsgType.PauseAll });
     } else {
@@ -183,6 +182,7 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
           <img
             className={styles["header-button-icon"]}
             src={isPlayAll ? "./assets/pause30.png" : "./assets/play30.png"}
+            alt={isPlayAll ? "pause" : "play all"}
           />
         </button>
       </div>
@@ -191,6 +191,7 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
           <img
             className={styles["header-button-icon"]}
             src={"./assets/menu30.svg"}
+            alt="menu"
           />
         </button>
       </div>

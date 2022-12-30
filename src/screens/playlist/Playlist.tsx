@@ -42,8 +42,6 @@ const Playlist = () => {
       changes: { [key: string]: chrome.storage.StorageChange },
       namespace: "sync" | "local" | "managed" | "session"
     ) => {
-      console.log("changes");
-      console.log(changes);
       if ("playingItem" in changes) {
         setPlayingIndex(changes["playingItem"].newValue?.id);
       }

@@ -147,57 +147,107 @@ const onYoutubeVideoPage = (
     video = video || getYoutubePlayer(); /*document.getElementsByClassName(
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;*/
-    if (volume != undefined && volume != false) {
+    if (volume !== undefined && volume !== false) {
       // It need to compete with the youtube own handler
       const volumeHandler = () => {
-        console.log("volumeHandler", video.volume);
         video.volume = volume / 100;
       };
       const refreshIntervalId = setInterval(volumeHandler, 50);
       video.addEventListener("volumechange", volumeHandler);
-      console.log("normal", video.volume);
       video.volume = volume / 100;
       setTimeout(() => {
         //magic number...
-        console.log("setTimeout", video.volume);
         clearInterval(refreshIntervalId);
         video.removeEventListener("volumechange", volumeHandler);
         video.volume = volume / 100;
       }, 800);
     }
     //Register different event handler to notify the status of the video
+    let isEnd = false;
+    const timeupdateHandler = () => {
+      //The comparison use === instead of >=, as i want to keep the video if the user
+      //jump to later video
+      if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
+        isEnd = true;
+        chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
+      }
+    };
     if (endTimestamp) {
-      let isEnd = false;
-      video.addEventListener("timeupdate", () => {
-        //The comparison use === instead of >=, as i want to keep the video if the user
-        //jump to later video
-        if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
-          isEnd = true;
-          chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
-        }
-      });
+      video.addEventListener("timeupdate", timeupdateHandler);
     }
-    video.addEventListener("ended", () => {
+
+    const endedHandler = () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
-    });
-    video.addEventListener("play", () => {
+      let count = 0;
+      //stop the video if the next video is auto play
+      const interval = setInterval(() => {
+        if (
+          document.getElementsByClassName(
+            "ytp-autonav-endscreen-countdown-overlay"
+          ).length > 0 &&
+          (
+            document.getElementsByClassName(
+              "ytp-autonav-endscreen-countdown-overlay"
+            )[0] as HTMLElement
+          ).style.display !== "none"
+        ) {
+          (
+            document.getElementsByClassName(
+              "ytp-autonav-endscreen-upnext-cancel-button"
+            )[0] as HTMLButtonElement
+          )?.click();
+          clearInterval(interval);
+        } else if (count++ > 9) {
+          clearInterval(interval);
+        }
+      }, 500);
+    };
+    video.addEventListener("ended", endedHandler);
+
+    const playHandler = () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoPlayEvent });
-    });
-    video.addEventListener("pause", () => {
+    };
+    video.addEventListener("play", playHandler);
+
+    const pauseHandler = () => {
       chrome.runtime.sendMessage({ name: MsgType.VideoPauseEvent });
-    });
-    video.addEventListener("enterpictureinpicture", () => {
+    };
+    video.addEventListener("pause", pauseHandler);
+
+    const enterpictureinpictureHandler = () => {
       chrome.runtime.sendMessage({ name: MsgType.EnterPip });
-    });
-    video.addEventListener("leavepictureinpicture", () => {
+    };
+    video.addEventListener(
+      "enterpictureinpicture",
+      enterpictureinpictureHandler
+    );
+
+    const leavepictureinpictureHandler = () => {
       chrome.runtime.sendMessage({ name: MsgType.ExitPip });
-    });
+    };
+    video.addEventListener(
+      "leavepictureinpicture",
+      leavepictureinpictureHandler
+    );
+    window.onbeforeunload = () => {
+      video.removeEventListener("timeupdate", timeupdateHandler);
+      video.removeEventListener("ended", endedHandler);
+      video.removeEventListener("play", playHandler);
+      video.removeEventListener("pause", pauseHandler);
+      video.removeEventListener(
+        "enterpictureinpicture",
+        enterpictureinpictureHandler
+      );
+      video.removeEventListener(
+        "leavepictureinpicture",
+        leavepictureinpictureHandler
+      );
+    };
   }
 };
 
 const getYoutubePlayer = () => {
   const videos = document.getElementsByTagName("video");
-  console.log(videos);
   return videos[videos.length - 1] as HTMLVideoElement;
 };
 
@@ -331,7 +381,6 @@ const onBookmarkSave = (url: string, videoId: string) => {
     maxDuration,
     volume,
   };
-  console.log(data);
   chrome.storage.sync.get("youtube_list", (result) => {
     if (chrome.runtime.lastError) {
       console.log(chrome.runtime.lastError);
