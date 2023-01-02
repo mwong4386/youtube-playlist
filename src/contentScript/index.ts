@@ -177,7 +177,6 @@ const onYoutubeVideoPage = (
     }
 
     const endedHandler = () => {
-      chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
       let count = 0;
       //stop the video if the next video is auto play
       const interval = setInterval(() => {
@@ -201,6 +200,7 @@ const onYoutubeVideoPage = (
           clearInterval(interval);
         }
       }, 500);
+      chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     };
     video.addEventListener("ended", endedHandler);
 
