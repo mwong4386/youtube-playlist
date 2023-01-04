@@ -19,15 +19,18 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   const ctx = useActionSheet();
   const onPlayPauseButton = () => {
     if (isPlayAll) {
+      console.log("sendPauseAll");
       chrome.runtime.sendMessage({ name: MsgType.PauseAll });
     } else {
       openPlayMenu();
     }
   };
   const sendPlayOrderly = () => {
+    console.log("sendPlayOrderly");
     chrome.runtime.sendMessage({ name: MsgType.PlayAll });
   };
   const sendPlayRandom = () => {
+    console.log("sendPlayRandom");
     chrome.runtime.sendMessage({ name: MsgType.PlayAllRandom });
   };
   const onPlayInPicture = () => {

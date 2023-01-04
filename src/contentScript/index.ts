@@ -177,6 +177,7 @@ const onYoutubeVideoPage = (
     }
 
     const endedHandler = () => {
+      console.log("video ended");
       let count = 0;
       //stop the video if the next video is auto play
       const interval = setInterval(() => {
@@ -195,6 +196,7 @@ const onYoutubeVideoPage = (
               "ytp-autonav-endscreen-upnext-cancel-button"
             )[0] as HTMLButtonElement
           )?.click();
+          console.log("stop the next video", count);
           clearInterval(interval);
         } else if (count++ > 9) {
           clearInterval(interval);
@@ -434,16 +436,20 @@ const disableEndTimeGroup = (disable: boolean) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { type, url, videoId, isPlayTab, endTimestamp, enablePin, volume } =
     request;
+  console.log("on Message", request);
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
-      onYoutubeVideoPage(
-        url,
-        videoId,
-        isPlayTab,
-        endTimestamp,
-        enablePin,
-        volume
-      );
+      if (window.location.href === url) {
+        //if the information is outdated, ignore it
+        onYoutubeVideoPage(
+          url.split("?")[0],
+          videoId,
+          isPlayTab,
+          endTimestamp,
+          enablePin,
+          volume
+        );
+      }
       break;
     case csMsgType.PlayYoutubeVideo:
       onPlayVideo();

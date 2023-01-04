@@ -182,6 +182,7 @@ const deleteVideo = async (id: string) => {
   });
 };
 const onMessageHandler = async (message: any) => {
+  console.log("on Message Handler", message);
   switch (message.name) {
     case MsgType.PlayVideo:
       await onPlayVideo(message.item);
@@ -242,7 +243,7 @@ const onMessageHandler = async (message: any) => {
           },
           () => {
             if (chrome.runtime.lastError) {
-              console.log(chrome.runtime.lastError);
+              console.log(1, chrome.runtime.lastError);
             }
           }
         );
@@ -310,33 +311,76 @@ const resetInitial = async () => {
     });
   });
 
-  chrome.tabs.onUpdated.addListener((tabId1, tab) => {
-    if (tab.url && tab.url.includes("youtube.com/watch")) {
-      const query: string = tab.url.split("?")[1];
+  const sendMessageToYoutubeTab = (
+    tabId: number,
+    url: string,
+    videoId: string | null,
+    isPlayTab: boolean,
+    count: number
+  ) => {
+    console.log("send Message to yt", count);
+    chrome.tabs.sendMessage(
+      tabId,
+      {
+        type: csMsgType.OnYoutubeVideoPage,
+        url: url,
+        videoId: videoId,
+        isPlayTab: isPlayTab,
+        endTimestamp: isPlayTab && playingItem?.endTimestamp,
+        enablePin: enablePin,
+        volume: isPlayTab && enableAdjustVideoVolume && playingItem?.volume,
+      },
+      () => {
+        if (count >= 4) return; //if still error after 4 times, give up
+        if (chrome.runtime.lastError) {
+          console.log(2, chrome.runtime.lastError);
+          setTimeout(() => {
+            sendMessageToYoutubeTab(tabId, url, videoId, isPlayTab, count + 1);
+          }, 500);
+        }
+      }
+    );
+  };
+
+  //use webNavigation.onHistoryStateUpdated instead of tab.onUpdated
+  //https://stackoverflow.com/questions/36808309/chrome-extension-page-update-twice-then-removed-on-youtube/36818991#36818991
+  chrome.webNavigation.onHistoryStateUpdated.addListener((detail) => {
+    if (detail.url && detail.url.includes("youtube.com/watch")) {
+      const query: string = detail.url.split("?")[1];
       const params: URLSearchParams = new URLSearchParams(query);
       const videoId = params.get("v");
-      const isPlayTab = tabId === tabId1;
+      const isPlayTab = tabId === detail.tabId;
+      console.log(tabId, " ", detail.tabId);
       if (!videoId) return;
       if (isPlayTab && playingItem?.videoId !== videoId) {
+        console.log("unknown video id ", videoId, " ", playingItem);
         return;
       } else {
-        chrome.tabs.sendMessage(
-          tabId1,
-          {
-            type: csMsgType.OnYoutubeVideoPage,
-            url: tab.url.split("?")[0],
-            videoId: videoId,
-            isPlayTab: isPlayTab,
-            endTimestamp: isPlayTab && playingItem?.endTimestamp,
-            enablePin: enablePin,
-            volume: isPlayTab && enableAdjustVideoVolume && playingItem?.volume,
-          },
-          () => {
-            if (chrome.runtime.lastError) {
-              console.log(chrome.runtime.lastError);
-            }
-          }
+        console.log("Seems good ", playingItem);
+        sendMessageToYoutubeTab(
+          detail.tabId,
+          detail.url,
+          videoId,
+          isPlayTab,
+          0
         );
+        // chrome.tabs.sendMessage(
+        //   detail.tabId,
+        //   {
+        //     type: csMsgType.OnYoutubeVideoPage,
+        //     url: detail.url.split("?")[0],
+        //     videoId: videoId,
+        //     isPlayTab: isPlayTab,
+        //     endTimestamp: isPlayTab && playingItem?.endTimestamp,
+        //     enablePin: enablePin,
+        //     volume: isPlayTab && enableAdjustVideoVolume && playingItem?.volume,
+        //   },
+        //   () => {
+        //     if (chrome.runtime.lastError) {
+        //       console.log(2, chrome.runtime.lastError);
+        //     }
+        //   }
+        // );
       }
     }
   });
