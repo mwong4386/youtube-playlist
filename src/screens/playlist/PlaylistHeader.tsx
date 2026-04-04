@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import MsgType from "../../constants/msgType";
-import MPlaylistItem from "../../models/MPlaylistItem";
 import { getCurrentTimestamp } from "../../utils/date";
+import MPlaylistItem from "../../models/MPlaylistItem";
+import { parseImportedPlaylist } from "../../utils/playlistImport";
 import useActionSheet from "../actionSheet/useActionSheet";
 import styles from "./Playlist.module.css";
 
@@ -150,14 +151,16 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
         reader.addEventListener("load", () => {
           const content = reader.result as string;
           if (content) {
-            try {
-              const temp: MPlaylistItem[] = JSON.parse(content);
-              if (temp.length > 0) {
-                chrome.storage.sync.set({
-                  youtube_list: temp,
-                });
-              }
-            } catch (exception) {}
+            const { playlist: importedPlaylist, error } =
+              parseImportedPlaylist(content);
+
+            if (importedPlaylist) {
+              chrome.storage.sync.set({
+                youtube_list: importedPlaylist,
+              });
+            } else if (error) {
+              window.alert(error);
+            }
             (document.getElementById("uploadfile") as HTMLInputElement).value =
               "";
           }

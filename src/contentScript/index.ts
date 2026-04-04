@@ -1,6 +1,7 @@
 import MsgType from "../constants/msgType";
 import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
+import MPlaylistItem from "../models/MPlaylistItem";
 import {
   createStartPin,
   createStopPin,
@@ -319,6 +320,35 @@ const onResetClick = () => {
   moveStartPin(0);
 };
 
+const upsertPlaylistItem = (
+  list: MPlaylistItem[],
+  item: MPlaylistItem
+): MPlaylistItem[] => {
+  const existingIndex = list.findIndex(
+    (playlistItem) => playlistItem.videoId === item.videoId
+  );
+
+  if (existingIndex === -1) {
+    return [...list, item];
+  }
+
+  return list.reduce<MPlaylistItem[]>((result, playlistItem, index) => {
+    if (playlistItem.videoId !== item.videoId) {
+      result.push(playlistItem);
+      return result;
+    }
+
+    if (index === existingIndex) {
+      result.push({
+        ...item,
+        id: playlistItem.id,
+      });
+    }
+
+    return result;
+  }, []);
+};
+
 const onBookmarkSave = (url: string, videoId: string) => {
   clearErrorMsg();
   const hour: number = parseFloat(
@@ -372,7 +402,7 @@ const onBookmarkSave = (url: string, videoId: string) => {
     ).disabled = false;
     return;
   }
-  const data = {
+  const data: MPlaylistItem = {
     id: uuidv4(),
     url,
     videoId,
@@ -388,10 +418,9 @@ const onBookmarkSave = (url: string, videoId: string) => {
       console.log(chrome.runtime.lastError);
       return;
     }
-    const list = result["youtube_list"] || [];
-    list.push(data);
+    const list = (result["youtube_list"] || []) as MPlaylistItem[];
     chrome.storage.sync.set({
-      youtube_list: list,
+      youtube_list: upsertPlaylistItem(list, data),
     });
   });
   (document.getElementById("cs-dialog") as HTMLDialogElement).close();

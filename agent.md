@@ -183,8 +183,8 @@ Current keys:
 
 ## Improvement Checklist
 
-- [ ] add deduplication or update-in-place when saving the same video twice
-- [ ] validate imported playlist JSON more safely
+- [x] add deduplication or update-in-place when saving the same video twice
+- [x] validate imported playlist JSON more safely
 - [ ] add lightweight tests around playlist transforms and playback sequencing
 - [ ] isolate YouTube DOM selectors into one module
 - [ ] make the playback state machine more explicit
