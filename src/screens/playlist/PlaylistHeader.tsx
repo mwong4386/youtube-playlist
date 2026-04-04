@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import MsgType from "../../constants/msgType";
+import PlaybackState, {
+  createInitialPlaybackState,
+  isPlaybackActive,
+  isQueueModeActive,
+} from "../../models/PlaybackState";
 import { getCurrentTimestamp } from "../../utils/date";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import { parseImportedPlaylist } from "../../utils/playlistImport";
@@ -18,6 +23,16 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   const [enableAdjustVideoVolume, setEnableAdjustVideoVolume] =
     useState<boolean>(false);
   const ctx = useActionSheet();
+
+  const syncPlaybackState = (state?: PlaybackState | null) => {
+    const nextState = state || createInitialPlaybackState();
+    setIsPlayAll(isQueueModeActive(nextState.queueMode));
+    setIsPIP(nextState.isPip);
+    setPlaying(isPlaybackActive(nextState.status));
+    setEnablePin(nextState.enablePin);
+    setEnableAdjustVideoVolume(nextState.enableAdjustVideoVolume);
+  };
+
   const onPlayPauseButton = () => {
     if (isPlayAll) {
       console.log("sendPauseAll");
@@ -97,6 +112,7 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   useEffect(() => {
     chrome.storage.local.get(
       [
+        "playbackState",
         "isPlayAll",
         "isPIP",
         "isPlaying",
@@ -104,6 +120,10 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
         "enableAdjustVideoVolume",
       ],
       (result) => {
+        if (result["playbackState"]) {
+          syncPlaybackState(result["playbackState"]);
+          return;
+        }
         setIsPlayAll(!!result["isPlayAll"]);
         setIsPIP(!!result["isPIP"]);
         setPlaying(!!result["isPlaying"]);
@@ -118,6 +138,9 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
       changes: { [key: string]: chrome.storage.StorageChange },
       namespace: "sync" | "local" | "managed" | "session"
     ) => {
+      if ("playbackState" in changes) {
+        syncPlaybackState(changes["playbackState"].newValue);
+      }
       if ("isPlayAll" in changes) {
         setIsPlayAll(!!changes["isPlayAll"].newValue);
       }

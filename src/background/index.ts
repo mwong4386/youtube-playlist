@@ -1,174 +1,206 @@
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
 import MPlaylistItem from "../models/MPlaylistItem";
+import PlaybackState, {
+  QueueMode,
+  createInitialPlaybackState,
+  isPlaybackActive,
+  isQueueModeActive,
+} from "../models/PlaybackState";
 import { getRandomInt } from "../utils/math";
 import { getStorage } from "../utils/syncStorage";
+import reducePlaybackState from "./playbackMachine";
 
-let tabId: number | undefined = undefined; // store the youtube player tab
-let isPlaying: boolean = false; // indicate is the player playing / pause
-let isPlayAll: boolean = false; // If true, looping playlist
-let isRandom: boolean = false; // If true, looping with random
+let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
-let isPIP: boolean = false; // If true, show picture in picture for the currently playing item
-let enablePin: boolean = false; // If true, show control time pin on the youtube watch page
-let enableAdjustVideoVolume: boolean = true;
+
+const applyPlaybackEvent = (
+  event: Parameters<typeof reducePlaybackState>[1],
+): PlaybackState => {
+  playbackState = reducePlaybackState(playbackState, event);
+  return playbackState;
+};
+
+const resetPlaybackState = () => {
+  playingItem = null;
+  applyPlaybackEvent({ type: "RESET" });
+};
+
+const getPlaylist = async () => {
+  const items = await getStorage("youtube_list");
+  return ((items || []) as MPlaylistItem[]).slice();
+};
+
+const getCurrentItem = async () => {
+  if (playingItem?.id === playbackState.currentItemId) {
+    return playingItem;
+  }
+  if (!playbackState.currentItemId) {
+    playingItem = null;
+    return null;
+  }
+  const playlist = await getPlaylist();
+  const item =
+    playlist.find((playlistItem) => playlistItem.id === playbackState.currentItemId) ||
+    null;
+  playingItem = item;
+  return item;
+};
+
+const getUrlForItem = (item: MPlaylistItem) =>
+  `${item.url}/?v=${item.videoId}${item.timestamp ? "&t=" + item.timestamp : ""}`;
+
+const updateStateToLocalStorage = () => {
+  chrome.storage.local.set({
+    playbackState,
+    tabId: playbackState.currentTabId,
+    playingItem: playingItem,
+    isPlaying: isPlaybackActive(playbackState.status),
+    isPlayAll: isQueueModeActive(playbackState.queueMode),
+    isPIP: playbackState.isPip,
+    isRandom: playbackState.queueMode === "random",
+    enablePin: playbackState.enablePin,
+    enableAdjustVideoVolume: playbackState.enableAdjustVideoVolume,
+  });
+};
+
 const openTab = async (url: string) => {
-  /*if no playing tab, create one
-    if there is playing tab, try to redirect the tab to new url
-    if the tab has no response, create one instead*/
-  if (!tabId) {
+  let nextTabId: number | null = playbackState.currentTabId;
+  if (!nextTabId) {
     const tab = await chrome.tabs.create({ url: url });
-    tabId = tab?.id;
+    nextTabId = tab?.id ?? null;
   } else {
     try {
-      await chrome.tabs.update(tabId, { url: url });
+      const tab = await chrome.tabs.update(nextTabId, { url: url });
+      nextTabId = tab?.id ?? nextTabId;
     } catch (exception) {
       const tab = await chrome.tabs.create({ url: url });
-      tabId = tab?.id;
+      nextTabId = tab?.id ?? null;
     }
   }
-  isPIP = false; //stop picture in picture for new video
+  applyPlaybackEvent({ type: "TAB_UPDATED", tabId: nextTabId });
+  applyPlaybackEvent({ type: "EXIT_PIP" });
 };
 
-const onPlayVideo = async (item: MPlaylistItem) => {
-  /* If the item is playing/pause, send it a resume signal,
-     otherwise, open it by new/current tab */
-  const url = `${item.url}/?v=${item.videoId}${
-    item.timestamp ? "&t=" + item.timestamp : ""
-  }`;
-  if (item.id === playingItem?.id) {
+const sendSignalAsync = async (
+  type: csMsgType,
+  fallback?: () => Promise<void>,
+  extraMessage?: Record<string, unknown>,
+) => {
+  const tabId = playbackState.currentTabId;
+  if (tabId) {
+    return new Promise((resolve) => {
+      chrome.tabs.sendMessage(
+        tabId,
+        { type, ...extraMessage },
+        async () => {
+          if (chrome.runtime.lastError && fallback) {
+            await fallback();
+          }
+          resolve("ok");
+        },
+      );
+    });
+  }
+  if (fallback) {
+    await fallback();
+  }
+};
+
+const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") => {
+  const url = getUrlForItem(item);
+  const isCurrentItem = item.id === playbackState.currentItemId;
+
+  playingItem = item;
+  applyPlaybackEvent({ type: "PLAY_ITEM", item, queueMode });
+
+  if (
+    isCurrentItem &&
+    (playbackState.status === "playing" || playbackState.status === "paused")
+  ) {
     await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
-      //if cannot resume the video, restart the page again
+      applyPlaybackEvent({ type: "PLAY_ITEM", item, queueMode });
       await openTab(url);
     });
-    isPlaying = true;
     return;
   }
-  playingItem = item;
+
   await openTab(url);
-  isPlaying = true;
 };
 
-const playNext = async () => {
-  /* load the youtube list from youtube storage
-  find next item from the list and pass it to play  */
-  const items = await getStorage("youtube_list");
-  const playlist = (items || []) as MPlaylistItem[];
+const playNext = async (queueMode: QueueMode = playbackState.queueMode) => {
+  const playlist = await getPlaylist();
   if (playlist.length === 0) {
-    await resetInitial();
+    resetPlaybackState();
     return;
   }
-  let item;
-  if (isRandom) {
+
+  let item: MPlaylistItem;
+  if (queueMode === "random") {
     item = playlist[getRandomInt(playlist.length)];
-  } else if (!!playingItem) {
+  } else if (playingItem) {
     const currentIndex = playlist.findIndex(
-      (item) => item.id === playingItem?.id,
+      (playlistItem) => playlistItem.id === playingItem?.id,
     );
     const nextIndex = (currentIndex + 1) % playlist.length;
     item = playlist[nextIndex];
   } else {
     item = playlist[0];
   }
-  await onPlayVideo(item);
+
+  await onPlayVideo(item, queueMode);
 };
 
-const onPlayAll = async () => {
-  /* trigger the play all function
-  if it already playing something, it will update the flag only
-  otherwise, it will signal the page to resume playing
-  if the tab cannot resume (e.g. the tab has been closed), it will run fallback
-  to play the playlist   */
-  isPlayAll = true;
-  if (!isPlaying) {
-    await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
-      //if no playing item record, it will reloop the playlist
-      if (!playingItem) {
-        await playNext();
-        return;
-      }
-      //if there is playing item, it will start playing the playing item again
-      const items = await getStorage("youtube_list");
-      const playlist = (items || []) as MPlaylistItem[];
-      if (playlist.length === 0) {
-        await resetInitial();
-        return;
-      }
-      let item;
-      const currentIndex = playlist.findIndex(
-        (item) => item.id === playingItem?.id,
-      );
-      item = currentIndex === -1 ? playlist[0] : playlist[currentIndex];
-      onPlayVideo(item);
-    });
-    isPlaying = true;
+const onPlayAll = async (queueMode: Exclude<QueueMode, "off">) => {
+  applyPlaybackEvent({ type: "PLAY_ALL", queueMode });
+
+  if (playbackState.status === "playing" && playbackState.currentItemId) {
+    return;
   }
-};
 
-const onPauseVideo = async () => {
-  isPlaying = false;
-  await sendSignalAsync(csMsgType.PauseYoutubeVideo, resetInitial);
-};
-
-const onPauseAll = async () => {
-  isPlayAll = false;
-  isRandom = false;
-  await onPauseVideo();
-};
-
-const sendSignalAsync = async (
-  type: csMsgType,
-  fallback?: () => Promise<void>,
-) => {
-  /* if there is tab, try to send it signal
-     if there is no tab id or tab return error, call the fallback method if any */
-  const tab_id = tabId;
-  if (tab_id) {
-    return new Promise((resolve, reject) => {
-      chrome.tabs.sendMessage(tab_id, { type: type }, async (response) => {
-        if (chrome.runtime.lastError) {
-          if (fallback) {
-            await fallback();
-          }
-        }
-        resolve("ok");
-      });
-    });
-  } else {
-    if (fallback) {
-      await fallback();
-    }
+  const currentItem = await getCurrentItem();
+  if (!currentItem) {
+    await playNext(queueMode);
+    return;
   }
-};
 
-const onVideoEnd = async () => {
-  isPlaying = false;
-  if (isPlayAll) {
-    await playNext();
-  }
-};
-
-const updateStateToLocalStorage = () => {
-  chrome.storage.local.set({
-    tabId: tabId,
-    playingItem: playingItem,
-    isPlaying: isPlaying,
-    isPlayAll: isPlayAll,
-    isPIP: isPIP,
-    isRandom: isRandom,
-    enablePin: enablePin,
-    enableAdjustVideoVolume: enableAdjustVideoVolume,
+  await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
+    await onPlayVideo(currentItem, queueMode);
   });
 };
 
+const onPauseVideo = async () => {
+  applyPlaybackEvent({ type: "PAUSE" });
+  await sendSignalAsync(csMsgType.PauseYoutubeVideo, async () => {
+    resetPlaybackState();
+  });
+};
+
+const onPauseAll = async () => {
+  await sendSignalAsync(csMsgType.PauseYoutubeVideo, async () => {
+    resetPlaybackState();
+  });
+  resetPlaybackState();
+};
+
+const onVideoEnd = async () => {
+  const queueMode = playbackState.queueMode;
+  applyPlaybackEvent({ type: "VIDEO_ENDED" });
+  if (queueMode === "off") {
+    playingItem = null;
+    return;
+  }
+  await playNext(queueMode);
+};
+
 const deleteVideo = async (id: string) => {
-  const items = await getStorage("youtube_list");
-  const playlist = (items || []) as MPlaylistItem[];
+  const playlist = await getPlaylist();
   const newPlaylist = playlist.filter((item) => item.id !== id);
   await chrome.storage.sync.set({
     youtube_list: newPlaylist,
   });
 };
+
 const onMessageHandler = async (message: any) => {
   console.log("on Message Handler", message);
   switch (message.name) {
@@ -179,21 +211,19 @@ const onMessageHandler = async (message: any) => {
       await onPauseVideo();
       break;
     case MsgType.PlayAll:
-      isRandom = false;
-      await onPlayAll();
+      await onPlayAll("sequential");
       break;
     case MsgType.PlayAllRandom:
-      isRandom = true;
-      await onPlayAll();
+      await onPlayAll("random");
       break;
     case MsgType.PauseAll:
       await onPauseAll();
       break;
     case MsgType.VideoPlayEvent:
-      isPlaying = true;
+      applyPlaybackEvent({ type: "VIDEO_PLAYING" });
       break;
     case MsgType.VideoPauseEvent:
-      isPlaying = false;
+      applyPlaybackEvent({ type: "VIDEO_PAUSED" });
       break;
     case MsgType.VideoEnd:
       await onVideoEnd();
@@ -202,29 +232,29 @@ const onMessageHandler = async (message: any) => {
       await deleteVideo(message.item.id);
       break;
     case MsgType.OpenPictureInWindow:
-      if (tabId) {
+      if (playbackState.currentTabId) {
         chrome.scripting.executeScript({
           files: ["/openPictureInWindow.js"],
-          target: { tabId: tabId, allFrames: true },
+          target: { tabId: playbackState.currentTabId, allFrames: true },
         });
       }
       break;
     case MsgType.EnterPip:
-      isPIP = true;
+      applyPlaybackEvent({ type: "ENTER_PIP" });
       break;
     case MsgType.ExitPip:
-      isPIP = false;
+      applyPlaybackEvent({ type: "EXIT_PIP" });
       break;
     case MsgType.TogglePin:
-      enablePin = !enablePin;
+      applyPlaybackEvent({ type: "TOGGLE_PIN" });
       break;
     case MsgType.ToggleVolumeAdjust:
-      enableAdjustVideoVolume = !enableAdjustVideoVolume;
+      applyPlaybackEvent({ type: "TOGGLE_VOLUME_ADJUST" });
       break;
     case MsgType.VolumeChange:
-      if (tabId) {
+      if (playbackState.currentTabId) {
         chrome.tabs.sendMessage(
-          tabId,
+          playbackState.currentTabId,
           {
             type: csMsgType.VolumeChange,
             volume: message.volume,
@@ -241,20 +271,33 @@ const onMessageHandler = async (message: any) => {
   }
 };
 
-const resetInitial = async () => {
-  playingItem = null;
-  tabId = undefined;
-  isPlayAll = false;
-  isPlaying = false;
-  isPIP = false;
-  isRandom = false;
-};
+const getLegacyPlaybackState = (result: {
+  [key: string]: any;
+}): PlaybackState => ({
+  status: result["isPlaying"]
+    ? "playing"
+    : result["playingItem"]
+      ? "paused"
+      : "idle",
+  queueMode: result["isRandom"]
+    ? "random"
+    : result["isPlayAll"]
+      ? "sequential"
+      : "off",
+  currentItemId: result["playingItem"]?.id ?? null,
+  currentTabId: result["tabId"] ?? null,
+  isPip: !!result["isPIP"],
+  enablePin: !!result["enablePin"],
+  enableAdjustVideoVolume:
+    result["enableAdjustVideoVolume"] === undefined
+      ? true
+      : !!result["enableAdjustVideoVolume"],
+});
 
 (function () {
-  // In case the background script restart, it will detect whether the tab still exist,
-  // if no, reset the state
   chrome.storage.local.get(
     [
+      "playbackState",
       "tabId",
       "isPlaying",
       "isPlayAll",
@@ -265,27 +308,26 @@ const resetInitial = async () => {
       "enableAdjustVideoVolume",
     ],
     (result) => {
-      tabId = result["tabId"];
-      isPlaying = result["isPlaying"];
-      isPlayAll = result["isPlayAll"];
-      playingItem = result["playingItem"];
-      isPIP = result["isPIP"];
-      isRandom = result["isRandom"];
-      enablePin = result["enablePin"];
-      enableAdjustVideoVolume = result["enableAdjustVideoVolume"];
-      if (!tabId) {
-        resetInitial();
+      playbackState = result["playbackState"]
+        ? {
+            ...createInitialPlaybackState(),
+            ...result["playbackState"],
+          }
+        : getLegacyPlaybackState(result);
+      playingItem = result["playingItem"] || null;
+      if (!playbackState.currentTabId) {
+        resetPlaybackState();
         updateStateToLocalStorage();
         return;
       }
       chrome.tabs.sendMessage(
-        tabId,
+        playbackState.currentTabId,
         {
           type: csMsgType.CheckExists,
         },
-        (response) => {
+        () => {
           if (chrome.runtime.lastError) {
-            resetInitial();
+            resetPlaybackState();
             updateStateToLocalStorage();
           }
         },
@@ -299,13 +341,14 @@ const resetInitial = async () => {
     });
   });
 
-  const sendMessageToYoutubeTab = (
+  const sendMessageToYoutubeTab = async (
     tabId: number,
     url: string,
     videoId: string | null,
     isPlayTab: boolean,
     count: number,
   ) => {
+    const currentItem = await getCurrentItem();
     console.log("send Message to yt", count);
     chrome.tabs.sendMessage(
       tabId,
@@ -314,51 +357,47 @@ const resetInitial = async () => {
         url: url,
         videoId: videoId,
         isPlayTab: isPlayTab,
-        endTimestamp: isPlayTab && playingItem?.endTimestamp,
-        enablePin: enablePin,
-        volume: isPlayTab && enableAdjustVideoVolume && playingItem?.volume,
+        endTimestamp: isPlayTab ? currentItem?.endTimestamp : undefined,
+        enablePin: playbackState.enablePin,
+        volume:
+          isPlayTab && playbackState.enableAdjustVideoVolume
+            ? currentItem?.volume
+            : false,
       },
       () => {
-        if (count >= 4) return; //if still error after 4 times, give up
+        if (count >= 4) return;
         if (chrome.runtime.lastError) {
           console.log(2, chrome.runtime.lastError);
           setTimeout(() => {
-            sendMessageToYoutubeTab(tabId, url, videoId, isPlayTab, count + 1);
+            void sendMessageToYoutubeTab(tabId, url, videoId, isPlayTab, count + 1);
           }, 500);
         }
       },
     );
   };
 
-  //use webNavigation.onHistoryStateUpdated instead of tab.onUpdated
-  //https://stackoverflow.com/questions/36808309/chrome-extension-page-update-twice-then-removed-on-youtube/36818991#36818991
   chrome.webNavigation.onHistoryStateUpdated.addListener((detail) => {
     if (detail.url && detail.url.includes("youtube.com/watch")) {
       const query: string = detail.url.split("?")[1];
       const params: URLSearchParams = new URLSearchParams(query);
       const videoId = params.get("v");
-      const isPlayTab = tabId === detail.tabId;
-      console.log(tabId, " ", detail.tabId);
+      const isPlayTab = playbackState.currentTabId === detail.tabId;
+      console.log(playbackState.currentTabId, " ", detail.tabId);
       if (!videoId) return;
       if (isPlayTab && playingItem?.videoId !== videoId) {
         console.log("unknown video id ", videoId, " ", playingItem);
         return;
-      } else {
-        console.log("Seems good ", playingItem);
-        sendMessageToYoutubeTab(
-          detail.tabId,
-          detail.url,
-          videoId,
-          isPlayTab,
-          0,
-        );
       }
+      console.log("Seems good ", playingItem);
+      void sendMessageToYoutubeTab(detail.tabId, detail.url, videoId, isPlayTab, 0);
     }
   });
 
-  chrome.tabs.onRemoved.addListener((tabId1, tab) => {
-    if (tabId1 === tabId) {
-      resetInitial();
+  chrome.tabs.onRemoved.addListener((tabId) => {
+    const previousState = playbackState;
+    applyPlaybackEvent({ type: "TAB_REMOVED", tabId });
+    if (previousState.currentTabId === tabId) {
+      playingItem = null;
       updateStateToLocalStorage();
     }
   });

@@ -183,12 +183,7 @@ Current keys:
 
 ## Improvement Checklist
 
-- [x] add deduplication or update-in-place when saving the same video twice
-- [x] validate imported playlist JSON more safely
-- [ ] add lightweight tests around playlist transforms and playback sequencing
-- [ ] isolate YouTube DOM selectors into one module
-- [ ] make the playback state machine more explicit
-- [ ] consider migrating the markdown file name to `AGENTS.md` later if you want broader tool compatibility
+The active checklist now lives in `CHECKLIST.md` so feature planning stays separate from the agent guide.
 
 ## Working Assumptions For Future Agents
 

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import MPlaylistItem from "../../models/MPlaylistItem";
+import PlaybackState, {
+  createInitialPlaybackState,
+  isPlaybackActive,
+} from "../../models/PlaybackState";
 import { getStorage } from "../../utils/syncStorage";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
@@ -21,6 +25,12 @@ const Playlist = () => {
     undefined
   ); //for opening the info modal
 
+  const syncPlaybackState = (state?: PlaybackState | null) => {
+    const nextState = state || createInitialPlaybackState();
+    setPlayingIndex(nextState.currentItemId || undefined);
+    setPlaying(isPlaybackActive(nextState.status));
+  };
+
   useEffect(() => {
     const getPlaylist = async () => {
       const list = ((await getStorage("youtube_list")) ||
@@ -31,7 +41,11 @@ const Playlist = () => {
   }, []);
 
   useEffect(() => {
-    chrome.storage.local.get(["isPlaying", "playingItem"], (result) => {
+    chrome.storage.local.get(["playbackState", "isPlaying", "playingItem"], (result) => {
+      if (result["playbackState"]) {
+        syncPlaybackState(result["playbackState"]);
+        return;
+      }
       if (result["playingItem"]) setPlayingIndex(result["playingItem"]?.id);
       if (result["isPlaying"]) setPlaying(result["isPlaying"]);
     });
@@ -42,6 +56,9 @@ const Playlist = () => {
       changes: { [key: string]: chrome.storage.StorageChange },
       namespace: "sync" | "local" | "managed" | "session"
     ) => {
+      if ("playbackState" in changes) {
+        syncPlaybackState(changes["playbackState"].newValue);
+      }
       if ("playingItem" in changes) {
         setPlayingIndex(changes["playingItem"].newValue?.id);
       }
