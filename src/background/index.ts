@@ -63,7 +63,7 @@ const playNext = async () => {
     item = playlist[getRandomInt(playlist.length)];
   } else if (!!playingItem) {
     const currentIndex = playlist.findIndex(
-      (item) => item.id === playingItem?.id
+      (item) => item.id === playingItem?.id,
     );
     const nextIndex = (currentIndex + 1) % playlist.length;
     item = playlist[nextIndex];
@@ -96,25 +96,13 @@ const onPlayAll = async () => {
       }
       let item;
       const currentIndex = playlist.findIndex(
-        (item) => item.id === playingItem?.id
+        (item) => item.id === playingItem?.id,
       );
       item = currentIndex === -1 ? playlist[0] : playlist[currentIndex];
       onPlayVideo(item);
     });
     isPlaying = true;
   }
-};
-
-const findPlayingItem = async (videoId: string) => {
-  const items = await getStorage("youtube_list");
-  const playlist = (items || []) as MPlaylistItem[];
-  if (playlist.length === 0) {
-    return undefined;
-  }
-  let item;
-  const currentIndex = playlist.findIndex((item) => item.id === videoId);
-  item = currentIndex === -1 ? undefined : playlist[currentIndex];
-  return item;
 };
 
 const onPauseVideo = async () => {
@@ -130,7 +118,7 @@ const onPauseAll = async () => {
 
 const sendSignalAsync = async (
   type: csMsgType,
-  fallback?: () => Promise<void>
+  fallback?: () => Promise<void>,
 ) => {
   /* if there is tab, try to send it signal
      if there is no tab id or tab return error, call the fallback method if any */
@@ -245,7 +233,7 @@ const onMessageHandler = async (message: any) => {
             if (chrome.runtime.lastError) {
               console.log(1, chrome.runtime.lastError);
             }
-          }
+          },
         );
       }
       break;
@@ -300,9 +288,9 @@ const resetInitial = async () => {
             resetInitial();
             updateStateToLocalStorage();
           }
-        }
+        },
       );
-    }
+    },
   );
 
   chrome.runtime.onMessage.addListener(function (message) {
@@ -316,7 +304,7 @@ const resetInitial = async () => {
     url: string,
     videoId: string | null,
     isPlayTab: boolean,
-    count: number
+    count: number,
   ) => {
     console.log("send Message to yt", count);
     chrome.tabs.sendMessage(
@@ -338,7 +326,7 @@ const resetInitial = async () => {
             sendMessageToYoutubeTab(tabId, url, videoId, isPlayTab, count + 1);
           }, 500);
         }
-      }
+      },
     );
   };
 
@@ -362,25 +350,8 @@ const resetInitial = async () => {
           detail.url,
           videoId,
           isPlayTab,
-          0
+          0,
         );
-        // chrome.tabs.sendMessage(
-        //   detail.tabId,
-        //   {
-        //     type: csMsgType.OnYoutubeVideoPage,
-        //     url: detail.url.split("?")[0],
-        //     videoId: videoId,
-        //     isPlayTab: isPlayTab,
-        //     endTimestamp: isPlayTab && playingItem?.endTimestamp,
-        //     enablePin: enablePin,
-        //     volume: isPlayTab && enableAdjustVideoVolume && playingItem?.volume,
-        //   },
-        //   () => {
-        //     if (chrome.runtime.lastError) {
-        //       console.log(2, chrome.runtime.lastError);
-        //     }
-        //   }
-        // );
       }
     }
   });
