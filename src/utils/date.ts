@@ -24,7 +24,7 @@ export const getHourMinuteSecond = (
   duration: number,
   isSecondWithLeadingZero: boolean
 ) => {
-  if (duration === NaN) {
+  if (Number.isNaN(duration)) {
     return [0, 0, 0];
   }
 
