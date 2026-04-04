@@ -109,7 +109,7 @@ const onYoutubeVideoPage = (
     //Add a + button to the youtube control button group, it will open the dialog
     const bookmarkBtn = document.createElement("button");
     bookmarkBtn.style.cssText =
-      "position: relative; font-size: 36px; height: 100%; text-align: center;top:calc(36px - 100%);left:0;";
+      "position: relative; display:flex; align-items:center; justify-content:center; font-size:36px; height:100%; line-height:1; padding:0 8px; left:0;";
     bookmarkBtn.className = "ytp-button bookmark-button";
     bookmarkBtn.innerText = "+";
     bookmarkBtn.title = "Click to open bookmark dialog";
