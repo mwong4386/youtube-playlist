@@ -3,16 +3,20 @@
     width: 100%;
     bottom:0;
     left:0;
-    padding: 0;
+    padding: 0 0 16px;
     background-color: rgba(255,255,255,1);
     cursor: pointer;
     z-index: 1000;
-    margin-bottom: -600px;
-    transition: .3s ease-in-out;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(100%);
+    transition: transform .3s ease-in-out, opacity .3s ease-in-out;
 }
 
 .container.active{
-    margin-bottom: 0;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 
 .row{
@@ -27,11 +31,14 @@
     width: 100%;
     bottom:0;
     left:0;
-    margin-bottom: -600px;
     background-color: rgba(0,0,0,0.25);
     z-index: 900;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease-in-out;
 }
 
 .backdrop.active{
-    margin-bottom: 0;
+    opacity: 1;
+    pointer-events: auto;
 }

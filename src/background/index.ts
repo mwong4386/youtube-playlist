@@ -295,6 +295,14 @@ const getLegacyPlaybackState = (result: {
 });
 
 (function () {
+  if (chrome.sidePanel?.setPanelBehavior) {
+    chrome.sidePanel
+      .setPanelBehavior({ openPanelOnActionClick: true })
+      .catch((error) => {
+        console.warn("Failed to enable side panel action behavior", error);
+      });
+  }
+
   chrome.storage.local.get(
     [
       "playbackState",

@@ -3,10 +3,12 @@
     "description": "This extension is made for demonstration purposes",
     "version": "1.0",
     "manifest_version": 3,
-    "permissions": ["storage", "tabs","scripting","downloads","webNavigation"],
+    "permissions": ["storage", "tabs","scripting","downloads","webNavigation","sidePanel"],
     "action": {
-        "default_popup": "index.html",
         "default_title":"Youtube playlist"
+    },
+    "side_panel": {
+        "default_path": "index.html"
     },
    "background":{
       "service_worker":"./static/js/background.js"

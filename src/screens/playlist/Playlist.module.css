@@ -66,10 +66,13 @@
 .header-container {
   display: flex;
   flex-direction: row;
-  height: 30px;
+  height: 42px;
   top: 0;
   position: fixed;
   width: 100%;
+  box-sizing: border-box;
+  background-color: white;
+  z-index: 1;
 }
 .header-left-container {
   flex: 1;
@@ -78,7 +81,7 @@
   flex: 1;
 }
 .empty-container {
-  height: 250px;
+  min-height: calc(100vh - 42px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,8 +94,8 @@
 
 .playlist-container {
   padding: 0;
-  margin-top: 38px;
-  max-height: 562px;
+  margin-top: 42px;
+  height: calc(100vh - 42px);
   overflow-y: scroll;
 }
 
