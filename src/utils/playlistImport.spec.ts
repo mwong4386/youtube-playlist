@@ -22,6 +22,9 @@ test("parseImportedPlaylist accepts a valid playlist and normalizes values", () 
         endTimestamp: 48.2,
         maxDuration: 60.7,
         volume: 104.4,
+        audioEq: {
+          preset: "bassBoost",
+        },
       },
     ])
   );
@@ -38,8 +41,34 @@ test("parseImportedPlaylist accepts a valid playlist and normalizes values", () 
       endTimestamp: 48,
       maxDuration: 60,
       volume: 100,
+      audioEq: {
+        preset: "bassBoost",
+      },
     },
   ]);
+});
+
+test("parseImportedPlaylist fills in default eq settings for old playlists", () => {
+  const result = parseImportedPlaylist(
+    JSON.stringify([
+      {
+        id: "legacy",
+        title: "Song",
+        channelName: "Channel",
+        url: "https://youtube.com/watch?v=123",
+        videoId: "123",
+        timestamp: 12,
+        endTimestamp: 48,
+        maxDuration: 60,
+        volume: 40,
+      },
+    ])
+  );
+
+  expectEqual(result.error, undefined);
+  expectEqual(result.playlist?.[0]?.audioEq, {
+    preset: "flat",
+  });
 });
 
 test("parseImportedPlaylist rejects non-array JSON payloads", () => {

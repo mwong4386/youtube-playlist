@@ -74,6 +74,9 @@ export const getVolumeInput = () => getById<HTMLInputElement>("cs-volume");
 
 export const getVolumeText = () => getById<HTMLElement>("cs-volume-text");
 
+export const getEqPresetInput = () =>
+  getById<HTMLSelectElement>("cs-eq-preset");
+
 export const getVideoTitleElement = () => getById<HTMLElement>("cs-video-title");
 
 export const getChannelNameElement = () => getById<HTMLElement>("cs-channel-name");

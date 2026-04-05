@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseImportedPlaylist = void 0;
+const audioEq_1 = require("./audioEq");
 const isRecord = (value) => {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 };
@@ -22,7 +23,7 @@ const parsePlaylistItem = (value, index, usedIds) => {
             error: `Item ${index + 1} must be a JSON object.`,
         };
     }
-    const { id, title, channelName, url, videoId, timestamp, endTimestamp, maxDuration, volume, } = value;
+    const { id, title, channelName, url, videoId, timestamp, endTimestamp, maxDuration, volume, audioEq, } = value;
     if (!isNonEmptyString(title)) {
         return {
             error: getItemError(index, "title", "expected a non-empty string"),
@@ -94,6 +95,7 @@ const parsePlaylistItem = (value, index, usedIds) => {
                 : Math.min(Math.floor(endTimestamp), Math.floor(maxDuration)),
             maxDuration: Math.floor(maxDuration),
             volume: clamp(Math.round(volume), 0, 100),
+            audioEq: (0, audioEq_1.normalizeAudioEqSettings)(isRecord(audioEq) ? audioEq : audioEq_1.DEFAULT_AUDIO_EQ_SETTINGS),
         },
     };
 };

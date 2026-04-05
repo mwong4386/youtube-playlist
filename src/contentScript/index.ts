@@ -1,6 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
+import AudioEqSettings from "../models/AudioEq";
+import {
+  DEFAULT_AUDIO_EQ_SETTINGS,
+  normalizeAudioEqSettings,
+} from "../utils/audioEq";
 import MPlaylistItem from "../models/MPlaylistItem";
 import { getHourMinuteSecond } from "../utils/date";
 import {
@@ -23,6 +28,7 @@ import {
   getChannelNameFromPage,
   getConfirmButton,
   getDialog,
+  getEqPresetInput,
   getEndHourInput,
   getEndMinuteInput,
   getEndSecondInput,
@@ -46,8 +52,95 @@ export let _duration: number = NaN;
 let cleanupPlaybackHandlers: (() => void) | null = null;
 let cleanupVolumeEnforcer: (() => void) | null = null;
 let hasInjectedVolumeBridge = false;
+let audioContext: AudioContext | null = null;
+let currentEqVideo: HTMLVideoElement | null = null;
+let currentEqSource: MediaElementAudioSourceNode | null = null;
+let bassFilter: BiquadFilterNode | null = null;
+let trebleFilter: BiquadFilterNode | null = null;
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
+
+const ensureAudioEqGraph = (video: HTMLVideoElement) => {
+  if (
+    audioContext &&
+    currentEqVideo === video &&
+    currentEqSource &&
+    bassFilter &&
+    trebleFilter
+  ) {
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().catch(() => undefined);
+    }
+    return {
+      context: audioContext,
+      bassFilter,
+      trebleFilter,
+    };
+  }
+
+  if (!audioContext || audioContext.state === "closed") {
+    audioContext = new AudioContext();
+  }
+
+  if (audioContext.state === "suspended") {
+    void audioContext.resume().catch(() => undefined);
+  }
+
+  if (currentEqSource && currentEqVideo !== video) {
+    try {
+      currentEqSource.disconnect();
+    } catch (error) {
+      // Ignore disconnect errors when YouTube swaps media elements.
+    }
+  }
+
+  bassFilter = audioContext.createBiquadFilter();
+  bassFilter.type = "lowshelf";
+  bassFilter.frequency.value = 200;
+
+  trebleFilter = audioContext.createBiquadFilter();
+  trebleFilter.type = "highshelf";
+  trebleFilter.frequency.value = 2400;
+
+  currentEqSource = audioContext.createMediaElementSource(video);
+  currentEqSource.connect(bassFilter);
+  bassFilter.connect(trebleFilter);
+  trebleFilter.connect(audioContext.destination);
+  currentEqVideo = video;
+
+  return {
+    context: audioContext,
+    bassFilter,
+    trebleFilter,
+  };
+};
+
+const applyVideoEq = (
+  video: HTMLVideoElement,
+  settings?: AudioEqSettings | null,
+) => {
+  const normalizedSettings = normalizeAudioEqSettings(settings);
+  const graph = ensureAudioEqGraph(video);
+  if (!graph) {
+    return;
+  }
+
+  switch (normalizedSettings.preset) {
+    case "bassBoost":
+      graph.bassFilter.gain.value = 9;
+      graph.trebleFilter.gain.value = -1.5;
+      break;
+    case "trebleBoost":
+      graph.bassFilter.gain.value = -1.5;
+      graph.trebleFilter.gain.value = 7;
+      break;
+    case "flat":
+    default:
+      graph.bassFilter.gain.value = 0;
+      graph.trebleFilter.gain.value = 0;
+      break;
+  }
+};
 
 const ensureYoutubeVolumeBridge = () => {
   if (hasInjectedVolumeBridge) {
@@ -147,6 +240,7 @@ const onYoutubeVideoPage = (
   endTimestamp: number | undefined,
   enablePin: boolean,
   volume: number | false | undefined,
+  audioEq?: AudioEqSettings,
 ) => {
   const bookmark = getBookmarkButton();
   setStartTime(0);
@@ -216,6 +310,12 @@ const onYoutubeVideoPage = (
         getVolumeText().innerHTML = volume.value;
         applyVideoVolume(video, parseInt(volume.value));
       };
+      const eqPreset = getEqPresetInput();
+      eqPreset.onchange = () => {
+        applyVideoEq(video, {
+          preset: eqPreset.value as AudioEqSettings["preset"],
+        });
+      };
     });
     //Add a + button to the youtube control button group, it will open the dialog
     const bookmarkBtn = document.createElement("button");
@@ -261,6 +361,7 @@ const onYoutubeVideoPage = (
     if (volume !== undefined && volume !== false) {
       applyVideoVolume(video, volume);
     }
+    applyVideoEq(video, audioEq);
     //Register different event handler to notify the status of the video
     let isEnd = false;
     const timeupdateHandler = () => {
@@ -373,6 +474,7 @@ const onCSOpenDialogClickHandler = () => {
   const volumeRate = Math.floor(video.volume * 100).toString();
   getVolumeInput().value = volumeRate;
   getVolumeText().innerHTML = volumeRate;
+  getEqPresetInput().value = DEFAULT_AUDIO_EQ_SETTINGS.preset;
 
   const timestamp = getStartTime();
   const [hours, minutes, seconds] = getHourMinuteSecond(timestamp, false);
@@ -417,6 +519,9 @@ const onBookmarkSave = (url: string, videoId: string) => {
   const title = getVideoTitleElement().innerHTML;
   const channelName = getChannelNameElement().innerHTML;
   const volume = parseInt(getVolumeInput().value);
+  const audioEq = normalizeAudioEqSettings({
+    preset: getEqPresetInput().value as AudioEqSettings["preset"],
+  });
   const untilEnd = getUntilEndInput().checked;
   let endTimestamp: number | undefined = undefined;
 
@@ -449,6 +554,7 @@ const onBookmarkSave = (url: string, videoId: string) => {
     endTimestamp, // undefined mean until to end
     maxDuration,
     volume,
+    audioEq,
   };
 
   chrome.storage.sync.get("youtube_list", (result) => {
@@ -492,6 +598,10 @@ const onVolumeChange = (volume: number) => {
   const video = getYoutubePlayer();
   applyVideoVolume(video, Number(volume));
 };
+const onAudioEqChange = (audioEq?: AudioEqSettings) => {
+  const video = getYoutubePlayer();
+  applyVideoEq(video, audioEq);
+};
 const clearErrorMsg = () => {
   getErrorContainer()?.replaceChildren();
 };
@@ -507,7 +617,7 @@ const disableEndTimeGroup = (disable: boolean) => {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type, url, videoId, isPlayTab, endTimestamp, enablePin, volume } =
+  const { type, url, videoId, isPlayTab, endTimestamp, enablePin, volume, audioEq } =
     request;
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
@@ -520,6 +630,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           endTimestamp,
           enablePin,
           volume,
+          audioEq,
         );
       }
       break;
@@ -533,6 +644,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case csMsgType.VolumeChange:
       onVolumeChange(volume);
+      break;
+    case csMsgType.AudioEqChange:
+      onAudioEqChange(audioEq);
       break;
     default:
   }
@@ -570,6 +684,7 @@ The self invocation function ensure those case will still have someone to handle
       false,
       undefined,
       enablePin,
+      undefined,
       undefined,
     );
   });

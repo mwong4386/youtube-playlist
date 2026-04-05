@@ -11,6 +11,7 @@ export const DEV_PLAYLIST: MPlaylistItem[] = [
     endTimestamp: 203,
     maxDuration: 213,
     volume: 75,
+    audioEq: { preset: "flat" },
   },
   {
     id: "50047082-182e-4584-93b4-b7110d7c8b16",
@@ -22,5 +23,6 @@ export const DEV_PLAYLIST: MPlaylistItem[] = [
     endTimestamp: undefined,
     maxDuration: 250,
     volume: 92,
+    audioEq: { preset: "bassBoost" },
   },
 ];

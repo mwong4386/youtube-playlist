@@ -12,6 +12,7 @@ const enum MsgType {
   TogglePin,
   ToggleVolumeAdjust,
   VolumeChange,
+  AudioEqChange,
   EnterPip,
   ExitPip,
 }

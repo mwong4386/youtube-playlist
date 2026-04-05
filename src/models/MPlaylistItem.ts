@@ -1,3 +1,5 @@
+import AudioEqSettings from "./AudioEq";
+
 interface MPlaylistItem {
   id: string;
   title: string;
@@ -8,6 +10,7 @@ interface MPlaylistItem {
   endTimestamp: number | undefined;
   maxDuration: number;
   volume: number;
+  audioEq: AudioEqSettings;
 }
 
 export default MPlaylistItem;

@@ -4,6 +4,7 @@ const enum csMsgType {
   PauseYoutubeVideo,
   CheckExists,
   VolumeChange,
+  AudioEqChange,
 }
 
 export default csMsgType;

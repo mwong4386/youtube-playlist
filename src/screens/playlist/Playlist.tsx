@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AudioEqSettings from "../../models/AudioEq";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import PlaybackState, {
   createInitialPlaybackState,
@@ -113,13 +114,15 @@ const Playlist = () => {
     id: string,
     timestamp: number,
     endTimestamp: number | undefined,
-    volume: number
+    volume: number,
+    audioEq: AudioEqSettings
   ) => {
     const item = playlist.find((x) => x.id === id);
     if (!item) return;
     item.timestamp = timestamp;
     item.endTimestamp = endTimestamp;
     item.volume = volume;
+    item.audioEq = audioEq;
     chrome.storage.sync.set({
       youtube_list: playlist,
     });
@@ -145,6 +148,16 @@ const Playlist = () => {
       chrome.runtime.sendMessage({
         name: MsgType.VolumeChange,
         volume: event.currentTarget.value,
+      });
+    }
+  };
+  const onAudioEqChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (playing && selectItemId === playingId) {
+      chrome.runtime.sendMessage({
+        name: MsgType.AudioEqChange,
+        audioEq: {
+          preset: event.currentTarget.value,
+        },
       });
     }
   };
@@ -182,6 +195,7 @@ const Playlist = () => {
               setSelectItemId(undefined);
             }}
             onvolumechange={onvolumechange}
+            onAudioEqChange={onAudioEqChange}
             save={onSave}
             item={playlist.find((x) => x.id === selectItemId)}
           />

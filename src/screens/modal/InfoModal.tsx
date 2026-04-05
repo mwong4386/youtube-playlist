@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import AudioEqSettings from "../../models/AudioEq";
 import MPlaylistItem from "../../models/MPlaylistItem";
+import {
+  AUDIO_EQ_PRESET_LABELS,
+  DEFAULT_AUDIO_EQ_SETTINGS,
+} from "../../utils/audioEq";
 import Modal from "./Modal";
 import styles from "./Modal.module.css";
 
@@ -11,9 +16,11 @@ interface props {
     id: string,
     timestamp: number,
     endTimestamp: number | undefined,
-    volume: number
+    volume: number,
+    audioEq: AudioEqSettings
   ) => void;
   onvolumechange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onAudioEqChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   item: MPlaylistItem | undefined;
 }
 interface infoModels {
@@ -25,11 +32,19 @@ interface infoModels {
   endSeconds: number;
   untilEnd: boolean;
   volume: number;
+  eqPreset: AudioEqSettings["preset"];
 }
 
 const toNumber = (value: number) => Number(value) || 0;
 
-const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
+const InfoModal = ({
+  item,
+  active,
+  onvolumechange,
+  onAudioEqChange,
+  save,
+  close,
+}: props) => {
   const {
     register,
     handleSubmit,
@@ -47,6 +62,7 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
       endSeconds: 0,
       untilEnd: false,
       volume: 0,
+      eqPreset: DEFAULT_AUDIO_EQ_SETTINGS.preset,
     },
   });
 
@@ -75,6 +91,7 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
         endSeconds: endSeconds,
         untilEnd: !item.endTimestamp,
         volume: item.volume,
+        eqPreset: item.audioEq?.preset || DEFAULT_AUDIO_EQ_SETTINGS.preset,
       });
     } else {
       reset();
@@ -95,7 +112,9 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
       data.untilEnd || temp_endtimestamp > (item?.maxDuration as number)
         ? undefined
         : temp_endtimestamp;
-    save(item?.id as string, timestamp, endtimestamp, data.volume);
+    save(item?.id as string, timestamp, endtimestamp, data.volume, {
+      preset: data.eqPreset,
+    });
     close();
   };
   return (
@@ -269,6 +288,25 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
             <span id="cs-volume-text" className={styles["volume-text"]}>
               {watch("volume")}
             </span>
+          </div>
+          <div className={styles["eq-container"]}>
+            <label className={styles["eq-label"]} htmlFor="eq-preset">
+              EQ
+            </label>
+            <select
+              id="eq-preset"
+              className={styles["eq-select"]}
+              {...register("eqPreset", {
+                required: true,
+                onChange: onAudioEqChange,
+              })}
+            >
+              {Object.entries(AUDIO_EQ_PRESET_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </form>

@@ -1,3 +1,7 @@
+import {
+  DEFAULT_AUDIO_EQ_SETTINGS,
+  normalizeAudioEqSettings,
+} from "./audioEq";
 import MPlaylistItem from "../models/MPlaylistItem";
 
 interface ParsePlaylistImportResult {
@@ -51,6 +55,7 @@ const parsePlaylistItem = (
     endTimestamp,
     maxDuration,
     volume,
+    audioEq,
   } = value;
 
   if (
@@ -151,6 +156,9 @@ const parsePlaylistItem = (
           : Math.min(Math.floor(endTimestamp), Math.floor(maxDuration)),
       maxDuration: Math.floor(maxDuration),
       volume: clamp(Math.round(volume), 0, 100),
+      audioEq: normalizeAudioEqSettings(
+        isRecord(audioEq) ? audioEq : DEFAULT_AUDIO_EQ_SETTINGS
+      ),
     },
   };
 };

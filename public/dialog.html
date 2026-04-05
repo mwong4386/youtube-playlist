@@ -79,6 +79,12 @@
     .cs-dialog-content{
         padding: 12px 24px;
     }
+    .cs-eq-select{
+        font-size: 16px;
+        padding: 4px 8px;
+        border: 2px solid #000;
+        background-color: white;
+    }
     .cs-dialog{
         opacity: 0.9;
         padding: 0;
@@ -135,6 +141,14 @@
                 <label class="cs-time-label">Volume</label>	
                 <input type="range" min="0" max="100" step="1" id="cs-volume" />	
                 <span id="cs-volume-text" class="cs-volume-text"></span>
+            </div>
+            <div class="cs-time-container">
+                <label class="cs-time-label" for="cs-eq-preset">EQ</label>
+                <select id="cs-eq-preset" class="cs-eq-select">
+                    <option value="flat">Flat</option>
+                    <option value="bassBoost">Bass Boost</option>
+                    <option value="trebleBoost">Treble Boost</option>
+                </select>
             </div>
             <div class="cs-error-container">
             </div>
