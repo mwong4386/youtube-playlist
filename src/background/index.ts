@@ -278,11 +278,18 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.VolumeChange:
       if (playbackState.currentTabId) {
+        if (playingItem) {
+          playingItem = {
+            ...playingItem,
+            volume: Number(message.volume),
+          };
+          updateStateToLocalStorage();
+        }
         chrome.tabs.sendMessage(
           playbackState.currentTabId,
           {
             type: csMsgType.VolumeChange,
-            volume: message.volume,
+            volume: Number(message.volume),
           },
           () => {
             if (chrome.runtime.lastError) {
@@ -447,5 +454,20 @@ const getLegacyPlaybackState = (result: {
       playingItem = null;
       updateStateToLocalStorage();
     }
+  });
+
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace !== "sync" || !("youtube_list" in changes)) {
+      return;
+    }
+
+    const updatedPlaylist = (changes["youtube_list"].newValue || []) as MPlaylistItem[];
+    if (!playbackState.currentItemId) {
+      return;
+    }
+
+    playingItem =
+      updatedPlaylist.find((item) => item.id === playbackState.currentItemId) || null;
+    updateStateToLocalStorage();
   });
 })();

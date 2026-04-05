@@ -159,6 +159,13 @@ Current keys:
 - Built extension artifacts are emitted into `build/`.
 - Existing test coverage appears minimal.
 
+## Browser Validation
+
+- This repo includes a restricted browser-testing wrapper MCP at `tools/playwright-wrapper-mcp/`.
+- When browser validation is useful, prefer the `playwright-wrapper` MCP over any raw Playwright server.
+- The wrapper is intended to launch Brave with a disposable profile, load this extension from `build/`, and stay limited to YouTube pages plus `chrome-extension://*`.
+- If the wrapper is unavailable in the current session, explain that clearly instead of silently falling back to broader browser access.
+
 ## Important Constraints
 
 - This extension is tightly coupled to YouTube's DOM structure and class names.
@@ -190,3 +197,9 @@ The active checklist now lives in `CHECKLIST.md` so feature planning stays separ
 - The real project root is this folder, not the parent directory.
 - Favor small, targeted changes because the app relies on message passing and shared storage state.
 - Verify feature changes across popup, background, and content script together when the feature touches playback.
+
+## Workspace Boundary
+
+- Only read, write, or search inside this project folder unless the user explicitly asks for work outside it.
+- If work outside the project folder is truly necessary, ask the user in plain text first and explain why it is needed before taking any action.
+- Do not run broad home-directory or system-wide searches to discover config files or app settings without explicit user permission.

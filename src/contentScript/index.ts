@@ -44,6 +44,7 @@ import {
 let onCSConfirm: (e: Event) => any;
 export let _duration: number = NaN;
 let cleanupPlaybackHandlers: (() => void) | null = null;
+let cleanupVolumeEnforcer: (() => void) | null = null;
 
 const ensureVideoPlayback = (video: HTMLVideoElement) => {
   let attempts = 0;
@@ -67,6 +68,34 @@ const ensureVideoPlayback = (video: HTMLVideoElement) => {
 
     playVideo();
   }, 300);
+};
+
+const applyVideoVolume = (video: HTMLVideoElement, volume: number) => {
+  cleanupVolumeEnforcer?.();
+  cleanupVolumeEnforcer = null;
+
+  const nextVolume = volume / 100;
+  const enforceVolume = () => {
+    video.volume = nextVolume;
+    video.muted = nextVolume === 0;
+  };
+
+  enforceVolume();
+
+  const refreshIntervalId = window.setInterval(enforceVolume, 50);
+  video.addEventListener("volumechange", enforceVolume);
+
+  const timeoutId = window.setTimeout(() => {
+    window.clearInterval(refreshIntervalId);
+    video.removeEventListener("volumechange", enforceVolume);
+    enforceVolume();
+  }, 800);
+
+  cleanupVolumeEnforcer = () => {
+    window.clearInterval(refreshIntervalId);
+    window.clearTimeout(timeoutId);
+    video.removeEventListener("volumechange", enforceVolume);
+  };
 };
 
 const onYoutubeVideoPage = (
@@ -188,19 +217,7 @@ const onYoutubeVideoPage = (
     ensureVideoPlayback(video);
 
     if (volume !== undefined && volume !== false) {
-      // It need to compete with the youtube own handler
-      const volumeHandler = () => {
-        video.volume = volume / 100;
-      };
-      const refreshIntervalId = setInterval(volumeHandler, 50);
-      video.addEventListener("volumechange", volumeHandler);
-      video.volume = volume / 100;
-      setTimeout(() => {
-        //magic number...
-        clearInterval(refreshIntervalId);
-        video.removeEventListener("volumechange", volumeHandler);
-        video.volume = volume / 100;
-      }, 800);
+      applyVideoVolume(video, volume);
     }
     //Register different event handler to notify the status of the video
     let isEnd = false;
@@ -287,6 +304,8 @@ const onYoutubeVideoPage = (
     window.onbeforeunload = () => {
       cleanupPlaybackHandlers?.();
       cleanupPlaybackHandlers = null;
+      cleanupVolumeEnforcer?.();
+      cleanupVolumeEnforcer = null;
     };
   }
 };
@@ -426,7 +445,7 @@ const onPauseVideo = () => {
 };
 const onVolumeChange = (volume: number) => {
   const video = getYoutubePlayer();
-  video.volume = volume / 100;
+  applyVideoVolume(video, Number(volume));
 };
 const clearErrorMsg = () => {
   getErrorContainer()?.replaceChildren();
