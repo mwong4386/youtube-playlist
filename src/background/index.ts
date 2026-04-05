@@ -239,7 +239,12 @@ const onPauseAll = async () => {
   updateStateToLocalStorage();
 };
 
-const onVideoEnd = async () => {
+const onVideoEnd = async (videoId?: string) => {
+  const currentItem = await getCurrentItem();
+  if (videoId && currentItem?.videoId && currentItem.videoId !== videoId) {
+    return;
+  }
+
   const queueMode = playbackState.queueMode;
   applyPlaybackEvent({ type: "VIDEO_ENDED" });
   updateStateToLocalStorage();
@@ -257,6 +262,41 @@ const deleteVideo = async (id: string) => {
   await chrome.storage.sync.set({
     youtube_list: newPlaylist,
   });
+};
+
+const onVolumeChange = async (
+  volume: number,
+  persist: boolean | undefined,
+) => {
+  const normalizedVolume = Math.max(0, Math.min(100, Number(volume)));
+
+  if (playbackState.currentTabId) {
+    if (playingItem) {
+      playingItem = {
+        ...playingItem,
+        volume: normalizedVolume,
+      };
+      updateStateToLocalStorage();
+      if (persist) {
+        await updatePlaylistItem(playingItem.id, {
+          volume: normalizedVolume,
+        });
+      }
+    }
+
+    chrome.tabs.sendMessage(
+      playbackState.currentTabId,
+      {
+        type: csMsgType.VolumeChange,
+        volume: normalizedVolume,
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.log(1, chrome.runtime.lastError);
+        }
+      },
+    );
+  }
 };
 
 const onAudioEqChange = async (
@@ -323,7 +363,7 @@ const onMessageHandler = async (message: any) => {
       updateStateToLocalStorage();
       break;
     case MsgType.VideoEnd:
-      await onVideoEnd();
+      await onVideoEnd(message.videoId);
       break;
     case MsgType.DeleteVideo:
       await deleteVideo(message.item.id);
@@ -353,27 +393,7 @@ const onMessageHandler = async (message: any) => {
       updateStateToLocalStorage();
       break;
     case MsgType.VolumeChange:
-      if (playbackState.currentTabId) {
-        if (playingItem) {
-          playingItem = {
-            ...playingItem,
-            volume: Number(message.volume),
-          };
-          updateStateToLocalStorage();
-        }
-        chrome.tabs.sendMessage(
-          playbackState.currentTabId,
-          {
-            type: csMsgType.VolumeChange,
-            volume: Number(message.volume),
-          },
-          () => {
-            if (chrome.runtime.lastError) {
-              console.log(1, chrome.runtime.lastError);
-            }
-          },
-        );
-      }
+      await onVolumeChange(message.volume, message.persist);
       break;
     case MsgType.AudioEqChange:
       await onAudioEqChange(message.audioEq, message.persist);
@@ -497,15 +517,29 @@ const getLegacyPlaybackState = (result: {
     );
   };
 
-  const handleYoutubeNavigation = (tabId: number, url?: string) => {
+  const handleYoutubeNavigation = async (tabId: number, url?: string) => {
     if (!url || !url.includes("youtube.com/watch")) {
       return;
     }
 
     const videoId = getVideoIdFromUrl(url);
     const isPlayTab = playbackState.currentTabId === tabId;
+    const currentItem = isPlayTab ? await getCurrentItem() : null;
     if (!videoId) return;
-    if (isPlayTab && playingItem?.videoId !== videoId) {
+    if (isPlayTab && currentItem?.videoId !== videoId) {
+      if (
+        currentItem &&
+        (playbackState.status === "loading" ||
+          isQueueModeActive(playbackState.queueMode))
+      ) {
+        const expectedUrl = getUrlForItem(currentItem);
+        if (expectedUrl !== url) {
+          await openTab(expectedUrl);
+          updateStateToLocalStorage();
+        }
+        return;
+      }
+
       resetPlaybackState();
       updateStateToLocalStorage();
       return;
@@ -514,7 +548,7 @@ const getLegacyPlaybackState = (result: {
   };
 
   chrome.webNavigation.onHistoryStateUpdated.addListener((detail) => {
-    handleYoutubeNavigation(detail.tabId, detail.url);
+    void handleYoutubeNavigation(detail.tabId, detail.url);
   });
 
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -522,7 +556,7 @@ const getLegacyPlaybackState = (result: {
       return;
     }
 
-    handleYoutubeNavigation(tabId, tab.url);
+    void handleYoutubeNavigation(tabId, tab.url);
   });
 
   chrome.tabs.onRemoved.addListener((tabId) => {

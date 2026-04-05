@@ -8,19 +8,11 @@
   window.addEventListener(EVENT_NAME, (event) => {
     const detail = event && event.detail ? event.detail : {};
     const volume = Number(detail.volume);
-    console.log("[yt-playlist:page] volume bridge event", {
-      volume,
-      href: window.location.href,
-    });
     if (!Number.isFinite(volume)) {
       return;
     }
 
     const player = document.getElementById("movie_player");
-    console.log("[yt-playlist:page] movie_player present", {
-      hasPlayer: !!player,
-      hasSetVolume: !!(player && typeof player.setVolume === "function"),
-    });
     if (!player || typeof player.setVolume !== "function") {
       return;
     }

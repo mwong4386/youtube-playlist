@@ -629,27 +629,39 @@ const applyVideoVolume = (video: HTMLVideoElement, volume: number) => {
   // TODO: If the page-context bridge stays reliable long-term, simplify or
   // remove this retry window. For now it still helps during YouTube startup.
   const refreshIntervalId = window.setInterval(enforceVolume, 50);
-  video.addEventListener("volumechange", enforceVolume);
-  video.addEventListener("loadedmetadata", enforceVolume);
-  video.addEventListener("canplay", enforceVolume);
-  video.addEventListener("playing", enforceVolume);
+  const onVolumeChange = () => {
+    enforceVolume();
+  };
+  const onLoadedMetadata = () => {
+    enforceVolume();
+  };
+  const onCanPlay = () => {
+    enforceVolume();
+  };
+  const onPlaying = () => {
+    enforceVolume();
+  };
+  video.addEventListener("volumechange", onVolumeChange);
+  video.addEventListener("loadedmetadata", onLoadedMetadata);
+  video.addEventListener("canplay", onCanPlay);
+  video.addEventListener("playing", onPlaying);
 
   const timeoutId = window.setTimeout(() => {
     window.clearInterval(refreshIntervalId);
-    video.removeEventListener("volumechange", enforceVolume);
-    video.removeEventListener("loadedmetadata", enforceVolume);
-    video.removeEventListener("canplay", enforceVolume);
-    video.removeEventListener("playing", enforceVolume);
+    video.removeEventListener("volumechange", onVolumeChange);
+    video.removeEventListener("loadedmetadata", onLoadedMetadata);
+    video.removeEventListener("canplay", onCanPlay);
+    video.removeEventListener("playing", onPlaying);
     enforceVolume();
   }, 2500);
 
   cleanupVolumeEnforcer = () => {
     window.clearInterval(refreshIntervalId);
     window.clearTimeout(timeoutId);
-    video.removeEventListener("volumechange", enforceVolume);
-    video.removeEventListener("loadedmetadata", enforceVolume);
-    video.removeEventListener("canplay", enforceVolume);
-    video.removeEventListener("playing", enforceVolume);
+    video.removeEventListener("volumechange", onVolumeChange);
+    video.removeEventListener("loadedmetadata", onLoadedMetadata);
+    video.removeEventListener("canplay", onCanPlay);
+    video.removeEventListener("playing", onPlaying);
   };
 };
 
@@ -778,13 +790,6 @@ const onYoutubeVideoPage = (
 
     cleanupPlaybackHandlers?.();
     cleanupPlaybackHandlers = null;
-
-    ensureVideoPlayback(video);
-
-    if (volume !== undefined && volume !== false) {
-      applyVideoVolume(video, volume);
-    }
-    applyVideoEq(video, currentAudioEqSettings);
     //Register different event handler to notify the status of the video
     let isEnd = false;
     const timeupdateHandler = () => {
@@ -792,7 +797,7 @@ const onYoutubeVideoPage = (
       //jump to later video
       if (!isEnd && Math.floor(video.currentTime) === endTimestamp) {
         isEnd = true;
-        chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
+        chrome.runtime.sendMessage({ name: MsgType.VideoEnd, videoId });
       }
     };
     if (endTimestamp) {
@@ -800,20 +805,18 @@ const onYoutubeVideoPage = (
     }
 
     const endedHandler = () => {
-      console.log("video ended");
       let count = 0;
       //stop the video if the next video is auto play
       const interval = setInterval(() => {
         const overlay = getAutonavCountdownOverlay();
         if (overlay && overlay.style.display !== "none") {
           getAutonavCancelButton()?.click();
-          console.log("stop the next video", count);
           clearInterval(interval);
         } else if (count++ > 9) {
           clearInterval(interval);
         }
       }, 500);
-      chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
+      chrome.runtime.sendMessage({ name: MsgType.VideoEnd, videoId });
     };
     video.addEventListener("ended", endedHandler);
 
@@ -827,10 +830,16 @@ const onYoutubeVideoPage = (
     };
     video.addEventListener("pause", pauseHandler);
 
+    ensureVideoPlayback(video);
+
+    if (volume !== undefined && volume !== false) {
+      applyVideoVolume(video, volume);
+    }
+    applyVideoEq(video, currentAudioEqSettings);
+
     // If autoplay already started before these listeners were attached,
     // push the current state once so the popup stays in sync.
     if (video.ended) {
-      chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
     } else if (video.paused) {
       chrome.runtime.sendMessage({ name: MsgType.VideoPauseEvent });
     } else {
