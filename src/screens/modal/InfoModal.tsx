@@ -56,9 +56,13 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor(timestamp / 60) % 60;
       const seconds = timestamp % 60;
-      const endTimestamp = Math.floor(
-        item.endTimestamp ? item.endTimestamp : item.maxDuration
-      );
+      const fallbackEndTimestamp =
+        typeof item.endTimestamp === "number" && Number.isFinite(item.endTimestamp)
+          ? item.endTimestamp
+          : typeof item.maxDuration === "number" && Number.isFinite(item.maxDuration)
+            ? item.maxDuration
+            : 0;
+      const endTimestamp = Math.floor(fallbackEndTimestamp);
       const endHours = Math.floor(endTimestamp / 3600);
       const endMinutes = Math.floor(endTimestamp / 60) % 60;
       const endSeconds = endTimestamp % 60;
