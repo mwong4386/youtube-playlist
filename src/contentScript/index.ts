@@ -212,6 +212,16 @@ const onYoutubeVideoPage = (
     };
     video.addEventListener("pause", pauseHandler);
 
+    // If autoplay already started before these listeners were attached,
+    // push the current state once so the popup stays in sync.
+    if (video.ended) {
+      chrome.runtime.sendMessage({ name: MsgType.VideoEnd });
+    } else if (video.paused) {
+      chrome.runtime.sendMessage({ name: MsgType.VideoPauseEvent });
+    } else {
+      chrome.runtime.sendMessage({ name: MsgType.VideoPlayEvent });
+    }
+
     const enterpictureinpictureHandler = () => {
       chrome.runtime.sendMessage({ name: MsgType.EnterPip });
     };
@@ -298,35 +308,6 @@ const onResetClick = () => {
   moveStartPin(0);
 };
 
-const upsertPlaylistItem = (
-  list: MPlaylistItem[],
-  item: MPlaylistItem
-): MPlaylistItem[] => {
-  const existingIndex = list.findIndex(
-    (playlistItem) => playlistItem.videoId === item.videoId
-  );
-
-  if (existingIndex === -1) {
-    return [...list, item];
-  }
-
-  return list.reduce<MPlaylistItem[]>((result, playlistItem, index) => {
-    if (playlistItem.videoId !== item.videoId) {
-      result.push(playlistItem);
-      return result;
-    }
-
-    if (index === existingIndex) {
-      result.push({
-        ...item,
-        id: playlistItem.id,
-      });
-    }
-
-    return result;
-  }, []);
-};
-
 const onBookmarkSave = (url: string, videoId: string) => {
   clearErrorMsg();
   const hour: number = parseFloat(getStartHourInput().value);
@@ -371,17 +352,30 @@ const onBookmarkSave = (url: string, videoId: string) => {
     maxDuration,
     volume,
   };
+
   chrome.storage.sync.get("youtube_list", (result) => {
     if (chrome.runtime.lastError) {
       console.log(chrome.runtime.lastError);
+      getConfirmButton().disabled = false;
       return;
     }
-    const list = (result["youtube_list"] || []) as MPlaylistItem[];
+
+    const list = Array.isArray(result["youtube_list"])
+      ? (result["youtube_list"] as MPlaylistItem[])
+      : [];
+
     chrome.storage.sync.set({
-      youtube_list: upsertPlaylistItem(list, data),
+      youtube_list: [...list, data],
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.log(chrome.runtime.lastError);
+        getConfirmButton().disabled = false;
+        return;
+      }
+
+      getDialog().close();
     });
   });
-  getDialog().close();
 };
 
 const onPlayVideo = () => {

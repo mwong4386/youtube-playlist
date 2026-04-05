@@ -8,8 +8,10 @@ interface props {
   selectItemId: React.Dispatch<string | undefined>;
 }
 const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
+  const isActivePlayback = isPlaying && IPlaying;
+
   const onPlay = () => {
-    if (isPlaying && IPlaying) {
+    if (isActivePlayback) {
       chrome.runtime.sendMessage({ name: MsgType.PauseVideo });
     } else {
       chrome.runtime.sendMessage({ name: MsgType.PlayVideo, item: item });
@@ -55,7 +57,7 @@ const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
       </div>
       <div className={styles["play-container"]}>
         <button className={styles["play-button"]} onClick={onPlay}>
-          {isPlaying && IPlaying ? (
+          {isActivePlayback ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"

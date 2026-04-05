@@ -50,6 +50,16 @@ const getCurrentItem = async () => {
 const getUrlForItem = (item: MPlaylistItem) =>
   `${item.url}/?v=${item.videoId}${item.timestamp ? "&t=" + item.timestamp : ""}`;
 
+const getVideoIdFromUrl = (url?: string | null) => {
+  if (!url) return null;
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.searchParams.get("v");
+  } catch (error) {
+    return null;
+  }
+};
+
 const updateStateToLocalStorage = () => {
   chrome.storage.local.set({
     playbackState,
@@ -113,6 +123,7 @@ const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") =>
 
   playingItem = item;
   applyPlaybackEvent({ type: "PLAY_ITEM", item, queueMode });
+  updateStateToLocalStorage();
 
   if (
     isCurrentItem &&
@@ -126,6 +137,7 @@ const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") =>
   }
 
   await openTab(url);
+  updateStateToLocalStorage();
 };
 
 const playNext = async (queueMode: QueueMode = playbackState.queueMode) => {
@@ -153,6 +165,7 @@ const playNext = async (queueMode: QueueMode = playbackState.queueMode) => {
 
 const onPlayAll = async (queueMode: Exclude<QueueMode, "off">) => {
   applyPlaybackEvent({ type: "PLAY_ALL", queueMode });
+  updateStateToLocalStorage();
 
   if (playbackState.status === "playing" && playbackState.currentItemId) {
     return;
@@ -171,23 +184,29 @@ const onPlayAll = async (queueMode: Exclude<QueueMode, "off">) => {
 
 const onPauseVideo = async () => {
   applyPlaybackEvent({ type: "PAUSE" });
+  updateStateToLocalStorage();
   await sendSignalAsync(csMsgType.PauseYoutubeVideo, async () => {
     resetPlaybackState();
+    updateStateToLocalStorage();
   });
 };
 
 const onPauseAll = async () => {
   await sendSignalAsync(csMsgType.PauseYoutubeVideo, async () => {
     resetPlaybackState();
+    updateStateToLocalStorage();
   });
   resetPlaybackState();
+  updateStateToLocalStorage();
 };
 
 const onVideoEnd = async () => {
   const queueMode = playbackState.queueMode;
   applyPlaybackEvent({ type: "VIDEO_ENDED" });
+  updateStateToLocalStorage();
   if (queueMode === "off") {
     playingItem = null;
+    updateStateToLocalStorage();
     return;
   }
   await playNext(queueMode);
@@ -221,9 +240,11 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.VideoPlayEvent:
       applyPlaybackEvent({ type: "VIDEO_PLAYING" });
+      updateStateToLocalStorage();
       break;
     case MsgType.VideoPauseEvent:
       applyPlaybackEvent({ type: "VIDEO_PAUSED" });
+      updateStateToLocalStorage();
       break;
     case MsgType.VideoEnd:
       await onVideoEnd();
@@ -241,15 +262,19 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.EnterPip:
       applyPlaybackEvent({ type: "ENTER_PIP" });
+      updateStateToLocalStorage();
       break;
     case MsgType.ExitPip:
       applyPlaybackEvent({ type: "EXIT_PIP" });
+      updateStateToLocalStorage();
       break;
     case MsgType.TogglePin:
       applyPlaybackEvent({ type: "TOGGLE_PIN" });
+      updateStateToLocalStorage();
       break;
     case MsgType.ToggleVolumeAdjust:
       applyPlaybackEvent({ type: "TOGGLE_VOLUME_ADJUST" });
+      updateStateToLocalStorage();
       break;
     case MsgType.VolumeChange:
       if (playbackState.currentTabId) {
@@ -386,14 +411,14 @@ const getLegacyPlaybackState = (result: {
 
   chrome.webNavigation.onHistoryStateUpdated.addListener((detail) => {
     if (detail.url && detail.url.includes("youtube.com/watch")) {
-      const query: string = detail.url.split("?")[1];
-      const params: URLSearchParams = new URLSearchParams(query);
-      const videoId = params.get("v");
+      const videoId = getVideoIdFromUrl(detail.url);
       const isPlayTab = playbackState.currentTabId === detail.tabId;
       console.log(playbackState.currentTabId, " ", detail.tabId);
       if (!videoId) return;
       if (isPlayTab && playingItem?.videoId !== videoId) {
         console.log("unknown video id ", videoId, " ", playingItem);
+        resetPlaybackState();
+        updateStateToLocalStorage();
         return;
       }
       console.log("Seems good ", playingItem);

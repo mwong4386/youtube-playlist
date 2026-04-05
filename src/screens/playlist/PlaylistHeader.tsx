@@ -16,22 +16,20 @@ interface props {
   playlist: MPlaylistItem[];
 }
 const PlaylistHeader = ({ playlist, onDelete }: props) => {
+  const [playbackState, setPlaybackState] = useState<PlaybackState>(
+    createInitialPlaybackState()
+  );
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
-  const [isPIP, setIsPIP] = useState<boolean>(false);
-  const [enablePin, setEnablePin] = useState<boolean>(false);
-  const [playing, setPlaying] = useState<boolean>(false);
-  const [enableAdjustVideoVolume, setEnableAdjustVideoVolume] =
-    useState<boolean>(false);
   const ctx = useActionSheet();
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
-    const nextState = state || createInitialPlaybackState();
-    setIsPlayAll(isQueueModeActive(nextState.queueMode));
-    setIsPIP(nextState.isPip);
-    setPlaying(isPlaybackActive(nextState.status));
-    setEnablePin(nextState.enablePin);
-    setEnableAdjustVideoVolume(nextState.enableAdjustVideoVolume);
+    setPlaybackState(state || createInitialPlaybackState());
   };
+
+  const isPIP = playbackState.isPip;
+  const playing = isPlaybackActive(playbackState.status);
+  const enablePin = playbackState.enablePin;
+  const enableAdjustVideoVolume = playbackState.enableAdjustVideoVolume;
 
   const onPlayPauseButton = () => {
     if (isPlayAll) {
@@ -110,27 +108,17 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
   };
 
   useEffect(() => {
-    chrome.storage.local.get(
-      [
-        "playbackState",
-        "isPlayAll",
-        "isPIP",
-        "isPlaying",
-        "enablePin",
-        "enableAdjustVideoVolume",
-      ],
-      (result) => {
-        if (result["playbackState"]) {
-          syncPlaybackState(result["playbackState"]);
-          return;
-        }
-        setIsPlayAll(!!result["isPlayAll"]);
-        setIsPIP(!!result["isPIP"]);
-        setPlaying(!!result["isPlaying"]);
-        setEnablePin(!!result["enablePin"]);
-        setEnableAdjustVideoVolume(!!result["enableAdjustVideoVolume"]);
-      }
-    );
+    chrome.storage.local.get(["playbackState", "isPlayAll"], (result) => {
+      syncPlaybackState(result["playbackState"]);
+      setIsPlayAll(
+        result["isPlayAll"] === undefined
+          ? isQueueModeActive(
+              (result["playbackState"] || createInitialPlaybackState())
+                .queueMode || "off"
+            )
+          : !!result["isPlayAll"]
+      );
+    });
   }, []);
 
   useEffect(() => {
@@ -143,20 +131,6 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
       }
       if ("isPlayAll" in changes) {
         setIsPlayAll(!!changes["isPlayAll"].newValue);
-      }
-      if ("isPIP" in changes) {
-        setIsPIP(!!changes["isPIP"].newValue);
-      }
-      if ("isPlaying" in changes) {
-        setPlaying(!!changes["isPlaying"].newValue);
-      }
-      if ("enablePin" in changes) {
-        setEnablePin(!!changes["enablePin"].newValue);
-      }
-      if ("enableAdjustVideoVolume" in changes) {
-        setEnableAdjustVideoVolume(
-          !!changes["enableAdjustVideoVolume"].newValue
-        );
       }
     };
     chrome.storage.onChanged.addListener(listener);

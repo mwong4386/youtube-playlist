@@ -14,10 +14,11 @@ import MsgType from "../../constants/msgType";
 
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
-  //playing means the video is now playing
-  //playingId is not equal to playing, as the video may currently pause
+  const [playbackState, setPlaybackState] = useState<PlaybackState>(
+    createInitialPlaybackState()
+  );
   const [playing, setPlaying] = useState<boolean>(false);
-  const [playingId, setPlayingIndex] = useState<string | null | undefined>();
+  const [playingId, setPlayingId] = useState<string | undefined>(undefined);
   const [draggingElementId, setDraggingElement] = useState<string | undefined>(
     undefined
   );
@@ -27,8 +28,9 @@ const Playlist = () => {
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     const nextState = state || createInitialPlaybackState();
-    setPlayingIndex(nextState.currentItemId || undefined);
+    setPlaybackState(nextState);
     setPlaying(isPlaybackActive(nextState.status));
+    setPlayingId(nextState.currentItemId || undefined);
   };
 
   useEffect(() => {
@@ -41,14 +43,24 @@ const Playlist = () => {
   }, []);
 
   useEffect(() => {
-    chrome.storage.local.get(["playbackState", "isPlaying", "playingItem"], (result) => {
-      if (result["playbackState"]) {
-        syncPlaybackState(result["playbackState"]);
-        return;
+    chrome.storage.local.get(
+      ["playbackState", "isPlaying", "playingItem"],
+      (result) => {
+      syncPlaybackState(result["playbackState"]);
+        setPlaying(
+          result["isPlaying"] === undefined
+            ? isPlaybackActive(
+                (result["playbackState"] || createInitialPlaybackState()).status
+              )
+            : !!result["isPlaying"]
+        );
+        setPlayingId(
+          result["playingItem"]?.id ||
+            result["playbackState"]?.currentItemId ||
+            undefined
+        );
       }
-      if (result["playingItem"]) setPlayingIndex(result["playingItem"]?.id);
-      if (result["isPlaying"]) setPlaying(result["isPlaying"]);
-    });
+    );
   }, []);
 
   useEffect(() => {
@@ -60,7 +72,7 @@ const Playlist = () => {
         syncPlaybackState(changes["playbackState"].newValue);
       }
       if ("playingItem" in changes) {
-        setPlayingIndex(changes["playingItem"].newValue?.id);
+        setPlayingId(changes["playingItem"].newValue?.id);
       }
       if ("isPlaying" in changes) {
         setPlaying(!!changes["isPlaying"].newValue);
@@ -108,7 +120,10 @@ const Playlist = () => {
     }
   };
   const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (playing && selectItemId === playingId) {
+    if (
+      playing &&
+      selectItemId === playingId
+    ) {
       chrome.runtime.sendMessage({
         name: MsgType.VolumeChange,
         volume: event.currentTarget.value,
