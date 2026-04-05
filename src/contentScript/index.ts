@@ -65,11 +65,17 @@ let cleanupEqOutsideClick: (() => void) | null = null;
 let isCurrentPlaybackTab = false;
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
+const PLAYER_VOLUME_RETRY_DELAYS_MS = [120, 320, 700];
 
 const ensureAudioEqGraph = (video: HTMLVideoElement) => {
   const hasAllFilters = AUDIO_EQ_BANDS.every((band) => !!eqFilters[band.key]);
 
-  if (audioContext && currentEqVideo === video && currentEqSource && hasAllFilters) {
+  if (
+    audioContext &&
+    currentEqVideo === video &&
+    currentEqSource &&
+    hasAllFilters
+  ) {
     if (audioContext.state === "suspended") {
       void audioContext.resume().catch(() => undefined);
     }
@@ -610,7 +616,8 @@ const applyVideoVolume = (video: HTMLVideoElement, volume: number) => {
 
   const normalizedVolume = Math.max(0, Math.min(100, volume));
   const nextVolume = normalizedVolume / 100;
-  const enforceVolume = () => {
+
+  const syncNativeVolume = () => {
     const currentVideo = getYoutubePlayer() || video;
     ensureYoutubeVolumeBridge();
     window.dispatchEvent(
@@ -624,44 +631,14 @@ const applyVideoVolume = (video: HTMLVideoElement, volume: number) => {
     currentVideo.muted = nextVolume === 0;
   };
 
-  enforceVolume();
+  syncNativeVolume();
 
-  // TODO: If the page-context bridge stays reliable long-term, simplify or
-  // remove this retry window. For now it still helps during YouTube startup.
-  const refreshIntervalId = window.setInterval(enforceVolume, 50);
-  const onVolumeChange = () => {
-    enforceVolume();
-  };
-  const onLoadedMetadata = () => {
-    enforceVolume();
-  };
-  const onCanPlay = () => {
-    enforceVolume();
-  };
-  const onPlaying = () => {
-    enforceVolume();
-  };
-  video.addEventListener("volumechange", onVolumeChange);
-  video.addEventListener("loadedmetadata", onLoadedMetadata);
-  video.addEventListener("canplay", onCanPlay);
-  video.addEventListener("playing", onPlaying);
-
-  const timeoutId = window.setTimeout(() => {
-    window.clearInterval(refreshIntervalId);
-    video.removeEventListener("volumechange", onVolumeChange);
-    video.removeEventListener("loadedmetadata", onLoadedMetadata);
-    video.removeEventListener("canplay", onCanPlay);
-    video.removeEventListener("playing", onPlaying);
-    enforceVolume();
-  }, 2500);
+  const timeoutIds = PLAYER_VOLUME_RETRY_DELAYS_MS.map((delay) =>
+    window.setTimeout(syncNativeVolume, delay),
+  );
 
   cleanupVolumeEnforcer = () => {
-    window.clearInterval(refreshIntervalId);
-    window.clearTimeout(timeoutId);
-    video.removeEventListener("volumechange", onVolumeChange);
-    video.removeEventListener("loadedmetadata", onLoadedMetadata);
-    video.removeEventListener("canplay", onCanPlay);
-    video.removeEventListener("playing", onPlaying);
+    timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
   };
 };
 
