@@ -1,5 +1,6 @@
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
+import AudioEqSettings from "../models/AudioEq";
 import { normalizeAudioEqSettings } from "../utils/audioEq";
 import MPlaylistItem from "../models/MPlaylistItem";
 import PlaybackState, {
@@ -35,6 +36,30 @@ const resetPlaybackState = () => {
 const getPlaylist = async () => {
   const items = await getStorage("youtube_list");
   return ((items || []) as MPlaylistItem[]).map(normalizePlaylistItem);
+};
+
+const updatePlaylistItem = async (
+  id: string,
+  partial: Partial<Pick<MPlaylistItem, "volume" | "audioEq">>,
+) => {
+  const playlist = await getPlaylist();
+  const nextPlaylist = playlist.map((item) => {
+    if (item.id !== id) {
+      return item;
+    }
+
+    return {
+      ...item,
+      ...partial,
+      audioEq: partial.audioEq
+        ? normalizeAudioEqSettings(partial.audioEq)
+        : item.audioEq,
+    };
+  });
+
+  await chrome.storage.sync.set({
+    youtube_list: nextPlaylist,
+  });
 };
 
 const getCurrentItem = async () => {
@@ -234,6 +259,44 @@ const deleteVideo = async (id: string) => {
   });
 };
 
+const onAudioEqChange = async (
+  audioEq: Partial<AudioEqSettings>,
+  persist: boolean | undefined,
+) => {
+  const normalizedAudioEq = normalizeAudioEqSettings({
+    ...(playingItem?.audioEq || {}),
+    ...audioEq,
+  });
+
+  if (playbackState.currentTabId) {
+    if (playingItem) {
+      playingItem = {
+        ...playingItem,
+        audioEq: normalizedAudioEq,
+      };
+      updateStateToLocalStorage();
+      if (persist) {
+        await updatePlaylistItem(playingItem.id, {
+          audioEq: normalizedAudioEq,
+        });
+      }
+    }
+
+    chrome.tabs.sendMessage(
+      playbackState.currentTabId,
+      {
+        type: csMsgType.AudioEqChange,
+        audioEq: normalizedAudioEq,
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.log(1, chrome.runtime.lastError);
+        }
+      },
+    );
+  }
+};
+
 const onMessageHandler = async (message: any) => {
   switch (message.name) {
     case MsgType.PlayVideo:
@@ -291,11 +354,11 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.VolumeChange:
       if (playbackState.currentTabId) {
-      if (playingItem) {
-        playingItem = {
-          ...playingItem,
-          volume: Number(message.volume),
-        };
+        if (playingItem) {
+          playingItem = {
+            ...playingItem,
+            volume: Number(message.volume),
+          };
           updateStateToLocalStorage();
         }
         chrome.tabs.sendMessage(
@@ -313,27 +376,7 @@ const onMessageHandler = async (message: any) => {
       }
       break;
     case MsgType.AudioEqChange:
-      if (playbackState.currentTabId) {
-        if (playingItem) {
-          playingItem = {
-            ...playingItem,
-            audioEq: normalizeAudioEqSettings(message.audioEq),
-          };
-          updateStateToLocalStorage();
-        }
-        chrome.tabs.sendMessage(
-          playbackState.currentTabId,
-          {
-            type: csMsgType.AudioEqChange,
-            audioEq: normalizeAudioEqSettings(message.audioEq),
-          },
-          () => {
-            if (chrome.runtime.lastError) {
-              console.log(1, chrome.runtime.lastError);
-            }
-          },
-        );
-      }
+      await onAudioEqChange(message.audioEq, message.persist);
       break;
     default:
   }

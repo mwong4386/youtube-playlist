@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import AudioEqSettings from "../../models/AudioEq";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import {
-  AUDIO_EQ_PRESET_LABELS,
+  AUDIO_EQ_BANDS,
   DEFAULT_AUDIO_EQ_SETTINGS,
+  normalizeAudioEqSettings,
 } from "../../utils/audioEq";
 import Modal from "./Modal";
 import styles from "./Modal.module.css";
@@ -20,10 +21,10 @@ interface props {
     audioEq: AudioEqSettings
   ) => void;
   onvolumechange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onAudioEqChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  onAudioEqChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   item: MPlaylistItem | undefined;
 }
-interface infoModels {
+type infoModels = AudioEqSettings & {
   hours: number;
   minutes: number;
   seconds: number;
@@ -32,8 +33,7 @@ interface infoModels {
   endSeconds: number;
   untilEnd: boolean;
   volume: number;
-  eqPreset: AudioEqSettings["preset"];
-}
+};
 
 const toNumber = (value: number) => Number(value) || 0;
 
@@ -62,7 +62,7 @@ const InfoModal = ({
       endSeconds: 0,
       untilEnd: false,
       volume: 0,
-      eqPreset: DEFAULT_AUDIO_EQ_SETTINGS.preset,
+      ...DEFAULT_AUDIO_EQ_SETTINGS,
     },
   });
 
@@ -91,7 +91,7 @@ const InfoModal = ({
         endSeconds: endSeconds,
         untilEnd: !item.endTimestamp,
         volume: item.volume,
-        eqPreset: item.audioEq?.preset || DEFAULT_AUDIO_EQ_SETTINGS.preset,
+        ...normalizeAudioEqSettings(item.audioEq),
       });
     } else {
       reset();
@@ -112,9 +112,13 @@ const InfoModal = ({
       data.untilEnd || temp_endtimestamp > (item?.maxDuration as number)
         ? undefined
         : temp_endtimestamp;
-    save(item?.id as string, timestamp, endtimestamp, data.volume, {
-      preset: data.eqPreset,
-    });
+    save(
+      item?.id as string,
+      timestamp,
+      endtimestamp,
+      data.volume,
+      normalizeAudioEqSettings(data)
+    );
     close();
   };
   return (
@@ -289,24 +293,28 @@ const InfoModal = ({
               {watch("volume")}
             </span>
           </div>
-          <div className={styles["eq-container"]}>
-            <label className={styles["eq-label"]} htmlFor="eq-preset">
-              EQ
-            </label>
-            <select
-              id="eq-preset"
-              className={styles["eq-select"]}
-              {...register("eqPreset", {
-                required: true,
-                onChange: onAudioEqChange,
-              })}
-            >
-              {Object.entries(AUDIO_EQ_PRESET_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+          <div className={styles["eq-section"]}>
+            <p className={styles["eq-title"]}>Song EQ</p>
+            {AUDIO_EQ_BANDS.map((band) => (
+              <div key={band.key} className={styles["eq-row"]}>
+                <label className={styles["eq-band-label"]} htmlFor={band.key}>
+                  {band.label}
+                </label>
+                <input
+                  id={band.key}
+                  className={styles["eq-slider"]}
+                  type="range"
+                  min="-10"
+                  max="10"
+                  step="1"
+                  {...register(band.key, {
+                    valueAsNumber: true,
+                    onChange: onAudioEqChange,
+                  })}
+                />
+                <span className={styles["eq-value"]}>{watch(band.key)}</span>
+              </div>
+            ))}
           </div>
         </div>
       </form>

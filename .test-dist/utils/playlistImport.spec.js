@@ -23,7 +23,12 @@ const expectEqual = (actual, expected) => {
             maxDuration: 60.7,
             volume: 104.4,
             audioEq: {
-                preset: "bassBoost",
+                clearBass: 9.9,
+                band400: 3.6,
+                band1k: 1.2,
+                band2k5: 0,
+                band6k3: -1.2,
+                band16k: -2,
             },
         },
     ]));
@@ -40,7 +45,12 @@ const expectEqual = (actual, expected) => {
             maxDuration: 60,
             volume: 100,
             audioEq: {
-                preset: "bassBoost",
+                clearBass: 10,
+                band400: 4,
+                band1k: 1,
+                band2k5: 0,
+                band6k3: -1,
+                band16k: -2,
             },
         },
     ]);
@@ -61,7 +71,39 @@ const expectEqual = (actual, expected) => {
     ]));
     expectEqual(result.error, undefined);
     expectEqual(result.playlist?.[0]?.audioEq, {
-        preset: "flat",
+        clearBass: 0,
+        band400: 0,
+        band1k: 0,
+        band2k5: 0,
+        band6k3: 0,
+        band16k: 0,
+    });
+});
+(0, node_test_1.default)("parseImportedPlaylist migrates legacy eq presets", () => {
+    const result = (0, playlistImport_1.parseImportedPlaylist)(JSON.stringify([
+        {
+            id: "legacy-preset",
+            title: "Song",
+            channelName: "Channel",
+            url: "https://youtube.com/watch?v=123",
+            videoId: "123",
+            timestamp: 12,
+            endTimestamp: 48,
+            maxDuration: 60,
+            volume: 40,
+            audioEq: {
+                preset: "trebleBoost",
+            },
+        },
+    ]));
+    expectEqual(result.error, undefined);
+    expectEqual(result.playlist?.[0]?.audioEq, {
+        clearBass: -2,
+        band400: -1,
+        band1k: 1,
+        band2k5: 4,
+        band6k3: 6,
+        band16k: 7,
     });
 });
 (0, node_test_1.default)("parseImportedPlaylist rejects non-array JSON payloads", () => {

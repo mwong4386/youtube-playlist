@@ -151,12 +151,12 @@ const Playlist = () => {
       });
     }
   };
-  const onAudioEqChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const onAudioEqChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (playing && selectItemId === playingId) {
       chrome.runtime.sendMessage({
         name: MsgType.AudioEqChange,
         audioEq: {
-          preset: event.currentTarget.value,
+          [event.currentTarget.id]: Number(event.currentTarget.value),
         },
       });
     }

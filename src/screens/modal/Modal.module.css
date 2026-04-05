@@ -120,21 +120,28 @@
 .volume-text {
   font-size: 14px;
 }
-.eq-container {
-  display: flex;
-  align-items: center;
-  margin-top: 8px;
+.eq-section {
+  margin-top: 12px;
 }
-.eq-label {
-  display: inline-block;
+.eq-title {
+  margin: 0 0 8px;
   font-size: 14px;
   font-weight: bold;
-  width: 72px;
-  margin-left: -36px;
 }
-.eq-select {
-  font-size: 14px;
-  padding: 4px 8px;
-  border: 2px solid #000;
-  background-color: white;
+.eq-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.eq-band-label {
+  font-size: 12px;
+}
+.eq-slider {
+  width: 100%;
+}
+.eq-value {
+  font-size: 12px;
+  text-align: right;
 }

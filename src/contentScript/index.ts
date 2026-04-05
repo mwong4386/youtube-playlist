@@ -3,7 +3,10 @@ import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
 import AudioEqSettings from "../models/AudioEq";
 import {
-  DEFAULT_AUDIO_EQ_SETTINGS,
+  AUDIO_EQ_MAX,
+  AUDIO_EQ_MIN,
+  cloneAudioEqSettings,
+  AUDIO_EQ_BANDS,
   normalizeAudioEqSettings,
 } from "../utils/audioEq";
 import MPlaylistItem from "../models/MPlaylistItem";
@@ -28,7 +31,6 @@ import {
   getChannelNameFromPage,
   getConfirmButton,
   getDialog,
-  getEqPresetInput,
   getEndHourInput,
   getEndMinuteInput,
   getEndSecondInput,
@@ -55,26 +57,24 @@ let hasInjectedVolumeBridge = false;
 let audioContext: AudioContext | null = null;
 let currentEqVideo: HTMLVideoElement | null = null;
 let currentEqSource: MediaElementAudioSourceNode | null = null;
-let bassFilter: BiquadFilterNode | null = null;
-let trebleFilter: BiquadFilterNode | null = null;
+let eqFilters: Partial<Record<keyof AudioEqSettings, BiquadFilterNode>> = {};
+let currentAudioEqSettings = cloneAudioEqSettings();
+let currentEqButton: HTMLButtonElement | null = null;
+let currentEqPanel: HTMLDivElement | null = null;
+let isCurrentPlaybackTab = false;
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
 
 const ensureAudioEqGraph = (video: HTMLVideoElement) => {
-  if (
-    audioContext &&
-    currentEqVideo === video &&
-    currentEqSource &&
-    bassFilter &&
-    trebleFilter
-  ) {
+  const hasAllFilters = AUDIO_EQ_BANDS.every((band) => !!eqFilters[band.key]);
+
+  if (audioContext && currentEqVideo === video && currentEqSource && hasAllFilters) {
     if (audioContext.state === "suspended") {
       void audioContext.resume().catch(() => undefined);
     }
     return {
       context: audioContext,
-      bassFilter,
-      trebleFilter,
+      filters: eqFilters as Record<keyof AudioEqSettings, BiquadFilterNode>,
     };
   }
 
@@ -94,52 +94,348 @@ const ensureAudioEqGraph = (video: HTMLVideoElement) => {
     }
   }
 
-  bassFilter = audioContext.createBiquadFilter();
-  bassFilter.type = "lowshelf";
-  bassFilter.frequency.value = 200;
-
-  trebleFilter = audioContext.createBiquadFilter();
-  trebleFilter.type = "highshelf";
-  trebleFilter.frequency.value = 2400;
+  Object.values(eqFilters).forEach((filter) => {
+    try {
+      filter?.disconnect();
+    } catch (error) {
+      // Ignore disconnect errors while rebuilding the chain.
+    }
+  });
 
   currentEqSource = audioContext.createMediaElementSource(video);
-  currentEqSource.connect(bassFilter);
-  bassFilter.connect(trebleFilter);
-  trebleFilter.connect(audioContext.destination);
+  let previousNode: AudioNode = currentEqSource;
+  eqFilters = {};
+
+  for (const band of AUDIO_EQ_BANDS) {
+    const filter = audioContext.createBiquadFilter();
+    filter.frequency.value = band.frequency;
+    if (band.key === "clearBass") {
+      filter.type = "lowshelf";
+    } else if (band.key === "band16k") {
+      filter.type = "highshelf";
+    } else {
+      filter.type = "peaking";
+      filter.Q.value = 1.1;
+    }
+
+    previousNode.connect(filter);
+    previousNode = filter;
+    eqFilters[band.key] = filter;
+  }
+
+  previousNode.connect(audioContext.destination);
   currentEqVideo = video;
 
   return {
     context: audioContext,
-    bassFilter,
-    trebleFilter,
+    filters: eqFilters as Record<keyof AudioEqSettings, BiquadFilterNode>,
   };
 };
 
 const applyVideoEq = (
   video: HTMLVideoElement,
-  settings?: AudioEqSettings | null,
+  settings?: Partial<AudioEqSettings> | null,
 ) => {
-  const normalizedSettings = normalizeAudioEqSettings(settings);
+  const normalizedSettings = normalizeAudioEqSettings({
+    ...currentAudioEqSettings,
+    ...settings,
+  });
+  currentAudioEqSettings = normalizedSettings;
   const graph = ensureAudioEqGraph(video);
   if (!graph) {
     return;
   }
 
-  switch (normalizedSettings.preset) {
-    case "bassBoost":
-      graph.bassFilter.gain.value = 9;
-      graph.trebleFilter.gain.value = -1.5;
-      break;
-    case "trebleBoost":
-      graph.bassFilter.gain.value = -1.5;
-      graph.trebleFilter.gain.value = 7;
-      break;
-    case "flat":
-    default:
-      graph.bassFilter.gain.value = 0;
-      graph.trebleFilter.gain.value = 0;
-      break;
+  for (const band of AUDIO_EQ_BANDS) {
+    graph.filters[band.key].gain.value = normalizedSettings[band.key];
   }
+  syncEqPanelUi(normalizedSettings);
+};
+
+const ensureEqPanelStyles = () => {
+  if (document.getElementById("yt-playlist-eq-style")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "yt-playlist-eq-style";
+  style.textContent = `
+    .yt-playlist-eq-panel {
+      position: fixed;
+      right: 24px;
+      bottom: 96px;
+      width: 360px;
+      padding: 16px 16px 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(17, 17, 17, 0.96), rgba(28, 28, 28, 0.94));
+      color: #fff;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+      z-index: 2147483647;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+    }
+    .yt-playlist-eq-panel[hidden] {
+      display: none;
+    }
+    .yt-playlist-eq-panel__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .yt-playlist-eq-panel__title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .yt-playlist-eq-panel__hint {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.64);
+      margin-top: 4px;
+    }
+    .yt-playlist-eq-panel__close {
+      border: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .yt-playlist-eq-panel__bands {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      align-items: end;
+    }
+    .yt-playlist-eq-panel__band {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .yt-playlist-eq-panel__value {
+      font-size: 11px;
+      color: #f7c66e;
+      min-height: 14px;
+    }
+    .yt-playlist-eq-panel__track {
+      height: 156px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .yt-playlist-eq-panel__slider {
+      width: 22px;
+      height: 132px;
+      margin: 0;
+      writing-mode: vertical-lr;
+      direction: rtl;
+      accent-color: #f7c66e;
+      cursor: pointer;
+    }
+    .yt-playlist-eq-panel__label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.85);
+      text-align: center;
+      line-height: 1.2;
+      min-height: 28px;
+    }
+    .yt-playlist-eq-panel__scale {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.45);
+    }
+    .yt-playlist-eq-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      min-width: 38px;
+      height: 100%;
+      padding: 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .yt-playlist-eq-button__label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      line-height: 1;
+      transform: translateY(-1px);
+      pointer-events: none;
+    }
+  `;
+
+  document.head.append(style);
+};
+
+const formatEqValue = (value: number) => {
+  return value > 0 ? `+${value}` : `${value}`;
+};
+
+const syncEqPanelUi = (settings: AudioEqSettings = currentAudioEqSettings) => {
+  if (!currentEqPanel) {
+    return;
+  }
+
+  for (const band of AUDIO_EQ_BANDS) {
+    const slider = currentEqPanel.querySelector(
+      `[data-eq-slider="${band.key}"]`,
+    ) as HTMLInputElement | null;
+    const value = currentEqPanel.querySelector(
+      `[data-eq-value="${band.key}"]`,
+    ) as HTMLElement | null;
+
+    if (slider && slider.value !== settings[band.key].toString()) {
+      slider.value = settings[band.key].toString();
+    }
+    if (value) {
+      value.textContent = formatEqValue(settings[band.key]);
+    }
+  }
+
+  const hint = currentEqPanel.querySelector(
+    "[data-eq-save-hint]",
+  ) as HTMLElement | null;
+  if (hint) {
+    hint.textContent = isCurrentPlaybackTab
+      ? "Drag to preview. Release to save to the current song."
+      : "Preview only here. Start playback from the playlist to save.";
+  }
+};
+
+const readEqPanelSettings = (): AudioEqSettings => {
+  return AUDIO_EQ_BANDS.reduce((settings, band) => {
+    const slider = currentEqPanel?.querySelector(
+      `[data-eq-slider="${band.key}"]`,
+    ) as HTMLInputElement | null;
+    settings[band.key] = slider ? Number(slider.value) : currentAudioEqSettings[band.key];
+    return settings;
+  }, cloneAudioEqSettings(currentAudioEqSettings));
+};
+
+const sendEqSettingsToBackground = (settings: AudioEqSettings, persist: boolean) => {
+  chrome.runtime.sendMessage({
+    name: MsgType.AudioEqChange,
+    audioEq: settings,
+    persist,
+  });
+};
+
+const ensureEqPanel = () => {
+  ensureEqPanelStyles();
+  if (currentEqPanel) {
+    syncEqPanelUi();
+    return currentEqPanel;
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "yt-playlist-eq-panel";
+  panel.hidden = true;
+
+  const bandsMarkup = AUDIO_EQ_BANDS.map(
+    (band) => `
+      <div class="yt-playlist-eq-panel__band">
+        <span class="yt-playlist-eq-panel__value" data-eq-value="${band.key}">0</span>
+        <div class="yt-playlist-eq-panel__track">
+          <input
+            class="yt-playlist-eq-panel__slider"
+            data-eq-slider="${band.key}"
+            type="range"
+            min="${AUDIO_EQ_MIN}"
+            max="${AUDIO_EQ_MAX}"
+            step="1"
+            value="0"
+          />
+        </div>
+        <span class="yt-playlist-eq-panel__label">${band.shortLabel}</span>
+      </div>
+    `,
+  ).join("");
+
+  panel.innerHTML = `
+    <div class="yt-playlist-eq-panel__header">
+      <div>
+        <p class="yt-playlist-eq-panel__title">Song EQ</p>
+        <div class="yt-playlist-eq-panel__hint" data-eq-save-hint></div>
+      </div>
+      <button class="yt-playlist-eq-panel__close" type="button" aria-label="Close EQ panel">x</button>
+    </div>
+    <div class="yt-playlist-eq-panel__bands">${bandsMarkup}</div>
+    <div class="yt-playlist-eq-panel__scale">
+      <span>${AUDIO_EQ_MIN}</span>
+      <span>0</span>
+      <span>+${AUDIO_EQ_MAX}</span>
+    </div>
+  `;
+
+  panel
+    .querySelector(".yt-playlist-eq-panel__close")
+    ?.addEventListener("click", () => {
+      panel.hidden = true;
+    });
+
+  panel.addEventListener("input", (event) => {
+    const target = event.target as HTMLInputElement;
+    if (!target.matches("[data-eq-slider]")) {
+      return;
+    }
+
+    const nextSettings = readEqPanelSettings();
+    const video = getYoutubePlayer();
+    if (video) {
+      applyVideoEq(video, nextSettings);
+    }
+  });
+
+  panel.addEventListener("change", (event) => {
+    const target = event.target as HTMLInputElement;
+    if (!target.matches("[data-eq-slider]")) {
+      return;
+    }
+
+    const nextSettings = readEqPanelSettings();
+    const video = getYoutubePlayer();
+    if (video) {
+      applyVideoEq(video, nextSettings);
+    }
+    if (isCurrentPlaybackTab) {
+      sendEqSettingsToBackground(nextSettings, true);
+    }
+  });
+
+  document.body.append(panel);
+  currentEqPanel = panel;
+  syncEqPanelUi();
+  return currentEqPanel;
+};
+
+const ensureEqButton = () => {
+  if (currentEqButton) {
+    return currentEqButton;
+  }
+
+  const button = document.createElement("button");
+  button.className = "ytp-button yt-playlist-eq-button";
+  button.title = "Click to open song EQ";
+  button.innerHTML = `<span class="yt-playlist-eq-button__label">EQ</span>`;
+  button.addEventListener("click", () => {
+    const panel = ensureEqPanel();
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) {
+      syncEqPanelUi();
+    }
+  });
+
+  currentEqButton = button;
+  return button;
 };
 
 const ensureYoutubeVolumeBridge = () => {
@@ -242,6 +538,7 @@ const onYoutubeVideoPage = (
   volume: number | false | undefined,
   audioEq?: AudioEqSettings,
 ) => {
+  isCurrentPlaybackTab = isPlayTab;
   const bookmark = getBookmarkButton();
   setStartTime(0);
   let video: HTMLVideoElement = getYoutubePlayer();
@@ -310,12 +607,6 @@ const onYoutubeVideoPage = (
         getVolumeText().innerHTML = volume.value;
         applyVideoVolume(video, parseInt(volume.value));
       };
-      const eqPreset = getEqPresetInput();
-      eqPreset.onchange = () => {
-        applyVideoEq(video, {
-          preset: eqPreset.value as AudioEqSettings["preset"],
-        });
-      };
     });
     //Add a + button to the youtube control button group, it will open the dialog
     const bookmarkBtn = document.createElement("button");
@@ -326,10 +617,13 @@ const onYoutubeVideoPage = (
     bookmarkBtn.title = "Click to open bookmark dialog";
 
     bookmarkBtn.addEventListener("click", onCSOpenDialogClickHandler);
+    const eqButton = ensureEqButton();
     const rightControls = getRightControls();
     for (let rightControl of rightControls) {
       rightControl.prepend(bookmarkBtn);
+      bookmarkBtn.insertAdjacentElement("afterend", eqButton);
     }
+    ensureEqPanel();
     createStartPin(enablePin);
     createStopPin(enablePin);
   } else {
@@ -346,7 +640,12 @@ const onYoutubeVideoPage = (
     getConfirmButton().addEventListener("click", onCSConfirm);
     moveStartPin(getStartTime());
     setPinVisibility(enablePin);
+    ensureEqButton();
+    ensureEqPanel();
   }
+
+  currentAudioEqSettings = normalizeAudioEqSettings(audioEq);
+  syncEqPanelUi(currentAudioEqSettings);
 
   if (isPlayTab) {
     video = video || getYoutubePlayer(); /*document.getElementsByClassName(
@@ -361,7 +660,7 @@ const onYoutubeVideoPage = (
     if (volume !== undefined && volume !== false) {
       applyVideoVolume(video, volume);
     }
-    applyVideoEq(video, audioEq);
+    applyVideoEq(video, currentAudioEqSettings);
     //Register different event handler to notify the status of the video
     let isEnd = false;
     const timeupdateHandler = () => {
@@ -474,7 +773,6 @@ const onCSOpenDialogClickHandler = () => {
   const volumeRate = Math.floor(video.volume * 100).toString();
   getVolumeInput().value = volumeRate;
   getVolumeText().innerHTML = volumeRate;
-  getEqPresetInput().value = DEFAULT_AUDIO_EQ_SETTINGS.preset;
 
   const timestamp = getStartTime();
   const [hours, minutes, seconds] = getHourMinuteSecond(timestamp, false);
@@ -519,9 +817,7 @@ const onBookmarkSave = (url: string, videoId: string) => {
   const title = getVideoTitleElement().innerHTML;
   const channelName = getChannelNameElement().innerHTML;
   const volume = parseInt(getVolumeInput().value);
-  const audioEq = normalizeAudioEqSettings({
-    preset: getEqPresetInput().value as AudioEqSettings["preset"],
-  });
+  const audioEq = cloneAudioEqSettings(currentAudioEqSettings);
   const untilEnd = getUntilEndInput().checked;
   let endTimestamp: number | undefined = undefined;
 
@@ -598,7 +894,7 @@ const onVolumeChange = (volume: number) => {
   const video = getYoutubePlayer();
   applyVideoVolume(video, Number(volume));
 };
-const onAudioEqChange = (audioEq?: AudioEqSettings) => {
+const onAudioEqChange = (audioEq?: Partial<AudioEqSettings>) => {
   const video = getYoutubePlayer();
   applyVideoEq(video, audioEq);
 };

@@ -1,29 +1,25 @@
-type AudioEqPreset = "flat" | "bassBoost" | "trebleBoost";
+type AudioEqBandKey =
+  | "clearBass"
+  | "band400"
+  | "band1k"
+  | "band2k5"
+  | "band6k3"
+  | "band16k";
 
-interface AudioEqSettings {
-  preset: AudioEqPreset;
-}
+type AudioEqSettings = Record<AudioEqBandKey, number>;
+
+const AUDIO_EQ_MIN = -10;
+const AUDIO_EQ_MAX = 10;
 
 const DEFAULT_AUDIO_EQ_SETTINGS: AudioEqSettings = {
-  preset: "flat",
-};
-
-const normalizeAudioEqSettings = (
-  value?: Partial<AudioEqSettings> | null,
-): AudioEqSettings => {
-  if (
-    value?.preset === "bassBoost" ||
-    value?.preset === "trebleBoost" ||
-    value?.preset === "flat"
-  ) {
-    return {
-      preset: value.preset,
-    };
-  }
-
-  return { ...DEFAULT_AUDIO_EQ_SETTINGS };
+  clearBass: 0,
+  band400: 0,
+  band1k: 0,
+  band2k5: 0,
+  band6k3: 0,
+  band16k: 0,
 };
 
 export default AudioEqSettings;
-export { DEFAULT_AUDIO_EQ_SETTINGS, normalizeAudioEqSettings };
-export type { AudioEqPreset };
+export { AUDIO_EQ_MAX, AUDIO_EQ_MIN, DEFAULT_AUDIO_EQ_SETTINGS };
+export type { AudioEqBandKey };
