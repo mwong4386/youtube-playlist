@@ -11,6 +11,9 @@ import styles from "./Playlist.module.css";
 import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
 import MsgType from "../../constants/msgType";
+import { DEV_PLAYLIST } from "../../dev/devPlaylist";
+
+const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 
 const Playlist = () => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
@@ -35,8 +38,23 @@ const Playlist = () => {
 
   useEffect(() => {
     const getPlaylist = async () => {
-      const list = ((await getStorage("youtube_list")) ||
-        []) as MPlaylistItem[];
+      const storedList = (await getStorage("youtube_list")) as
+        | MPlaylistItem[]
+        | undefined;
+      if (storedList && storedList.length > 0) {
+        setPlaylist(storedList);
+        return;
+      }
+
+      if (shouldSeedPlaylist) {
+        chrome.storage.sync.set({
+          youtube_list: DEV_PLAYLIST,
+        });
+        setPlaylist(DEV_PLAYLIST);
+        return;
+      }
+
+      const list: MPlaylistItem[] = [];
       setPlaylist(list);
     };
     getPlaylist();

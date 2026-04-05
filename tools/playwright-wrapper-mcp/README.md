@@ -23,6 +23,7 @@ This is a restricted MCP server that wraps Playwright instead of exposing raw br
 - `goto`
 - `click`
 - `type`
+- `upload_file`
 - `press`
 - `wait_for`
 - `read_text`
@@ -32,6 +33,11 @@ This is a restricted MCP server that wraps Playwright instead of exposing raw br
 ## Important setup rule
 
 Register this wrapper MCP in Codex, and do not expose a raw Playwright MCP server alongside it. If both are available, the wrapper boundary can be bypassed.
+
+## File upload boundary
+
+- `upload_file` is restricted to files inside this repository.
+- This supports extension import flows without granting access to arbitrary paths outside the project.
 
 ## Environment variables
 

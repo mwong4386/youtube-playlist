@@ -2,6 +2,21 @@ function normalizeHost(hostname) {
   return hostname.toLowerCase();
 }
 
+export function assertAllowedFilePath(rawPath, config) {
+  const resolvedPath = new URL(`file://${rawPath}`).pathname || rawPath;
+  const normalizedPath = resolvedPath.toLowerCase();
+  const normalizedRoot = config.allowedFileRoot.toLowerCase();
+
+  if (
+    normalizedPath !== normalizedRoot &&
+    !normalizedPath.startsWith(`${normalizedRoot}/`)
+  ) {
+    throw new Error(
+      `Blocked by browser policy: file path is outside the allowed workspace root`
+    );
+  }
+}
+
 export function isAllowedUrl(rawUrl, config) {
   let parsed;
 

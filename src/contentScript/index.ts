@@ -1,7 +1,8 @@
-import MsgType from "../constants/msgType";
 import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
+import MsgType from "../constants/msgType";
 import MPlaylistItem from "../models/MPlaylistItem";
+import { getHourMinuteSecond } from "../utils/date";
 import {
   createStartPin,
   createStopPin,
@@ -14,7 +15,6 @@ import {
   setPinVisibility,
   setStartTime,
 } from "./MovingPin";
-import { getHourMinuteSecond } from "../utils/date";
 import {
   getAutonavCancelButton,
   getAutonavCountdownOverlay,
@@ -45,6 +45,27 @@ let onCSConfirm: (e: Event) => any;
 export let _duration: number = NaN;
 let cleanupPlaybackHandlers: (() => void) | null = null;
 let cleanupVolumeEnforcer: (() => void) | null = null;
+let hasInjectedVolumeBridge = false;
+
+const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
+
+const ensureYoutubeVolumeBridge = () => {
+  if (hasInjectedVolumeBridge) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.dataset.youtubePlaylistVolumeBridge = "true";
+  script.src = chrome.runtime.getURL("volumeBridge.js");
+
+  (document.documentElement || document.head || document.body).appendChild(
+    script,
+  );
+  script.addEventListener("load", () => {
+    script.remove();
+  });
+  hasInjectedVolumeBridge = true;
+};
 
 const ensureVideoPlayback = (video: HTMLVideoElement) => {
   let attempts = 0;
@@ -74,27 +95,48 @@ const applyVideoVolume = (video: HTMLVideoElement, volume: number) => {
   cleanupVolumeEnforcer?.();
   cleanupVolumeEnforcer = null;
 
-  const nextVolume = volume / 100;
+  const normalizedVolume = Math.max(0, Math.min(100, volume));
+  const nextVolume = normalizedVolume / 100;
   const enforceVolume = () => {
-    video.volume = nextVolume;
-    video.muted = nextVolume === 0;
+    const currentVideo = getYoutubePlayer() || video;
+    ensureYoutubeVolumeBridge();
+    window.dispatchEvent(
+      new CustomEvent(YT_VOLUME_EVENT, {
+        detail: { volume: normalizedVolume },
+      }),
+    );
+    if (Math.abs(currentVideo.volume - nextVolume) > 0.001) {
+      currentVideo.volume = nextVolume;
+    }
+    currentVideo.muted = nextVolume === 0;
   };
 
   enforceVolume();
 
+  // TODO: If the page-context bridge stays reliable long-term, simplify or
+  // remove this retry window. For now it still helps during YouTube startup.
   const refreshIntervalId = window.setInterval(enforceVolume, 50);
   video.addEventListener("volumechange", enforceVolume);
+  video.addEventListener("loadedmetadata", enforceVolume);
+  video.addEventListener("canplay", enforceVolume);
+  video.addEventListener("playing", enforceVolume);
 
   const timeoutId = window.setTimeout(() => {
     window.clearInterval(refreshIntervalId);
     video.removeEventListener("volumechange", enforceVolume);
+    video.removeEventListener("loadedmetadata", enforceVolume);
+    video.removeEventListener("canplay", enforceVolume);
+    video.removeEventListener("playing", enforceVolume);
     enforceVolume();
-  }, 800);
+  }, 2500);
 
   cleanupVolumeEnforcer = () => {
     window.clearInterval(refreshIntervalId);
     window.clearTimeout(timeoutId);
     video.removeEventListener("volumechange", enforceVolume);
+    video.removeEventListener("loadedmetadata", enforceVolume);
+    video.removeEventListener("canplay", enforceVolume);
+    video.removeEventListener("playing", enforceVolume);
   };
 };
 
@@ -104,7 +146,7 @@ const onYoutubeVideoPage = (
   isPlayTab: boolean,
   endTimestamp: number | undefined,
   enablePin: boolean,
-  volume: number | false | undefined
+  volume: number | false | undefined,
 ) => {
   const bookmark = getBookmarkButton();
   setStartTime(0);
@@ -165,14 +207,14 @@ const onYoutubeVideoPage = (
       for (const item of items) {
         //Select the full text when focus the inputbox
         item.addEventListener("focus", (event) =>
-          (event?.target as HTMLInputElement)?.select()
+          (event?.target as HTMLInputElement)?.select(),
         );
       }
       getResetStartTimeButton()?.addEventListener("click", onResetClick);
       const volume = getVolumeInput();
       volume.oninput = (event: Event) => {
         getVolumeText().innerHTML = volume.value;
-        video.volume = parseInt(volume.value) / 100;
+        applyVideoVolume(video, parseInt(volume.value));
       };
     });
     //Add a + button to the youtube control button group, it will open the dialog
@@ -276,7 +318,7 @@ const onYoutubeVideoPage = (
     };
     video.addEventListener(
       "enterpictureinpicture",
-      enterpictureinpictureHandler
+      enterpictureinpictureHandler,
     );
 
     const leavepictureinpictureHandler = () => {
@@ -284,7 +326,7 @@ const onYoutubeVideoPage = (
     };
     video.addEventListener(
       "leavepictureinpicture",
-      leavepictureinpictureHandler
+      leavepictureinpictureHandler,
     );
     cleanupPlaybackHandlers = () => {
       video.removeEventListener("timeupdate", timeupdateHandler);
@@ -293,11 +335,11 @@ const onYoutubeVideoPage = (
       video.removeEventListener("pause", pauseHandler);
       video.removeEventListener(
         "enterpictureinpicture",
-        enterpictureinpictureHandler
+        enterpictureinpictureHandler,
       );
       video.removeEventListener(
         "leavepictureinpicture",
-        leavepictureinpictureHandler
+        leavepictureinpictureHandler,
       );
     };
 
@@ -342,7 +384,7 @@ const onCSOpenDialogClickHandler = () => {
   const end_time = Math.floor(getEndTime());
   const [end_hours, end_minutes, end_seconds] = getHourMinuteSecond(
     end_time,
-    false
+    false,
   );
 
   getEndHourInput().value = end_hours.toString();
@@ -392,7 +434,7 @@ const onBookmarkSave = (url: string, videoId: string) => {
 
   if (endTimestamp !== undefined && endTimestamp <= timestamp) {
     addErrorMsg(
-      "Either check the until end or end time should larger than start time"
+      "Either check the until end or end time should larger than start time",
     );
     getConfirmButton().disabled = false;
     return;
@@ -420,17 +462,20 @@ const onBookmarkSave = (url: string, videoId: string) => {
       ? (result["youtube_list"] as MPlaylistItem[])
       : [];
 
-    chrome.storage.sync.set({
-      youtube_list: [...list, data],
-    }, () => {
-      if (chrome.runtime.lastError) {
-        console.log(chrome.runtime.lastError);
-        getConfirmButton().disabled = false;
-        return;
-      }
+    chrome.storage.sync.set(
+      {
+        youtube_list: [...list, data],
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.log(chrome.runtime.lastError);
+          getConfirmButton().disabled = false;
+          return;
+        }
 
-      getDialog().close();
-    });
+        getDialog().close();
+      },
+    );
   });
 };
 
@@ -464,18 +509,17 @@ const disableEndTimeGroup = (disable: boolean) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { type, url, videoId, isPlayTab, endTimestamp, enablePin, volume } =
     request;
-  console.log("on Message", request);
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
-      if (window.location.href === url) {
-        //if the information is outdated, ignore it
+      if (new URL(window.location.href).searchParams.get("v") === videoId) {
+        // if the information is outdated, ignore it
         onYoutubeVideoPage(
           url.split("?")[0],
           videoId,
           isPlayTab,
           endTimestamp,
           enablePin,
-          volume
+          volume,
         );
       }
       break;
@@ -498,12 +542,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.storage.onChanged.addListener(
   (
     changes: { [key: string]: chrome.storage.StorageChange },
-    namespace: "sync" | "local" | "managed" | "session"
+    namespace: "sync" | "local" | "managed" | "session",
   ) => {
     if ("enablePin" in changes) {
       setPinVisibility(!!changes["enablePin"].newValue);
     }
-  }
+  },
 );
 
 /*
@@ -526,7 +570,7 @@ The self invocation function ensure those case will still have someone to handle
       false,
       undefined,
       enablePin,
-      undefined
+      undefined,
     );
   });
 })();

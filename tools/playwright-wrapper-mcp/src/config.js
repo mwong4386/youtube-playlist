@@ -14,6 +14,7 @@ export function getConfig() {
     braveExecutablePath:
       process.env.BRAVE_EXECUTABLE_PATH || defaultBravePath,
     extensionPath: process.env.EXTENSION_BUILD_PATH || defaultExtensionPath,
+    allowedFileRoot: repoRoot,
     allowedHosts: new Set(["youtube.com", "www.youtube.com"]),
     allowChromeExtensionProtocol: true,
     allowFileProtocol: false,

@@ -47,8 +47,16 @@ const getCurrentItem = async () => {
   return item;
 };
 
-const getUrlForItem = (item: MPlaylistItem) =>
-  `${item.url}/?v=${item.videoId}${item.timestamp ? "&t=" + item.timestamp : ""}`;
+const getUrlForItem = (item: MPlaylistItem) => {
+  const url = new URL(item.url);
+  url.searchParams.set("v", item.videoId);
+  if (item.timestamp) {
+    url.searchParams.set("t", item.timestamp.toString());
+  } else {
+    url.searchParams.delete("t");
+  }
+  return url.toString();
+};
 
 const getVideoIdFromUrl = (url?: string | null) => {
   if (!url) return null;
@@ -221,7 +229,6 @@ const deleteVideo = async (id: string) => {
 };
 
 const onMessageHandler = async (message: any) => {
-  console.log("on Message Handler", message);
   switch (message.name) {
     case MsgType.PlayVideo:
       await onPlayVideo(message.item);
@@ -389,7 +396,6 @@ const getLegacyPlaybackState = (result: {
     count: number,
   ) => {
     const currentItem = await getCurrentItem();
-    console.log("send Message to yt", count);
     chrome.tabs.sendMessage(
       tabId,
       {
@@ -423,15 +429,12 @@ const getLegacyPlaybackState = (result: {
 
     const videoId = getVideoIdFromUrl(url);
     const isPlayTab = playbackState.currentTabId === tabId;
-    console.log(playbackState.currentTabId, " ", tabId);
     if (!videoId) return;
     if (isPlayTab && playingItem?.videoId !== videoId) {
-      console.log("unknown video id ", videoId, " ", playingItem);
       resetPlaybackState();
       updateStateToLocalStorage();
       return;
     }
-    console.log("Seems good ", playingItem);
     void sendMessageToYoutubeTab(tabId, url, videoId, isPlayTab, 0);
   };
 

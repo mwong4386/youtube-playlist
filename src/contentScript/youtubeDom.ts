@@ -11,6 +11,22 @@ export const getBookmarkButton = () => {
 };
 
 export const getYoutubePlayer = () => {
+  const mainPlayerVideo = document.querySelector(
+    "#movie_player video.video-stream.html5-main-video"
+  ) as HTMLVideoElement | null;
+
+  if (mainPlayerVideo) {
+    return mainPlayerVideo;
+  }
+
+  const visibleVideo = Array.from(document.getElementsByTagName("video")).find(
+    (video) => video.offsetParent !== null
+  );
+
+  if (visibleVideo) {
+    return visibleVideo as HTMLVideoElement;
+  }
+
   const videos = document.getElementsByTagName("video");
   return videos[videos.length - 1] as HTMLVideoElement;
 };

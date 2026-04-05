@@ -21,7 +21,7 @@
     ],
     "web_accessible_resources": [
       {
-        "resources": [ "dialog.html","marker.html","endmarker.html"  ],
+        "resources": [ "dialog.html","marker.html","endmarker.html", "volumeBridge.js"  ],
         "matches": [ "https://www.youtube.com/*" ]
       }
       

@@ -11,7 +11,11 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { getConfig } from "./config.js";
-import { assertAllowedCurrentPage, assertAllowedUrl } from "./policy.js";
+import {
+  assertAllowedCurrentPage,
+  assertAllowedFilePath,
+  assertAllowedUrl,
+} from "./policy.js";
 
 const config = getConfig();
 const sessions = new Map();
@@ -157,6 +161,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "upload_file",
+        description:
+          "Attach a local file from inside the project workspace to a file input on the current allowlisted page.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            session_id: { type: "string" },
+            selector: { type: "string" },
+            file_path: { type: "string" },
+          },
+          required: ["session_id", "selector", "file_path"],
+        },
+      },
+      {
         name: "press",
         description: "Press a keyboard key against a selector on the current page.",
         inputSchema: {
@@ -262,6 +280,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === "type") {
     await page.locator(args.selector).fill(args.text);
     return textResult({ filled: args.selector, url: page.url() });
+  }
+
+  if (name === "upload_file") {
+    assertAllowedFilePath(args.file_path, config);
+    if (!fs.existsSync(args.file_path)) {
+      throw new Error(`Local file not found: ${args.file_path}`);
+    }
+    await page.locator(args.selector).setInputFiles(args.file_path);
+    return textResult({
+      uploaded: args.file_path,
+      selector: args.selector,
+      url: page.url(),
+    });
   }
 
   if (name === "press") {

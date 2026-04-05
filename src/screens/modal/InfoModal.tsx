@@ -3,6 +3,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import Modal from "./Modal";
 import styles from "./Modal.module.css";
+
 interface props {
   active: boolean;
   close: () => void;
@@ -25,6 +26,9 @@ interface infoModels {
   untilEnd: boolean;
   volume: number;
 }
+
+const toNumber = (value: number) => Number(value) || 0;
+
 const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
   const {
     register,
@@ -71,13 +75,18 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
     } else {
       reset();
     }
-  }, [item]);
+  }, [item, reset]);
 
   const onSubmit = (data: infoModels) => {
-    const timestamp = data.hours * 3600 + data.minutes * 60 + data.seconds * 1;
-    if (item?.maxDuration && timestamp > item?.maxDuration) return;
+    const timestamp =
+      toNumber(data.hours) * 3600 +
+      toNumber(data.minutes) * 60 +
+      toNumber(data.seconds);
+    if (item?.maxDuration && timestamp > item.maxDuration) return;
     const temp_endtimestamp =
-      data.endHours * 3600 + data.endMinutes * 60 + data.endSeconds * 1;
+      toNumber(data.endHours) * 3600 +
+      toNumber(data.endMinutes) * 60 +
+      toNumber(data.endSeconds);
     const endtimestamp =
       data.untilEnd || temp_endtimestamp > (item?.maxDuration as number)
         ? undefined
@@ -117,13 +126,23 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
                 pattern="[0-9]{0,2}"
                 {...register("hours", {
                   required: true,
+                  valueAsNumber: true,
                   validate: (value) => {
-                    return (
-                      value * 3600 +
-                        getValues("minutes") * 60 +
-                        getValues("seconds") * 1 <
-                      (item?.maxDuration || 0)
-                    );
+                    const maxDuration = item?.maxDuration;
+                    if (
+                      typeof maxDuration !== "number" ||
+                      !Number.isFinite(maxDuration) ||
+                      maxDuration <= 0
+                    ) {
+                      return true;
+                    }
+
+                    const timestamp =
+                      toNumber(value) * 3600 +
+                      toNumber(getValues("minutes")) * 60 +
+                      toNumber(getValues("seconds"));
+
+                    return timestamp <= maxDuration;
                   },
                 })}
               />
@@ -135,7 +154,10 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
                 maxLength={2}
                 size={2}
                 pattern="[0-5]?[0-9]"
-                {...register("minutes", { required: true })}
+                {...register("minutes", {
+                  required: true,
+                  valueAsNumber: true,
+                })}
               />
               <span className={styles["semicolon"]}>:</span>
               <input
@@ -145,7 +167,10 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
                 maxLength={2}
                 size={2}
                 pattern="[0-5]?[0-9]"
-                {...register("seconds", { required: true })}
+                {...register("seconds", {
+                  required: true,
+                  valueAsNumber: true,
+                })}
               />
             </span>
           </div>
@@ -164,7 +189,10 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
                 placeholder="HH"
                 maxLength={2}
                 size={2}
-                {...register("endHours", { required: !watch("untilEnd") })}
+                {...register("endHours", {
+                  required: !watch("untilEnd"),
+                  valueAsNumber: true,
+                })}
                 {...(!watch("untilEnd")
                   ? { pattern: "[0-9]{0,2}" }
                   : { disabled: true })}
@@ -177,7 +205,10 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
                 placeholder="mm"
                 maxLength={2}
                 size={2}
-                {...register("endMinutes", { required: !watch("untilEnd") })}
+                {...register("endMinutes", {
+                  required: !watch("untilEnd"),
+                  valueAsNumber: true,
+                })}
                 {...(!watch("untilEnd")
                   ? { pattern: "[0-5]?[0-9]" }
                   : { disabled: true })}
@@ -190,7 +221,10 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
                 placeholder="ss"
                 maxLength={2}
                 size={2}
-                {...register("endSeconds", { required: !watch("untilEnd") })}
+                {...register("endSeconds", {
+                  required: !watch("untilEnd"),
+                  valueAsNumber: true,
+                })}
                 {...(!watch("untilEnd")
                   ? { pattern: "[0-5]?[0-9]" }
                   : { disabled: true })}
@@ -224,6 +258,7 @@ const InfoModal = ({ item, active, onvolumechange, save, close }: props) => {
               id="cs-volume"
               {...register("volume", {
                 required: true,
+                valueAsNumber: true,
                 onChange: onvolumechange,
               })}
             />
