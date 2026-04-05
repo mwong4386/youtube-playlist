@@ -61,6 +61,7 @@ let eqFilters: Partial<Record<keyof AudioEqSettings, BiquadFilterNode>> = {};
 let currentAudioEqSettings = cloneAudioEqSettings();
 let currentEqButton: HTMLButtonElement | null = null;
 let currentEqPanel: HTMLDivElement | null = null;
+let cleanupEqOutsideClick: (() => void) | null = null;
 let isCurrentPlaybackTab = false;
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
@@ -152,18 +153,18 @@ const applyVideoEq = (
   syncEqPanelUi(normalizedSettings);
 };
 
-const ensureEqPanelStyles = () => {
-  if (document.getElementById("yt-playlist-eq-style")) {
+const ensureFloatingPanelStyles = () => {
+  if (document.getElementById("yt-playlist-panel-style")) {
     return;
   }
 
   const style = document.createElement("style");
-  style.id = "yt-playlist-eq-style";
+  style.id = "yt-playlist-panel-style";
   style.textContent = `
-    .yt-playlist-eq-panel {
-      position: fixed;
+    .yt-playlist-panel {
+      position: absolute;
       right: 24px;
-      bottom: 96px;
+      bottom: 136px;
       width: 360px;
       padding: 16px 16px 14px;
       border-radius: 18px;
@@ -172,34 +173,72 @@ const ensureEqPanelStyles = () => {
       box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
       z-index: 2147483647;
       font-family: "Avenir Next", "Segoe UI", sans-serif;
+      box-sizing: border-box;
     }
-    .yt-playlist-eq-panel[hidden] {
+    .yt-playlist-panel[hidden] {
       display: none;
     }
-    .yt-playlist-eq-panel__header {
+    .yt-playlist-panel__header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 14px;
     }
-    .yt-playlist-eq-panel__title {
+    .yt-playlist-panel__title {
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       margin: 0;
     }
+    .yt-playlist-panel__close {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .yt-playlist-panel__close:hover {
+      color: #fff;
+    }
+    .yt-playlist-panel__close:active {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    dialog.yt-playlist-panel {
+      margin: 0;
+      border: 0;
+      inset: auto auto auto auto;
+      overflow: hidden;
+    }
+    dialog.yt-playlist-panel::backdrop {
+      background: transparent;
+    }
+    @media (max-width: 640px) {
+      .yt-playlist-panel,
+      dialog.yt-playlist-panel {
+        right: 16px;
+        left: 16px;
+        bottom: 16px;
+        width: auto;
+        max-width: none;
+        inset: auto 16px 16px 16px;
+      }
+    }
+    .yt-playlist-eq-panel {
+      max-width: calc(100vw - 32px);
+    }
+    .yt-playlist-eq-panel__header {
+      margin-bottom: 14px;
+    }
+    .yt-playlist-eq-panel__title {
+      margin: 0;
+    }
     .yt-playlist-eq-panel__hint {
       font-size: 11px;
       color: rgba(255, 255, 255, 0.64);
       margin-top: 4px;
-    }
-    .yt-playlist-eq-panel__close {
-      border: 0;
-      background: transparent;
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 18px;
-      cursor: pointer;
     }
     .yt-playlist-eq-panel__bands {
       display: grid;
@@ -280,6 +319,86 @@ const formatEqValue = (value: number) => {
   return value > 0 ? `+${value}` : `${value}`;
 };
 
+const positionPanelAboveAnchor = (
+  panel: HTMLElement,
+  anchor: HTMLElement | null,
+  horizontalAnchor?: HTMLElement | null,
+) => {
+  if (!anchor) {
+    panel.style.removeProperty("top");
+    panel.style.removeProperty("bottom");
+    panel.style.removeProperty("right");
+    panel.style.removeProperty("left");
+    return;
+  }
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const horizontalRect = (horizontalAnchor ?? anchor).getBoundingClientRect();
+  const panelRect = panel.getBoundingClientRect();
+  const gap = 14;
+  const margin = 16;
+  const rightInset = -10;
+  const top = Math.max(
+    window.scrollY + margin,
+    window.scrollY + anchorRect.top - panelRect.height - gap,
+  );
+  const left = Math.max(
+    window.scrollX + margin,
+    window.scrollX + horizontalRect.right - panelRect.width + rightInset,
+  );
+
+  panel.style.top = `${Math.round(top)}px`;
+  panel.style.left = `${Math.round(left)}px`;
+  panel.style.bottom = "auto";
+  panel.style.right = "auto";
+};
+
+const getRightControlsAnchor = () => {
+  const rightControls = Array.from(getRightControls());
+  return rightControls[rightControls.length - 1] ?? null;
+};
+
+const closeBookmarkDialog = () => {
+  const dialog = document.getElementById("cs-dialog") as HTMLDialogElement | null;
+  if (dialog?.open) {
+    dialog.close();
+  }
+};
+
+const closeEqPanel = () => {
+  if (currentEqPanel && !currentEqPanel.hidden) {
+    currentEqPanel.hidden = true;
+  }
+};
+
+const ensureEqOutsideClickHandler = (
+  panel: HTMLDivElement,
+  button: HTMLButtonElement,
+) => {
+  cleanupEqOutsideClick?.();
+  const onDocumentPointerDown = (event: MouseEvent) => {
+    if (panel.hidden) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (!target) {
+      return;
+    }
+
+    if (panel.contains(target) || button.contains(target)) {
+      return;
+    }
+
+    panel.hidden = true;
+  };
+
+  document.addEventListener("mousedown", onDocumentPointerDown);
+  cleanupEqOutsideClick = () => {
+    document.removeEventListener("mousedown", onDocumentPointerDown);
+  };
+};
+
 const syncEqPanelUi = (settings: AudioEqSettings = currentAudioEqSettings) => {
   if (!currentEqPanel) {
     return;
@@ -330,14 +449,14 @@ const sendEqSettingsToBackground = (settings: AudioEqSettings, persist: boolean)
 };
 
 const ensureEqPanel = () => {
-  ensureEqPanelStyles();
+  ensureFloatingPanelStyles();
   if (currentEqPanel) {
     syncEqPanelUi();
     return currentEqPanel;
   }
 
   const panel = document.createElement("div");
-  panel.className = "yt-playlist-eq-panel";
+  panel.className = "yt-playlist-panel yt-playlist-eq-panel";
   panel.hidden = true;
 
   const bandsMarkup = AUDIO_EQ_BANDS.map(
@@ -361,12 +480,12 @@ const ensureEqPanel = () => {
   ).join("");
 
   panel.innerHTML = `
-    <div class="yt-playlist-eq-panel__header">
+    <div class="yt-playlist-panel__header yt-playlist-eq-panel__header">
       <div>
-        <p class="yt-playlist-eq-panel__title">Song EQ</p>
+        <p class="yt-playlist-panel__title yt-playlist-eq-panel__title">Song EQ</p>
         <div class="yt-playlist-eq-panel__hint" data-eq-save-hint></div>
       </div>
-      <button class="yt-playlist-eq-panel__close" type="button" aria-label="Close EQ panel">x</button>
+      <button class="yt-playlist-panel__close yt-playlist-eq-panel__close" type="button" aria-label="Close EQ panel">x</button>
     </div>
     <div class="yt-playlist-eq-panel__bands">${bandsMarkup}</div>
     <div class="yt-playlist-eq-panel__scale">
@@ -426,10 +545,15 @@ const ensureEqButton = () => {
   button.className = "ytp-button yt-playlist-eq-button";
   button.title = "Click to open song EQ";
   button.innerHTML = `<span class="yt-playlist-eq-button__label">EQ</span>`;
+  const panel = ensureEqPanel();
+  ensureEqOutsideClickHandler(panel, button);
   button.addEventListener("click", () => {
-    const panel = ensureEqPanel();
+    if (panel.hidden) {
+      closeBookmarkDialog();
+    }
     panel.hidden = !panel.hidden;
     if (!panel.hidden) {
+      positionPanelAboveAnchor(panel, button, getRightControlsAnchor());
       syncEqPanelUi();
     }
   });
@@ -796,7 +920,13 @@ const onCSOpenDialogClickHandler = () => {
   const isUntilEnd = getEndTime() === _duration;
   getUntilEndInput().checked = isUntilEnd;
   disableEndTimeGroup(isUntilEnd);
+  closeEqPanel();
   dialog.showModal();
+  positionPanelAboveAnchor(
+    dialog,
+    getBookmarkButton(),
+    getRightControlsAnchor(),
+  );
 };
 
 const onResetClick = () => {
