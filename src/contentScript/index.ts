@@ -43,6 +43,32 @@ import {
 
 let onCSConfirm: (e: Event) => any;
 export let _duration: number = NaN;
+let cleanupPlaybackHandlers: (() => void) | null = null;
+
+const ensureVideoPlayback = (video: HTMLVideoElement) => {
+  let attempts = 0;
+
+  const playVideo = () => {
+    const result = video.play();
+    if (result && typeof result.catch === "function") {
+      result.catch(() => {
+        // Ignore transient autoplay failures while the page is still settling.
+      });
+    }
+  };
+
+  playVideo();
+
+  const intervalId = window.setInterval(() => {
+    if (!video.paused || video.ended || attempts++ >= 10) {
+      window.clearInterval(intervalId);
+      return;
+    }
+
+    playVideo();
+  }, 300);
+};
+
 const onYoutubeVideoPage = (
   url: string,
   videoId: string,
@@ -155,6 +181,12 @@ const onYoutubeVideoPage = (
     video = video || getYoutubePlayer(); /*document.getElementsByClassName(
       "video-stream html5-main-video"
     )[0] as HTMLVideoElement;*/
+
+    cleanupPlaybackHandlers?.();
+    cleanupPlaybackHandlers = null;
+
+    ensureVideoPlayback(video);
+
     if (volume !== undefined && volume !== false) {
       // It need to compete with the youtube own handler
       const volumeHandler = () => {
@@ -237,7 +269,7 @@ const onYoutubeVideoPage = (
       "leavepictureinpicture",
       leavepictureinpictureHandler
     );
-    window.onbeforeunload = () => {
+    cleanupPlaybackHandlers = () => {
       video.removeEventListener("timeupdate", timeupdateHandler);
       video.removeEventListener("ended", endedHandler);
       video.removeEventListener("play", playHandler);
@@ -250,6 +282,11 @@ const onYoutubeVideoPage = (
         "leavepictureinpicture",
         leavepictureinpictureHandler
       );
+    };
+
+    window.onbeforeunload = () => {
+      cleanupPlaybackHandlers?.();
+      cleanupPlaybackHandlers = null;
     };
   }
 };

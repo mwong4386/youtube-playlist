@@ -409,21 +409,35 @@ const getLegacyPlaybackState = (result: {
     );
   };
 
-  chrome.webNavigation.onHistoryStateUpdated.addListener((detail) => {
-    if (detail.url && detail.url.includes("youtube.com/watch")) {
-      const videoId = getVideoIdFromUrl(detail.url);
-      const isPlayTab = playbackState.currentTabId === detail.tabId;
-      console.log(playbackState.currentTabId, " ", detail.tabId);
-      if (!videoId) return;
-      if (isPlayTab && playingItem?.videoId !== videoId) {
-        console.log("unknown video id ", videoId, " ", playingItem);
-        resetPlaybackState();
-        updateStateToLocalStorage();
-        return;
-      }
-      console.log("Seems good ", playingItem);
-      void sendMessageToYoutubeTab(detail.tabId, detail.url, videoId, isPlayTab, 0);
+  const handleYoutubeNavigation = (tabId: number, url?: string) => {
+    if (!url || !url.includes("youtube.com/watch")) {
+      return;
     }
+
+    const videoId = getVideoIdFromUrl(url);
+    const isPlayTab = playbackState.currentTabId === tabId;
+    console.log(playbackState.currentTabId, " ", tabId);
+    if (!videoId) return;
+    if (isPlayTab && playingItem?.videoId !== videoId) {
+      console.log("unknown video id ", videoId, " ", playingItem);
+      resetPlaybackState();
+      updateStateToLocalStorage();
+      return;
+    }
+    console.log("Seems good ", playingItem);
+    void sendMessageToYoutubeTab(tabId, url, videoId, isPlayTab, 0);
+  };
+
+  chrome.webNavigation.onHistoryStateUpdated.addListener((detail) => {
+    handleYoutubeNavigation(detail.tabId, detail.url);
+  });
+
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status !== "complete") {
+      return;
+    }
+
+    handleYoutubeNavigation(tabId, tab.url);
   });
 
   chrome.tabs.onRemoved.addListener((tabId) => {
