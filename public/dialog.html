@@ -1,31 +1,53 @@
 <style>
+    .cs-dialog{
+        --yt-playlist-surface: rgba(247, 247, 245, 0.98);
+        --yt-playlist-surface-soft: rgba(255, 255, 255, 0.92);
+        --yt-playlist-text: #171717;
+        --yt-playlist-text-muted: rgba(23, 23, 23, 0.64);
+        --yt-playlist-text-strong: rgba(23, 23, 23, 0.85);
+        --yt-playlist-accent: #cc0000;
+        --yt-playlist-accent-strong: #aa0000;
+        --yt-playlist-danger: #c53b3b;
+        --yt-playlist-border: rgba(23, 23, 23, 0.12);
+    }
+    .cs-dialog[data-theme="dark"]{
+        --yt-playlist-surface: rgba(17, 17, 17, 0.96);
+        --yt-playlist-surface-soft: rgba(255, 255, 255, 0.08);
+        --yt-playlist-text: #fff;
+        --yt-playlist-text-muted: rgba(255, 255, 255, 0.64);
+        --yt-playlist-text-strong: rgba(255, 255, 255, 0.85);
+        --yt-playlist-accent: #f7c66e;
+        --yt-playlist-accent-strong: #ffd68a;
+        --yt-playlist-danger: #ff8f8f;
+        --yt-playlist-border: rgba(255, 255, 255, 0.12);
+    }
     .cs-time {
         display: inline-flex;
         align-items: center;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid var(--yt-playlist-border);
         border-radius: 12px;
         padding: 6px 8px;
         margin-left: 6px;
-        background: rgba(255, 255, 255, 0.05);
+        background: color-mix(in srgb, var(--yt-playlist-surface-soft) 65%, transparent);
     }
     .cs-time input {
         border: 0;
         text-align: center;
         outline: 0;
         background: transparent;
-        color: #fff;
+        color: var(--yt-playlist-text);
     }
     .cs-dialog-button{
         padding: 10px 14px;
         border-radius: 12px;
         border: 1px solid transparent;
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
+        background: color-mix(in srgb, var(--yt-playlist-surface-soft) 80%, transparent);
+        color: var(--yt-playlist-text);
     }
     .cs-semicolon{
         font-size: 20px;
         font-weight:bold;
-        color: rgba(255, 255, 255, 0.64);
+        color: var(--yt-playlist-text-muted);
     }
     .cs-time-inputgroup{
         font-size: 18px;
@@ -53,11 +75,11 @@
         font-weight: bold;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        background: #f7c66e;
+        background: var(--yt-playlist-accent);
         color: #181818;
     }
     .cs-channel-name{
-        color: rgba(255, 255, 255, 0.64);
+        color: var(--yt-playlist-text-muted);
         font-size: 12px;
         line-height: 1.4;
         margin-bottom: 14px;
@@ -67,7 +89,7 @@
         font-size: 15px;
         font-weight: 600;
         line-height: 1.35;
-        color: #fff;
+        color: var(--yt-playlist-text);
         margin-bottom: 8px;
         margin-top: 0;
         display: -webkit-box;
@@ -89,12 +111,12 @@
         display: inline-block;
         width: 84px;
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.85);
+        color: var(--yt-playlist-text-strong);
     }
     .cs-volume-text{
         min-width: 32px;
         font-size: 14px;
-        color: #f7c66e;
+        color: var(--yt-playlist-accent);
         text-align: right;
     }
     .cs-dialog-content{
@@ -102,39 +124,39 @@
     }
     .cs-error-container p{
         font-size: 13px;
-        color: #ff8f8f;
+        color: var(--yt-playlist-danger);
         margin: 8px 0 0;
     }
     .cs-reset-button{
         border: 0;
-        color: rgba(255, 255, 255, 0.64);
+        color: var(--yt-playlist-text-muted);
         background: transparent;
         padding: 6px;
         border-radius: 10px;
     }
     .cs-button:hover{
         cursor: pointer;
-        background-color: rgba(255, 255, 255, 0.14);
+        background-color: color-mix(in srgb, var(--yt-playlist-surface-soft) 95%, transparent);
     }
     .cs-button:active{
-        background-color: rgba(255, 255, 255, 0.22);
+        background-color: color-mix(in srgb, var(--yt-playlist-surface-soft) 100%, transparent);
     }
     .cs-confirm-button:hover{
-        background: #ffd68a;
+        background: var(--yt-playlist-accent-strong);
     }
     .cs-confirm-button:active{
-        background: #e8b95d;
+        background: var(--yt-playlist-accent);
     }
     .cs-volume{
         flex: 1;
-        accent-color: #f7c66e;
+        accent-color: var(--yt-playlist-accent);
     }
     .cs-checkbox{
-        accent-color: #f7c66e;
+        accent-color: var(--yt-playlist-accent);
     }
     .cs-until-end{
         width: auto;
-        color: rgba(255, 255, 255, 0.64);
+        color: var(--yt-playlist-text-muted);
     }
     .cs-row-group{
         display: flex;
@@ -155,7 +177,7 @@
         align-items: center;
     }
     .cs-time input:disabled{
-        color: rgba(255, 255, 255, 0.4);
+        color: color-mix(in srgb, var(--yt-playlist-text-muted) 72%, transparent);
     }
     .cs-dialog form{
         margin: 0;

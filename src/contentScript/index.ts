@@ -12,6 +12,14 @@ import {
 import MPlaylistItem from "../models/MPlaylistItem";
 import { getHourMinuteSecond } from "../utils/date";
 import {
+  DEFAULT_THEME_PREFERENCE,
+  getResolvedTheme,
+  normalizeThemePreference,
+  ResolvedTheme,
+  THEME_PREFERENCE_KEY,
+  ThemePreference,
+} from "../utils/theme";
+import {
   createStartPin,
   createStopPin,
   getEndTime,
@@ -63,9 +71,43 @@ let currentEqButton: HTMLButtonElement | null = null;
 let currentEqPanel: HTMLDivElement | null = null;
 let cleanupEqOutsideClick: (() => void) | null = null;
 let isCurrentPlaybackTab = false;
+let currentThemePreference: ThemePreference = DEFAULT_THEME_PREFERENCE;
+let currentResolvedTheme: ResolvedTheme = "light";
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
 const PLAYER_VOLUME_RETRY_DELAYS_MS = [120, 320, 700];
+const THEME_MEDIA_QUERY = "(prefers-color-scheme: dark)";
+
+const getPanelThemeTargets = () => {
+  const targets: HTMLElement[] = [];
+  const dialog = document.getElementById("cs-dialog") as HTMLElement | null;
+
+  if (dialog) {
+    targets.push(dialog);
+  }
+
+  if (currentEqPanel) {
+    targets.push(currentEqPanel);
+  }
+
+  return targets;
+};
+
+const applyContentScriptTheme = () => {
+  currentResolvedTheme = getResolvedTheme(
+    currentThemePreference,
+    window.matchMedia(THEME_MEDIA_QUERY).matches,
+  );
+
+  for (const target of getPanelThemeTargets()) {
+    target.dataset.theme = currentResolvedTheme;
+  }
+};
+
+const syncContentScriptThemePreference = (value: unknown) => {
+  currentThemePreference = normalizeThemePreference(value);
+  applyContentScriptTheme();
+};
 
 const ensureAudioEqGraph = (video: HTMLVideoElement) => {
   const hasAllFilters = AUDIO_EQ_BANDS.every((band) => !!eqFilters[band.key]);
@@ -168,18 +210,43 @@ const ensureFloatingPanelStyles = () => {
   style.id = "yt-playlist-panel-style";
   style.textContent = `
     .yt-playlist-panel {
+      --yt-playlist-surface: rgba(247, 247, 245, 0.98);
+      --yt-playlist-surface-strong: rgba(255, 255, 255, 0.98);
+      --yt-playlist-text: #171717;
+      --yt-playlist-text-muted: rgba(23, 23, 23, 0.64);
+      --yt-playlist-text-subtle: rgba(23, 23, 23, 0.45);
+      --yt-playlist-accent: #cc0000;
+      --yt-playlist-border: rgba(23, 23, 23, 0.12);
+      --yt-playlist-shadow: rgba(15, 23, 42, 0.18);
+      --yt-playlist-close: rgba(23, 23, 23, 0.72);
       position: absolute;
       right: 24px;
       bottom: 136px;
       width: 360px;
       padding: 16px 16px 14px;
       border-radius: 18px;
-      background: linear-gradient(180deg, rgba(17, 17, 17, 0.96), rgba(28, 28, 28, 0.94));
-      color: #fff;
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+      background: linear-gradient(
+        180deg,
+        var(--yt-playlist-surface-strong),
+        var(--yt-playlist-surface)
+      );
+      color: var(--yt-playlist-text);
+      border: 1px solid var(--yt-playlist-border);
+      box-shadow: 0 18px 48px var(--yt-playlist-shadow);
       z-index: 2147483647;
       font-family: "Avenir Next", "Segoe UI", sans-serif;
       box-sizing: border-box;
+    }
+    .yt-playlist-panel[data-theme="dark"] {
+      --yt-playlist-surface: rgba(17, 17, 17, 0.96);
+      --yt-playlist-surface-strong: rgba(28, 28, 28, 0.94);
+      --yt-playlist-text: #ffffff;
+      --yt-playlist-text-muted: rgba(255, 255, 255, 0.64);
+      --yt-playlist-text-subtle: rgba(255, 255, 255, 0.45);
+      --yt-playlist-accent: #f7c66e;
+      --yt-playlist-border: rgba(255, 255, 255, 0.08);
+      --yt-playlist-shadow: rgba(0, 0, 0, 0.35);
+      --yt-playlist-close: rgba(255, 255, 255, 0.8);
     }
     .yt-playlist-panel[hidden] {
       display: none;
@@ -201,16 +268,16 @@ const ensureFloatingPanelStyles = () => {
       border: 0;
       padding: 0;
       background: transparent;
-      color: rgba(255, 255, 255, 0.8);
+      color: var(--yt-playlist-close);
       font-size: 18px;
       line-height: 1;
       cursor: pointer;
     }
     .yt-playlist-panel__close:hover {
-      color: #fff;
+      color: var(--yt-playlist-text);
     }
     .yt-playlist-panel__close:active {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--yt-playlist-text-muted);
     }
     dialog.yt-playlist-panel {
       margin: 0;
@@ -243,7 +310,7 @@ const ensureFloatingPanelStyles = () => {
     }
     .yt-playlist-eq-panel__hint {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.64);
+      color: var(--yt-playlist-text-muted);
       margin-top: 4px;
     }
     .yt-playlist-eq-panel__bands {
@@ -260,7 +327,7 @@ const ensureFloatingPanelStyles = () => {
     }
     .yt-playlist-eq-panel__value {
       font-size: 11px;
-      color: #f7c66e;
+      color: var(--yt-playlist-accent);
       min-height: 14px;
     }
     .yt-playlist-eq-panel__track {
@@ -275,12 +342,12 @@ const ensureFloatingPanelStyles = () => {
       margin: 0;
       writing-mode: vertical-lr;
       direction: rtl;
-      accent-color: #f7c66e;
+      accent-color: var(--yt-playlist-accent);
       cursor: pointer;
     }
     .yt-playlist-eq-panel__label {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.85);
+      color: color-mix(in srgb, var(--yt-playlist-text) 85%, transparent);
       text-align: center;
       line-height: 1.2;
       min-height: 28px;
@@ -290,7 +357,7 @@ const ensureFloatingPanelStyles = () => {
       justify-content: space-between;
       margin-top: 10px;
       font-size: 10px;
-      color: rgba(255, 255, 255, 0.45);
+      color: var(--yt-playlist-text-subtle);
     }
     .yt-playlist-eq-button {
       position: relative;
@@ -464,6 +531,7 @@ const ensureEqPanel = () => {
   const panel = document.createElement("div");
   panel.className = "yt-playlist-panel yt-playlist-eq-panel";
   panel.hidden = true;
+  panel.dataset.theme = currentResolvedTheme;
 
   const bandsMarkup = AUDIO_EQ_BANDS.map(
     (band) => `
@@ -538,6 +606,7 @@ const ensureEqPanel = () => {
 
   document.body.append(panel);
   currentEqPanel = panel;
+  applyContentScriptTheme();
   syncEqPanelUi();
   return currentEqPanel;
 };
@@ -694,6 +763,7 @@ const onYoutubeVideoPage = (
     //Insert the dialog html
     getHtmlFromResource("/dialog.html").then((html) => {
       document.body.insertAdjacentHTML("beforeend", html);
+      applyContentScriptTheme();
       // Add confirm button handler
       getConfirmButton().addEventListener("click", onCSConfirm);
       // Close the dialog when click the backdrop
@@ -1073,8 +1143,26 @@ chrome.storage.onChanged.addListener(
     if ("enablePin" in changes) {
       setPinVisibility(!!changes["enablePin"].newValue);
     }
+    if (namespace === "sync" && THEME_PREFERENCE_KEY in changes) {
+      syncContentScriptThemePreference(changes[THEME_PREFERENCE_KEY].newValue);
+    }
   },
 );
+
+const themeMediaQuery = window.matchMedia(THEME_MEDIA_QUERY);
+const onThemeMediaQueryChange = () => {
+  applyContentScriptTheme();
+};
+
+if (typeof themeMediaQuery.addEventListener === "function") {
+  themeMediaQuery.addEventListener("change", onThemeMediaQueryChange);
+} else {
+  themeMediaQuery.addListener(onThemeMediaQueryChange);
+}
+
+chrome.storage.sync.get([THEME_PREFERENCE_KEY], (result) => {
+  syncContentScriptThemePreference(result[THEME_PREFERENCE_KEY]);
+});
 
 /*
 In case of the browser directly go to the youtube video page, the content script on Message

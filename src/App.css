@@ -5,7 +5,10 @@
   height: 100vh;
   padding: 0;
   overflow: hidden;
-  background-color: white;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 38%),
+    linear-gradient(180deg, var(--surface-tertiary) 0%, var(--surface-primary) 100%);
+  color: var(--text-primary);
 }
 
 .App-logo {
@@ -34,18 +37,18 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: var(--surface-secondary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: var(--text-primary);
 }
 
 .App-link {
-  color: #61dafb;
+  color: var(--accent-color);
 }
 
 @keyframes App-logo-spin {

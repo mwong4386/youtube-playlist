@@ -8,14 +8,26 @@ import PlaybackState, {
 import { getCurrentTimestamp } from "../../utils/date";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import { parseImportedPlaylist } from "../../utils/playlistImport";
+import {
+  normalizeThemePreference,
+  ThemePreference,
+  THEME_PREFERENCE_KEY,
+} from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
 import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
   playlist: MPlaylistItem[];
+  themePreference: ThemePreference;
+  setThemePreference: (preference: ThemePreference) => void;
 }
-const PlaylistHeader = ({ playlist, onDelete }: props) => {
+const PlaylistHeader = ({
+  playlist,
+  onDelete,
+  themePreference,
+  setThemePreference,
+}: props) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState()
   );
@@ -64,7 +76,12 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
     ctx.open();
   };
 
-  const openMenu = () => {
+  const openMenuWithTheme = (selectedTheme: ThemePreference) => {
+    const onThemeChange = (preference: ThemePreference) => {
+      setThemePreference(preference);
+      openMenuWithTheme(preference);
+    };
+
     ctx.setActionSheet([
       ...(playing
         ? [
@@ -77,21 +94,36 @@ const PlaylistHeader = ({ playlist, onDelete }: props) => {
         : []),
       {
         id: 2,
+        kind: "theme-selector",
+        themePreference: selectedTheme,
+        onThemeChange,
+      },
+      {
+        id: 3,
         description: `${enablePin ? "Hide" : "Show"} player pin`,
         callback: onTogglePin,
       },
       {
-        id: 3,
+        id: 4,
         description: `${
           enableAdjustVideoVolume ? "Disable" : "Enable"
         } Volume adjust`,
         callback: onToggleVolumeAdjust,
       },
-      { id: 4, description: "Import Playlist", callback: onImportJson },
-      { id: 5, description: "Export Playlist", callback: onExportJson },
-      { id: 6, description: "Delete All", callback: onDelete },
+      { id: 5, description: "Import Playlist", callback: onImportJson },
+      { id: 6, description: "Export Playlist", callback: onExportJson },
+      { id: 7, description: "Delete All", callback: onDelete },
     ]);
     ctx.open();
+  };
+
+  const openMenu = () => {
+    chrome.storage.sync.get([THEME_PREFERENCE_KEY], (result) => {
+      const storedThemePreference = normalizeThemePreference(
+        result[THEME_PREFERENCE_KEY]
+      );
+      openMenuWithTheme(storedThemePreference || themePreference);
+    });
   };
   const onExportJson = () => {
     var result = JSON.stringify(playlist);

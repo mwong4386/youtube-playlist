@@ -13,10 +13,16 @@ import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
 import MsgType from "../../constants/msgType";
 import { DEV_PLAYLIST } from "../../dev/devPlaylist";
+import { ThemePreference } from "../../utils/theme";
 
 const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 
-const Playlist = () => {
+interface Props {
+  themePreference: ThemePreference;
+  setThemePreference: (preference: ThemePreference) => void;
+}
+
+const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState()
@@ -163,7 +169,12 @@ const Playlist = () => {
   };
   return (
     <>
-      <PlaylistHeader playlist={playlist} onDelete={onDeleteAll} />
+      <PlaylistHeader
+        playlist={playlist}
+        onDelete={onDeleteAll}
+        themePreference={themePreference}
+        setThemePreference={setThemePreference}
+      />
       {playlist.length === 0 ? (
         <div className={styles["empty-container"]}>
           <p className={styles["empty-message"]}>The playlist is empty</p>
