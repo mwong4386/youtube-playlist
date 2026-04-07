@@ -48,7 +48,7 @@ The settings UI prevents creating more than 10 total profiles. Once the limit is
 
 ### EQ Profiles In Song Edit Modal
 
-The song edit modal gets a profile picker above the song EQ sliders.
+The song edit modal gets a profile picker above the song EQ sliders when at least one profile exists.
 
 Behavior:
 
@@ -56,6 +56,7 @@ Behavior:
 - The user can then fine-tune the sliders for that song.
 - Saving the song stores only the song's own `audioEq` band values.
 - The modal does not save or track a `profileId` on the song.
+- If the saved profile list is empty, hide the profile selector entirely and show only the song EQ sliders.
 
 ## Data Model
 
@@ -115,7 +116,7 @@ Add a settings modal component to the popup flow. It is opened from `PlaylistHea
 
 `InfoModal` receives the profile list and:
 
-- renders a profile selector
+- renders a profile selector only when profiles exist
 - updates the form EQ values when a profile is chosen
 - keeps manual slider changes local to the song form
 
@@ -153,6 +154,7 @@ Manual verification targets:
 - create, edit, and delete profiles
 - edit a seeded profile
 - choose a profile in the song modal and confirm sliders update
+- save an empty profile array and confirm the song modal hides the profile selector
 - save a song after adjusting copied EQ values
 - reopen settings and confirm the saved profile did not change from song-level edits
 
