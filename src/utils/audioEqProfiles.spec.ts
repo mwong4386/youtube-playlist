@@ -5,11 +5,15 @@ import {
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../models/AudioEqProfile";
 import {
+  clearSelectedAudioEqProfileId,
   createAudioEqProfileDraft,
   createAudioEqProfile,
   deleteAudioEqProfile,
   hasAudioEqProfileId,
   isAudioEqProfileDraftDirty,
+  normalizeSelectedAudioEqProfileId,
+  updateAudioEqProfileDraftBand,
+  updateAudioEqProfileDraftName,
   selectAudioEqProfileAudioEqById,
   SEEDED_AUDIO_EQ_PROFILES,
   shouldReplaceAudioEqProfileDraft,
@@ -347,6 +351,26 @@ test("hasAudioEqProfileId reports whether a saved profile id is still available"
   expectEqual(hasAudioEqProfileId(profiles, "missing"), false);
 });
 
+test("normalizeSelectedAudioEqProfileId keeps a known selection and clears unknown ones", () => {
+  const profiles = [
+    {
+      id: "profile-1",
+      name: "Profile 1",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+  ];
+
+  expectEqual(normalizeSelectedAudioEqProfileId(profiles, "profile-1"), "profile-1");
+  expectEqual(normalizeSelectedAudioEqProfileId(profiles, "missing"), "");
+  expectEqual(normalizeSelectedAudioEqProfileId([], "profile-1"), "");
+  expectEqual(normalizeSelectedAudioEqProfileId(profiles, ""), "");
+});
+
+test("clearSelectedAudioEqProfileId resets the selection after manual EQ changes", () => {
+  expectEqual(clearSelectedAudioEqProfileId("profile-1"), "");
+  expectEqual(clearSelectedAudioEqProfileId(""), "");
+});
+
 test("createAudioEqProfile trims the name and falls back for blanks", () => {
   const result = createAudioEqProfile("   ", {
     clearBass: 12,
@@ -393,6 +417,66 @@ test("createAudioEqProfileDraft builds a normalized editable draft", () => {
       band16k: -10,
     },
   });
+});
+
+test("updateAudioEqProfileDraftName applies a captured name string without mutating the source draft", () => {
+  const draft = createAudioEqProfileDraft({
+    id: "profile-1",
+    name: "Voice",
+    audioEq: {
+      clearBass: 1,
+      band400: 2,
+      band1k: 3,
+      band2k5: 4,
+      band6k3: 5,
+      band16k: 6,
+    },
+  });
+
+  const result = updateAudioEqProfileDraftName(draft, "Metal");
+
+  expectEqual(result, {
+    name: "Metal",
+    audioEq: {
+      clearBass: 1,
+      band400: 2,
+      band1k: 3,
+      band2k5: 4,
+      band6k3: 5,
+      band16k: 6,
+    },
+  });
+  expectEqual(draft.name, "Voice");
+});
+
+test("updateAudioEqProfileDraftBand applies a captured slider value without mutating other bands", () => {
+  const draft = createAudioEqProfileDraft({
+    id: "profile-1",
+    name: "Voice",
+    audioEq: {
+      clearBass: 1,
+      band400: 2,
+      band1k: 3,
+      band2k5: 4,
+      band6k3: 5,
+      band16k: 6,
+    },
+  });
+
+  const result = updateAudioEqProfileDraftBand(draft, "band2k5", -3);
+
+  expectEqual(result, {
+    name: "Voice",
+    audioEq: {
+      clearBass: 1,
+      band400: 2,
+      band1k: 3,
+      band2k5: -3,
+      band6k3: 5,
+      band16k: 6,
+    },
+  });
+  expectEqual(draft.audioEq.band2k5, 4);
 });
 
 test("shouldReplaceAudioEqProfileDraft keeps dirty edits when another profile is removed", () => {

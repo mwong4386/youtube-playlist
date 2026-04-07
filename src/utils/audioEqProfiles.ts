@@ -65,11 +65,6 @@ const normalizeAudioEqProfile = (
 
 const SEEDED_AUDIO_EQ_PROFILES: AudioEqProfile[] = [
   {
-    id: "flat",
-    name: "Flat",
-    audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
-  },
-  {
     id: "metal",
     name: "Metal",
     audioEq: {
@@ -161,6 +156,30 @@ const createAudioEqProfileDraft = (
     audioEq: profile
       ? normalizeAudioEqProfileAudioEq(profile.audioEq)
       : { ...DEFAULT_AUDIO_EQ_SETTINGS },
+  };
+};
+
+const updateAudioEqProfileDraftName = (
+  draft: AudioEqProfileDraft,
+  name: string,
+): AudioEqProfileDraft => {
+  return {
+    ...draft,
+    name,
+  };
+};
+
+const updateAudioEqProfileDraftBand = (
+  draft: AudioEqProfileDraft,
+  bandKey: keyof AudioEqSettings,
+  value: number,
+): AudioEqProfileDraft => {
+  return {
+    ...draft,
+    audioEq: {
+      ...draft.audioEq,
+      [bandKey]: value,
+    },
   };
 };
 
@@ -283,7 +302,23 @@ const hasAudioEqProfileId = (profiles: AudioEqProfile[], id: string) => {
   return profiles.some((profile) => profile.id === id);
 };
 
+const normalizeSelectedAudioEqProfileId = (
+  profiles: AudioEqProfile[],
+  id: string,
+) => {
+  if (!id) {
+    return "";
+  }
+
+  return hasAudioEqProfileId(profiles, id) ? id : "";
+};
+
+const clearSelectedAudioEqProfileId = (_id: string) => {
+  return "";
+};
+
 export {
+  clearSelectedAudioEqProfileId,
   SEEDED_AUDIO_EQ_PROFILES,
   cloneAudioEqProfileAudioEq,
   createAudioEqProfileDraft,
@@ -291,10 +326,13 @@ export {
   deleteAudioEqProfile,
   hasAudioEqProfileId,
   isAudioEqProfileDraftDirty,
+  normalizeSelectedAudioEqProfileId,
   normalizeAudioEqProfiles,
   readStoredAudioEqProfiles,
   selectAudioEqProfileAudioEqById,
   shouldReplaceAudioEqProfileDraft,
+  updateAudioEqProfileDraftBand,
+  updateAudioEqProfileDraftName,
   updateAudioEqProfileList,
 };
 export type { AudioEqProfileDraft };

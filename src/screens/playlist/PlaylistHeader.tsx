@@ -8,6 +8,9 @@ import PlaybackState, {
 import { getCurrentTimestamp } from "../../utils/date";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import { parseImportedPlaylist } from "../../utils/playlistImport";
+import {
+  ThemePreference,
+} from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
 import styles from "./Playlist.module.css";
 
@@ -15,11 +18,15 @@ interface props {
   onDelete: () => void;
   onOpenSettings: () => void;
   playlist: MPlaylistItem[];
+  themePreference: ThemePreference;
+  setThemePreference: (preference: ThemePreference) => void;
 }
 const PlaylistHeader = ({
   playlist,
   onDelete,
   onOpenSettings,
+  themePreference,
+  setThemePreference,
 }: props) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState()
@@ -82,24 +89,30 @@ const PlaylistHeader = ({
         : []),
       {
         id: 2,
-        description: "Settings",
-        callback: onOpenSettings,
+        kind: "theme-selector",
+        themePreference,
+        onThemeChange: setThemePreference,
       },
       {
         id: 3,
+        description: "EQ Profiles",
+        callback: onOpenSettings,
+      },
+      {
+        id: 4,
         description: `${enablePin ? "Hide" : "Show"} player pin`,
         callback: onTogglePin,
       },
       {
-        id: 4,
+        id: 5,
         description: `${
           enableAdjustVideoVolume ? "Disable" : "Enable"
         } Volume adjust`,
         callback: onToggleVolumeAdjust,
       },
-      { id: 5, description: "Import Playlist", callback: onImportJson },
-      { id: 6, description: "Export Playlist", callback: onExportJson },
-      { id: 7, description: "Delete All", callback: onDelete },
+      { id: 6, description: "Import Playlist", callback: onImportJson },
+      { id: 7, description: "Export Playlist", callback: onExportJson },
+      { id: 8, description: "Delete All", callback: onDelete },
     ]);
     ctx.open();
   };

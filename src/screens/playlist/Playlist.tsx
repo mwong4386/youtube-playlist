@@ -242,6 +242,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onOpenSettings={() => {
           setSettingsActive(true);
         }}
+        themePreference={themePreference}
+        setThemePreference={setThemePreference}
       />
       {playlist.length === 0 ? (
         <div className={styles["empty-container"]}>
@@ -286,8 +288,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         close={() => {
           setSettingsActive(false);
         }}
-        themePreference={themePreference}
-        setThemePreference={setThemePreference}
         audioEqProfiles={audioEqProfiles}
         onCreateProfile={onCreateProfile}
         onUpdateProfile={onUpdateProfile}

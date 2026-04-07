@@ -4,12 +4,6 @@ import AudioEqProfile, {
 } from "../../models/AudioEqProfile";
 import Modal from "../modal/Modal";
 import styles from "./SettingsModal.module.css";
-import {
-  getThemePreferenceIndex,
-  getThemePreferenceLabel,
-  THEME_PREFERENCE_OPTIONS,
-  ThemePreference,
-} from "../../utils/theme";
 import AudioEqSettings from "../../models/AudioEq";
 import {
   AUDIO_EQ_BANDS,
@@ -21,6 +15,8 @@ import {
   createAudioEqProfileDraft,
   isAudioEqProfileDraftDirty,
   shouldReplaceAudioEqProfileDraft,
+  updateAudioEqProfileDraftBand,
+  updateAudioEqProfileDraftName,
 } from "../../utils/audioEqProfiles";
 
 const formatEqValue = (value: number) => {
@@ -36,8 +32,6 @@ const getAudioEqSummary = (audioEq: AudioEqSettings) => {
 interface Props {
   active: boolean;
   close: () => void;
-  themePreference: ThemePreference;
-  setThemePreference: (preference: ThemePreference) => void;
   audioEqProfiles: AudioEqProfile[];
   onCreateProfile: (name: string, audioEq: AudioEqSettings) => void;
   onUpdateProfile: (profile: AudioEqProfile) => void;
@@ -47,14 +41,11 @@ interface Props {
 const SettingsModal = ({
   active,
   close,
-  themePreference,
-  setThemePreference,
   audioEqProfiles,
   onCreateProfile,
   onUpdateProfile,
   onDeleteProfile,
 }: Props) => {
-  const activeThemeIndex = getThemePreferenceIndex(themePreference);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState<AudioEqProfileDraft>(
     createAudioEqProfileDraft()
@@ -153,9 +144,11 @@ const SettingsModal = ({
     <Modal active={active} close={close}>
       <div className={styles["panel"]}>
         <div className={styles["header"]}>
-          <div>
-            <p className={styles["eyebrow"]}>Popup Settings</p>
-            <h2 className={styles["title"]}>Settings</h2>
+          <div className={styles["header-main"]}>
+            <h2 className={styles["title"]}>EQ Profiles</h2>
+            <span className={styles["badge"]}>
+              {audioEqProfiles.length}/{AUDIO_EQ_PROFILE_LIMIT}
+            </span>
           </div>
           <button
             type="button"
@@ -166,57 +159,10 @@ const SettingsModal = ({
             x
           </button>
         </div>
-        <section className={styles["section"]} aria-labelledby="theme-section-title">
-          <div className={styles["section-header"]}>
-            <h3 id="theme-section-title" className={styles["section-title"]}>
-              Theme
-            </h3>
-            <span className={styles["badge"]}>
-              {getThemePreferenceLabel(themePreference)}
-            </span>
-          </div>
-          <p className={styles["note"]}>
-            Choose how the popup should look. The current preference is{" "}
-            {getThemePreferenceLabel(themePreference).toLowerCase()}.
-          </p>
-          <div className={styles["segmented-control"]} role="group" aria-label="Theme">
-            <div
-              className={styles["segment-indicator"]}
-              style={
-                {
-                  "--segment-index": activeThemeIndex,
-                } as React.CSSProperties
-              }
-            />
-            {THEME_PREFERENCE_OPTIONS.map((option) => {
-              const isActive = themePreference === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`${styles["segment-button"]} ${
-                    isActive ? styles["segment-button-active"] : ""
-                  }`}
-                  aria-pressed={isActive}
-                  onClick={() => {
-                    setThemePreference(option.value);
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
         <section className={styles["section"]} aria-labelledby="eq-profiles-section-title">
-          <div className={styles["section-header"]}>
-            <h3 id="eq-profiles-section-title" className={styles["section-title"]}>
-              EQ Profiles
-            </h3>
-            <span className={styles["badge"]}>
-              {audioEqProfiles.length}/{AUDIO_EQ_PROFILE_LIMIT}
-            </span>
-          </div>
+          <h3 id="eq-profiles-section-title" className={styles["section-title"]}>
+            Manage reusable EQ curves
+          </h3>
           <p className={styles["note"]}>
             Create up to {AUDIO_EQ_PROFILE_LIMIT} reusable EQ profiles. Each profile
             saves all six bands.
@@ -333,10 +279,10 @@ const SettingsModal = ({
                   placeholder="New profile"
                   className={styles["text-input"]}
                   onChange={(event) => {
-                    setProfileForm((current) => ({
-                      ...current,
-                      name: event.currentTarget.value,
-                    }));
+                    const nextName = event.currentTarget.value;
+                    setProfileForm((current) =>
+                      updateAudioEqProfileDraftName(current, nextName)
+                    );
                   }}
                 />
               </label>
@@ -353,13 +299,13 @@ const SettingsModal = ({
                       className={styles["slider-input"]}
                       onChange={(event) => {
                         const nextValue = Number(event.currentTarget.value);
-                        setProfileForm((current) => ({
-                          ...current,
-                          audioEq: {
-                            ...current.audioEq,
-                            [band.key]: nextValue,
-                          },
-                        }));
+                        setProfileForm((current) =>
+                          updateAudioEqProfileDraftBand(
+                            current,
+                            band.key,
+                            nextValue
+                          )
+                        );
                       }}
                     />
                     <span className={styles["slider-value"]}>

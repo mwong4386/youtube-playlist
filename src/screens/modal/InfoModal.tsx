@@ -9,7 +9,8 @@ import {
   normalizeAudioEqSettings,
 } from "../../utils/audioEq";
 import {
-  hasAudioEqProfileId,
+  clearSelectedAudioEqProfileId,
+  normalizeSelectedAudioEqProfileId,
   selectAudioEqProfileAudioEqById,
 } from "../../utils/audioEqProfiles";
 import Modal from "./Modal";
@@ -109,12 +110,12 @@ const InfoModal = ({
   }, [item, reset]);
 
   useEffect(() => {
-    if (!selectedProfileId) {
-      return;
-    }
-
-    if (!hasAudioEqProfileId(profiles, selectedProfileId)) {
-      setSelectedProfileId("");
+    const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
+      profiles,
+      selectedProfileId
+    );
+    if (normalizedSelectedProfileId !== selectedProfileId) {
+      setSelectedProfileId(normalizedSelectedProfileId);
     }
   }, [profiles, selectedProfileId]);
 
@@ -147,7 +148,7 @@ const InfoModal = ({
 
   const onSongAudioEqChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (selectedProfileId) {
-      setSelectedProfileId("");
+      setSelectedProfileId(clearSelectedAudioEqProfileId(selectedProfileId));
     }
 
     onAudioEqChange({

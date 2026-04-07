@@ -2,6 +2,9 @@ import { v4 as uuidv4 } from "uuid";
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
 import AudioEqSettings from "../models/AudioEq";
+import AudioEqProfile, {
+  AUDIO_EQ_PROFILE_STORAGE_KEY,
+} from "../models/AudioEqProfile";
 import {
   AUDIO_EQ_MAX,
   AUDIO_EQ_MIN,
@@ -11,6 +14,12 @@ import {
 } from "../utils/audioEq";
 import MPlaylistItem from "../models/MPlaylistItem";
 import { getHourMinuteSecond } from "../utils/date";
+import {
+  clearSelectedAudioEqProfileId,
+  normalizeSelectedAudioEqProfileId,
+  readStoredAudioEqProfiles,
+  selectAudioEqProfileAudioEqById,
+} from "../utils/audioEqProfiles";
 import {
   DEFAULT_THEME_PREFERENCE,
   getResolvedTheme,
@@ -67,8 +76,10 @@ let currentEqVideo: HTMLVideoElement | null = null;
 let currentEqSource: MediaElementAudioSourceNode | null = null;
 let eqFilters: Partial<Record<keyof AudioEqSettings, BiquadFilterNode>> = {};
 let currentAudioEqSettings = cloneAudioEqSettings();
+let currentAudioEqProfiles: AudioEqProfile[] = [];
 let currentEqButton: HTMLButtonElement | null = null;
 let currentEqPanel: HTMLDivElement | null = null;
+let currentEqPanelProfileSelectionId = "";
 let cleanupEqOutsideClick: (() => void) | null = null;
 let isCurrentPlaybackTab = false;
 let currentThemePreference: ThemePreference = DEFAULT_THEME_PREFERENCE;
@@ -107,6 +118,20 @@ const applyContentScriptTheme = () => {
 const syncContentScriptThemePreference = (value: unknown) => {
   currentThemePreference = normalizeThemePreference(value);
   applyContentScriptTheme();
+};
+
+const syncContentScriptAudioEqProfiles = (value: Record<string, unknown>) => {
+  currentAudioEqProfiles = readStoredAudioEqProfiles(value);
+  const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
+    currentAudioEqProfiles,
+    currentEqPanelProfileSelectionId,
+  );
+
+  if (normalizedSelectedProfileId !== currentEqPanelProfileSelectionId) {
+    currentEqPanelProfileSelectionId = normalizedSelectedProfileId;
+  }
+
+  syncEqPanelUi();
 };
 
 const ensureAudioEqGraph = (video: HTMLVideoElement) => {
@@ -313,6 +338,28 @@ const ensureFloatingPanelStyles = () => {
       color: var(--yt-playlist-text-muted);
       margin-top: 4px;
     }
+    .yt-playlist-eq-panel__profile {
+      margin: 0 0 14px;
+    }
+    .yt-playlist-eq-panel__profile-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--yt-playlist-text-muted);
+      margin-bottom: 6px;
+    }
+    .yt-playlist-eq-panel__profile-select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--yt-playlist-border);
+      background: color-mix(in srgb, var(--yt-playlist-surface-strong) 94%, transparent);
+      color: var(--yt-playlist-text);
+      padding: 10px 12px;
+      font: inherit;
+      box-sizing: border-box;
+    }
     .yt-playlist-eq-panel__bands {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -465,10 +512,46 @@ const ensureEqOutsideClickHandler = (
   };
 };
 
+const syncEqPanelProfileUi = () => {
+  if (!currentEqPanel) {
+    return;
+  }
+
+  const profileContainer = currentEqPanel.querySelector(
+    "[data-eq-profile-container]",
+  ) as HTMLElement | null;
+  const profileSelect = currentEqPanel.querySelector(
+    "[data-eq-profile-select]",
+  ) as HTMLSelectElement | null;
+
+  if (!profileContainer || !profileSelect) {
+    return;
+  }
+
+  const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
+    currentAudioEqProfiles,
+    currentEqPanelProfileSelectionId,
+  );
+  if (normalizedSelectedProfileId !== currentEqPanelProfileSelectionId) {
+    currentEqPanelProfileSelectionId = normalizedSelectedProfileId;
+  }
+
+  profileContainer.hidden = currentAudioEqProfiles.length === 0;
+  profileSelect.replaceChildren(
+    new Option("Custom", ""),
+    ...currentAudioEqProfiles.map(
+      (profile) => new Option(profile.name, profile.id),
+    ),
+  );
+  profileSelect.value = currentEqPanelProfileSelectionId;
+};
+
 const syncEqPanelUi = (settings: AudioEqSettings = currentAudioEqSettings) => {
   if (!currentEqPanel) {
     return;
   }
+
+  syncEqPanelProfileUi();
 
   for (const band of AUDIO_EQ_BANDS) {
     const slider = currentEqPanel.querySelector(
@@ -554,6 +637,14 @@ const ensureEqPanel = () => {
       </div>
       <button class="yt-playlist-panel__close yt-playlist-eq-panel__close" type="button" aria-label="Close EQ panel">x</button>
     </div>
+    <div class="yt-playlist-eq-panel__profile" data-eq-profile-container hidden>
+      <label class="yt-playlist-eq-panel__profile-label" for="yt-playlist-eq-profile">EQ Profile</label>
+      <select
+        id="yt-playlist-eq-profile"
+        class="yt-playlist-eq-panel__profile-select"
+        data-eq-profile-select
+      ></select>
+    </div>
     <div class="yt-playlist-eq-panel__bands">${bandsMarkup}</div>
   `;
 
@@ -569,6 +660,13 @@ const ensureEqPanel = () => {
       return;
     }
 
+    if (currentEqPanelProfileSelectionId) {
+      currentEqPanelProfileSelectionId = clearSelectedAudioEqProfileId(
+        currentEqPanelProfileSelectionId,
+      );
+      syncEqPanelProfileUi();
+    }
+
     const nextSettings = readEqPanelSettings();
     const video = getYoutubePlayer();
     if (video) {
@@ -577,9 +675,47 @@ const ensureEqPanel = () => {
   });
 
   panel.addEventListener("change", (event) => {
-    const target = event.target as HTMLInputElement;
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    if (target instanceof HTMLSelectElement && target.matches("[data-eq-profile-select]")) {
+      currentEqPanelProfileSelectionId = target.value;
+
+      if (!currentEqPanelProfileSelectionId) {
+        return;
+      }
+
+      const selectedProfile = selectAudioEqProfileAudioEqById(
+        currentAudioEqProfiles,
+        currentEqPanelProfileSelectionId,
+      );
+      if (!selectedProfile) {
+        currentEqPanelProfileSelectionId = "";
+        syncEqPanelUi();
+        return;
+      }
+
+      const video = getYoutubePlayer();
+      if (video) {
+        applyVideoEq(video, selectedProfile);
+      } else {
+        currentAudioEqSettings = normalizeAudioEqSettings(selectedProfile);
+        syncEqPanelUi(currentAudioEqSettings);
+      }
+
+      if (isCurrentPlaybackTab) {
+        sendEqSettingsToBackground(selectedProfile, true);
+      }
+      return;
+    }
+
     if (!target.matches("[data-eq-slider]")) {
       return;
+    }
+
+    if (currentEqPanelProfileSelectionId) {
+      currentEqPanelProfileSelectionId = clearSelectedAudioEqProfileId(
+        currentEqPanelProfileSelectionId,
+      );
+      syncEqPanelProfileUi();
     }
 
     const nextSettings = readEqPanelSettings();
@@ -616,6 +752,7 @@ const ensureEqButton = () => {
     }
     panel.hidden = !panel.hidden;
     if (!panel.hidden) {
+      currentEqPanelProfileSelectionId = "";
       positionPanelAboveAnchor(panel, button, getRightControlsAnchor());
       syncEqPanelUi();
     }
@@ -709,6 +846,7 @@ const onYoutubeVideoPage = (
   audioEq?: AudioEqSettings,
 ) => {
   isCurrentPlaybackTab = isPlayTab;
+  currentEqPanelProfileSelectionId = "";
   const bookmark = getBookmarkButton();
   setStartTime(0);
   let video: HTMLVideoElement = getYoutubePlayer();
@@ -1134,6 +1272,16 @@ chrome.storage.onChanged.addListener(
     if (namespace === "sync" && THEME_PREFERENCE_KEY in changes) {
       syncContentScriptThemePreference(changes[THEME_PREFERENCE_KEY].newValue);
     }
+    if (namespace === "sync" && AUDIO_EQ_PROFILE_STORAGE_KEY in changes) {
+      syncContentScriptAudioEqProfiles(
+        typeof changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue === "undefined"
+          ? {}
+          : {
+              [AUDIO_EQ_PROFILE_STORAGE_KEY]:
+                changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue,
+            },
+      );
+    }
   },
 );
 
@@ -1150,6 +1298,10 @@ if (typeof themeMediaQuery.addEventListener === "function") {
 
 chrome.storage.sync.get([THEME_PREFERENCE_KEY], (result) => {
   syncContentScriptThemePreference(result[THEME_PREFERENCE_KEY]);
+});
+
+chrome.storage.sync.get([AUDIO_EQ_PROFILE_STORAGE_KEY], (result) => {
+  syncContentScriptAudioEqProfiles(result);
 });
 
 /*
