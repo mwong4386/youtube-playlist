@@ -13,6 +13,9 @@
   },
   "include": [
     "src/**/*.spec.ts",
+    "src/models/AudioEqProfile.ts",
+    "src/utils/audioEqProfiles.ts",
+    "src/utils/audioEqProfiles.spec.ts",
     "src/utils/theme.ts",
     "src/utils/playlistImport.ts",
     "src/models/MPlaylistItem.ts"
