@@ -80,7 +80,7 @@ Add utilities that:
 
 - normalize stored profile arrays
 - clamp EQ values using existing EQ rules
-- fill in seeded defaults when stored data is missing or invalid
+- fill in seeded defaults when no profile storage exists yet
 - return cloned profile EQ values when applying a profile to a song
 
 Backward compatibility requirements:
@@ -127,7 +127,8 @@ Extend audio EQ utilities with:
 
 ## Error Handling
 
-- If stored profiles are missing or malformed, fall back to normalized seeded defaults.
+- If profile storage is missing, load the seeded defaults.
+- If stored profiles are malformed, normalize valid entries and ignore invalid data instead of reseeding starter profiles.
 - If the selected profile is missing while editing a song, do nothing and keep current song EQ values.
 - If deleting the last profile, allow it; the create action remains available and seeded defaults are still available on a fresh or reset store only.
 
@@ -136,6 +137,7 @@ Extend audio EQ utilities with:
 Add focused tests for:
 
 - profile normalization and seeded fallback behavior
+- malformed profile data is ignored without reseeding starter profiles
 - clamping invalid stored EQ values inside profiles
 - applying a selected profile copies EQ values instead of linking by reference
 
