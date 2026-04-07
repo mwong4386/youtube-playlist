@@ -74,7 +74,7 @@ Storage keys:
 - `youtube_list`: unchanged playlist item storage.
 - `audio_eq_profiles`: reusable EQ profiles for the popup.
 
-Seeded defaults are defined in code and normalized on load. If storage does not contain profiles yet, the app uses the seeded defaults and can persist them on first profile change.
+Seeded defaults are defined in code and normalized on load. If the `audio_eq_profiles` key does not exist yet, the app uses the seeded defaults. If the key exists and contains an empty array, keep the empty array and do not restore starter profiles.
 
 ## Normalization And Compatibility
 
@@ -82,7 +82,7 @@ Add utilities that:
 
 - normalize stored profile arrays
 - clamp EQ values using existing EQ rules
-- fill in seeded defaults when no profile storage exists yet
+- fill in seeded defaults only when the profile storage key does not exist yet
 - return cloned profile EQ values when applying a profile to a song
 
 Backward compatibility requirements:
@@ -129,17 +129,19 @@ Extend audio EQ utilities with:
 
 ## Error Handling
 
-- If profile storage is missing, load the seeded defaults.
+- If the `audio_eq_profiles` key is missing, load the seeded defaults.
+- If the `audio_eq_profiles` key exists with `[]`, keep it as an intentionally empty profile list.
 - If stored profiles are malformed, normalize valid entries and ignore invalid data instead of reseeding starter profiles.
 - If storage contains more than 10 profiles, keep the first 10 normalized entries and ignore the rest.
 - If the selected profile is missing while editing a song, do nothing and keep current song EQ values.
-- If deleting the last profile, allow it; the create action remains available and seeded defaults are still available on a fresh or reset store only.
+- If deleting the last profile results in an empty saved array, keep that empty array and show no profile choices until the user creates a new one.
 
 ## Testing
 
 Add focused tests for:
 
 - profile normalization and seeded fallback behavior
+- an existing empty profile array stays empty and does not reseed starter profiles
 - malformed profile data is ignored without reseeding starter profiles
 - profile lists are capped at 10 entries
 - clamping invalid stored EQ values inside profiles
