@@ -8,12 +8,25 @@ interface NormalizeAudioEqProfilesOptions {
   hasStoredValue: boolean;
 }
 
+const DEFAULT_AUDIO_EQ_PROFILE_NAME = "New profile";
+
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
 const isNonEmptyString = (value: unknown): value is string => {
   return typeof value === "string" && value.trim().length > 0;
+};
+
+const createAudioEqProfileId = () => {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `profile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  );
+};
+
+const normalizeAudioEqProfileAudioEq = (value: unknown): AudioEqSettings => {
+  return normalizeAudioEqSettings(isRecord(value) ? value : undefined);
 };
 
 const cloneAudioEqProfile = (profile: AudioEqProfile): AudioEqProfile => {
@@ -33,14 +46,14 @@ const normalizeAudioEqProfile = (
 
   const { id, name, audioEq } = value;
 
-  if (!isNonEmptyString(id) || !isNonEmptyString(name) || !isRecord(audioEq)) {
+  if (!isNonEmptyString(id) || !isNonEmptyString(name)) {
     return undefined;
   }
 
   return {
     id: id.trim(),
     name: name.trim(),
-    audioEq: normalizeAudioEqSettings(audioEq),
+    audioEq: normalizeAudioEqProfileAudioEq(audioEq),
   };
 };
 
@@ -115,11 +128,20 @@ const createAudioEqProfile = (
 ): AudioEqProfile => {
   const profileName = name.trim();
   return {
-    id:
-      globalThis.crypto?.randomUUID?.() ??
-      `profile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
-    name: profileName,
+    id: createAudioEqProfileId(),
+    name: profileName.length > 0 ? profileName : DEFAULT_AUDIO_EQ_PROFILE_NAME,
     audioEq: normalizeAudioEqSettings(audioEq),
+  };
+};
+
+const sanitizeAudioEqProfile = (profile: AudioEqProfile): AudioEqProfile => {
+  return {
+    id: isNonEmptyString(profile.id) ? profile.id.trim() : createAudioEqProfileId(),
+    name:
+      isNonEmptyString(profile.name)
+        ? profile.name.trim()
+        : DEFAULT_AUDIO_EQ_PROFILE_NAME,
+    audioEq: normalizeAudioEqProfileAudioEq(profile.audioEq),
   };
 };
 
@@ -127,19 +149,21 @@ const updateAudioEqProfileList = (
   profiles: AudioEqProfile[],
   nextProfile: AudioEqProfile,
 ): AudioEqProfile[] => {
-  const normalizedProfile = {
-    ...nextProfile,
-    audioEq: cloneAudioEqProfileAudioEq(nextProfile),
-  };
-  const existingIndex = profiles.findIndex((profile) => profile.id === nextProfile.id);
+  const normalizedProfiles = profiles
+    .map((profile) => normalizeAudioEqProfile(profile))
+    .filter((profile): profile is AudioEqProfile => !!profile);
+  const normalizedProfile = sanitizeAudioEqProfile(nextProfile);
+  const existingIndex = normalizedProfiles.findIndex(
+    (profile) => profile.id === normalizedProfile.id
+  );
 
   if (existingIndex >= 0) {
-    return profiles.map((profile, index) =>
+    return normalizedProfiles.map((profile, index) =>
       index === existingIndex ? normalizedProfile : profile
     );
   }
 
-  const nextProfiles = [...profiles, normalizedProfile];
+  const nextProfiles = [...normalizedProfiles, normalizedProfile];
   if (nextProfiles.length <= AUDIO_EQ_PROFILE_LIMIT) {
     return nextProfiles;
   }

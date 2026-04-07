@@ -1,12 +1,16 @@
 import test from "node:test";
+import { DEFAULT_AUDIO_EQ_SETTINGS } from "../models/AudioEq";
 import {
   AUDIO_EQ_PROFILE_LIMIT,
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../models/AudioEqProfile";
 import {
+  createAudioEqProfile,
+  deleteAudioEqProfile,
   SEEDED_AUDIO_EQ_PROFILES,
   cloneAudioEqProfileAudioEq,
   normalizeAudioEqProfiles,
+  updateAudioEqProfileList,
 } from "./audioEqProfiles";
 
 const expectEqual = (actual: unknown, expected: unknown) => {
@@ -197,6 +201,27 @@ test("normalizeAudioEqProfiles ignores malformed entries, clamps EQ, and caps pr
   });
 });
 
+test("normalizeAudioEqProfiles salvages valid profile metadata when audioEq is malformed", () => {
+  const result = normalizeAudioEqProfiles(
+    [
+      {
+        id: "profile-1",
+        name: " Voice ",
+        audioEq: null,
+      },
+    ],
+    { hasStoredValue: true }
+  );
+
+  expectEqual(result, [
+    {
+      id: "profile-1",
+      name: "Voice",
+      audioEq: DEFAULT_AUDIO_EQ_SETTINGS,
+    },
+  ]);
+});
+
 test("cloneAudioEqProfileAudioEq returns a detached copy", () => {
   const profile = {
     id: "profile-1",
@@ -230,6 +255,152 @@ test("cloneAudioEqProfileAudioEq returns a detached copy", () => {
     band6k3: 5,
     band16k: 6,
   });
+});
+
+test("createAudioEqProfile trims the name and falls back for blanks", () => {
+  const result = createAudioEqProfile("   ", {
+    clearBass: 12,
+    band400: 1.2,
+    band1k: 0,
+    band2k5: -1.2,
+    band6k3: 8.8,
+    band16k: -12,
+  });
+
+  expectEqual(result.name, "New profile");
+  expectEqual(result.audioEq, {
+    clearBass: 10,
+    band400: 1,
+    band1k: 0,
+    band2k5: -1,
+    band6k3: 9,
+    band16k: -10,
+  });
+});
+
+test("updateAudioEqProfileList normalizes existing entries and repairs blank next profiles", () => {
+  const result = updateAudioEqProfileList(
+    [
+      {
+        id: "keep",
+        name: " Keep ",
+        audioEq: {
+          clearBass: 12,
+          band400: 0,
+          band1k: 0,
+          band2k5: 0,
+          band6k3: 0,
+          band16k: 0,
+        },
+      },
+      {
+        id: "drop-me",
+        name: "   ",
+        audioEq: {
+          clearBass: 1,
+          band400: 1,
+          band1k: 1,
+          band2k5: 1,
+          band6k3: 1,
+          band16k: 1,
+        },
+      } as never,
+    ],
+    {
+      id: "keep",
+      name: " Updated ",
+      audioEq: {
+        clearBass: -12,
+        band400: 2.4,
+        band1k: 0,
+        band2k5: 1,
+        band6k3: 11,
+        band16k: 3,
+      },
+    }
+  );
+
+  expectEqual(result, [
+    {
+      id: "keep",
+      name: "Updated",
+      audioEq: {
+        clearBass: -10,
+        band400: 2,
+        band1k: 0,
+        band2k5: 1,
+        band6k3: 10,
+        band16k: 3,
+      },
+    },
+  ]);
+});
+
+test("updateAudioEqProfileList keeps a saved profile valid when next name is blank", () => {
+  const result = updateAudioEqProfileList([], {
+    id: "draft",
+    name: "   ",
+    audioEq: {
+      clearBass: 0,
+      band400: 0,
+      band1k: 0,
+      band2k5: 0,
+      band6k3: 0,
+      band16k: 0,
+    },
+  });
+
+  expectEqual(result, [
+    {
+      id: "draft",
+      name: "New profile",
+      audioEq: {
+        clearBass: 0,
+        band400: 0,
+        band1k: 0,
+        band2k5: 0,
+        band6k3: 0,
+        band16k: 0,
+      },
+    },
+  ]);
+});
+
+test("deleteAudioEqProfile removes the matching id without mutating the input list", () => {
+  const profiles = [
+    {
+      id: "one",
+      name: "One",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+    {
+      id: "two",
+      name: "Two",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+  ];
+
+  const result = deleteAudioEqProfile(profiles, "one");
+
+  expectEqual(result, [
+    {
+      id: "two",
+      name: "Two",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+  ]);
+  expectEqual(profiles, [
+    {
+      id: "one",
+      name: "One",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+    {
+      id: "two",
+      name: "Two",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+  ]);
 });
 
 test("model constants stay stable", () => {
