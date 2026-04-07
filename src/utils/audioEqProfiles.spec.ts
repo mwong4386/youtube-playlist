@@ -5,9 +5,12 @@ import {
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../models/AudioEqProfile";
 import {
+  createAudioEqProfileDraft,
   createAudioEqProfile,
   deleteAudioEqProfile,
+  isAudioEqProfileDraftDirty,
   SEEDED_AUDIO_EQ_PROFILES,
+  shouldReplaceAudioEqProfileDraft,
   cloneAudioEqProfileAudioEq,
   normalizeAudioEqProfiles,
   readStoredAudioEqProfiles,
@@ -291,6 +294,102 @@ test("createAudioEqProfile trims the name and falls back for blanks", () => {
     band6k3: 9,
     band16k: -10,
   });
+});
+
+test("createAudioEqProfileDraft builds a normalized editable draft", () => {
+  const result = createAudioEqProfileDraft({
+    id: "profile-1",
+    name: "Voice",
+    audioEq: {
+      clearBass: 12,
+      band400: 1.2,
+      band1k: 0,
+      band2k5: -1.2,
+      band6k3: 8.8,
+      band16k: -12,
+    },
+  });
+
+  expectEqual(result, {
+    name: "Voice",
+    audioEq: {
+      clearBass: 10,
+      band400: 1,
+      band1k: 0,
+      band2k5: -1,
+      band6k3: 9,
+      band16k: -10,
+    },
+  });
+});
+
+test("shouldReplaceAudioEqProfileDraft keeps dirty edits when another profile is removed", () => {
+  const sourceProfile = {
+    id: "profile-a",
+    name: "Profile A",
+    audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+  };
+
+  const result = shouldReplaceAudioEqProfileDraft({
+    sourceProfile,
+    nextProfile: {
+      id: "profile-a",
+      name: "Profile A",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+    draft: {
+      name: "Profile A",
+      audioEq: {
+        ...DEFAULT_AUDIO_EQ_SETTINGS,
+        clearBass: 6,
+      },
+    },
+  });
+
+  expectEqual(result, false);
+});
+
+test("shouldReplaceAudioEqProfileDraft refreshes a clean editor when the edited profile changes externally", () => {
+  const sourceProfile = {
+    id: "profile-a",
+    name: "Profile A",
+    audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+  };
+
+  const result = shouldReplaceAudioEqProfileDraft({
+    sourceProfile,
+    nextProfile: {
+      id: "profile-a",
+      name: "Profile A Updated",
+      audioEq: {
+        ...DEFAULT_AUDIO_EQ_SETTINGS,
+        band1k: 4,
+      },
+    },
+    draft: createAudioEqProfileDraft(sourceProfile),
+  });
+
+  expectEqual(result, true);
+});
+
+test("isAudioEqProfileDraftDirty compares a draft against its source profile", () => {
+  const sourceProfile = {
+    id: "profile-a",
+    name: "Profile A",
+    audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+  };
+
+  expectEqual(
+    isAudioEqProfileDraftDirty(sourceProfile, createAudioEqProfileDraft(sourceProfile)),
+    false
+  );
+  expectEqual(
+    isAudioEqProfileDraftDirty(sourceProfile, {
+      name: "Profile A Edited",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    }),
+    true
+  );
 });
 
 test("updateAudioEqProfileList normalizes existing entries and repairs blank next profiles", () => {

@@ -9,6 +9,11 @@ interface NormalizeAudioEqProfilesOptions {
   hasStoredValue: boolean;
 }
 
+interface AudioEqProfileDraft {
+  name: string;
+  audioEq: AudioEqSettings;
+}
+
 const DEFAULT_AUDIO_EQ_PROFILE_NAME = "New profile";
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
@@ -148,6 +153,75 @@ const createAudioEqProfile = (
   };
 };
 
+const createAudioEqProfileDraft = (
+  profile?: AudioEqProfile | null,
+): AudioEqProfileDraft => {
+  return {
+    name: profile?.name ?? "",
+    audioEq: profile
+      ? normalizeAudioEqProfileAudioEq(profile.audioEq)
+      : { ...DEFAULT_AUDIO_EQ_SETTINGS },
+  };
+};
+
+const areAudioEqSettingsEqual = (
+  left: AudioEqSettings,
+  right: AudioEqSettings,
+) => {
+  return (
+    left.clearBass === right.clearBass &&
+    left.band400 === right.band400 &&
+    left.band1k === right.band1k &&
+    left.band2k5 === right.band2k5 &&
+    left.band6k3 === right.band6k3 &&
+    left.band16k === right.band16k
+  );
+};
+
+const isAudioEqProfileDraftDirty = (
+  sourceProfile: AudioEqProfile | null,
+  draft: AudioEqProfileDraft,
+) => {
+  if (!sourceProfile) {
+    const defaultDraft = createAudioEqProfileDraft();
+    return (
+      draft.name !== defaultDraft.name ||
+      !areAudioEqSettingsEqual(draft.audioEq, defaultDraft.audioEq)
+    );
+  }
+
+  const sourceDraft = createAudioEqProfileDraft(sourceProfile);
+  return (
+    draft.name !== sourceDraft.name ||
+    !areAudioEqSettingsEqual(draft.audioEq, sourceDraft.audioEq)
+  );
+};
+
+const shouldReplaceAudioEqProfileDraft = ({
+  sourceProfile,
+  nextProfile,
+  draft,
+}: {
+  sourceProfile: AudioEqProfile | null;
+  nextProfile: AudioEqProfile | null;
+  draft: AudioEqProfileDraft;
+}) => {
+  if (!nextProfile || !sourceProfile || sourceProfile.id !== nextProfile.id) {
+    return true;
+  }
+
+  if (isAudioEqProfileDraftDirty(sourceProfile, draft)) {
+    return false;
+  }
+
+  const sourceDraft = createAudioEqProfileDraft(sourceProfile);
+  const nextDraft = createAudioEqProfileDraft(nextProfile);
+  return (
+    sourceDraft.name !== nextDraft.name ||
+    !areAudioEqSettingsEqual(sourceDraft.audioEq, nextDraft.audioEq)
+  );
+};
+
 const sanitizeAudioEqProfile = (profile: AudioEqProfile): AudioEqProfile => {
   return {
     id: isNonEmptyString(profile.id) ? profile.id.trim() : createAudioEqProfileId(),
@@ -195,9 +269,13 @@ const deleteAudioEqProfile = (
 export {
   SEEDED_AUDIO_EQ_PROFILES,
   cloneAudioEqProfileAudioEq,
+  createAudioEqProfileDraft,
   createAudioEqProfile,
   deleteAudioEqProfile,
+  isAudioEqProfileDraftDirty,
   normalizeAudioEqProfiles,
   readStoredAudioEqProfiles,
+  shouldReplaceAudioEqProfileDraft,
   updateAudioEqProfileList,
 };
+export type { AudioEqProfileDraft };
