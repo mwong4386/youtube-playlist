@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import AudioEqSettings from "../../models/AudioEq";
+import AudioEqProfile from "../../models/AudioEqProfile";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import {
   AUDIO_EQ_BANDS,
   DEFAULT_AUDIO_EQ_SETTINGS,
   normalizeAudioEqSettings,
 } from "../../utils/audioEq";
+import { selectAudioEqProfileAudioEqById } from "../../utils/audioEqProfiles";
 import Modal from "./Modal";
 import styles from "./Modal.module.css";
 
@@ -23,6 +25,7 @@ interface props {
   onvolumechange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onAudioEqChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   item: MPlaylistItem | undefined;
+  profiles: AudioEqProfile[];
 }
 type infoModels = AudioEqSettings & {
   hours: number;
@@ -44,12 +47,15 @@ const InfoModal = ({
   onAudioEqChange,
   save,
   close,
+  profiles,
 }: props) => {
+  const [selectedProfileId, setSelectedProfileId] = useState("");
   const {
     register,
     handleSubmit,
     watch,
     getValues,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<infoModels>({
@@ -96,7 +102,41 @@ const InfoModal = ({
     } else {
       reset();
     }
+    setSelectedProfileId("");
   }, [item, reset]);
+
+  const onProfileChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextProfileId = event.currentTarget.value;
+    setSelectedProfileId(nextProfileId);
+
+    if (!nextProfileId) {
+      return;
+    }
+
+    const selectedProfile = selectAudioEqProfileAudioEqById(
+      profiles,
+      nextProfileId
+    );
+
+    if (!selectedProfile) {
+      return;
+    }
+
+    AUDIO_EQ_BANDS.forEach((band) => {
+      setValue(band.key, selectedProfile[band.key], {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    });
+  };
+
+  const onSongAudioEqChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedProfileId) {
+      setSelectedProfileId("");
+    }
+
+    onAudioEqChange(event);
+  };
 
   const onSubmit = (data: infoModels) => {
     const timestamp =
@@ -293,6 +333,29 @@ const InfoModal = ({
               {watch("volume")}
             </span>
           </div>
+          {profiles.length > 0 && (
+            <div className={styles["eq-profile-container"]}>
+              <label
+                className={styles["eq-profile-label"]}
+                htmlFor="song-eq-profile"
+              >
+                EQ Profile
+              </label>
+              <select
+                id="song-eq-profile"
+                className={styles["eq-profile-select"]}
+                value={selectedProfileId}
+                onChange={onProfileChange}
+              >
+                <option value="">Custom</option>
+                {profiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className={styles["eq-section"]}>
             <p className={styles["eq-title"]}>Song EQ</p>
             {AUDIO_EQ_BANDS.map((band) => (
@@ -309,7 +372,7 @@ const InfoModal = ({
                   step="1"
                   {...register(band.key, {
                     valueAsNumber: true,
-                    onChange: onAudioEqChange,
+                    onChange: onSongAudioEqChange,
                   })}
                 />
                 <span className={styles["eq-value"]}>{watch(band.key)}</span>

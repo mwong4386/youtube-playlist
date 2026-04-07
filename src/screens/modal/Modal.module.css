@@ -128,6 +128,25 @@
 .eq-section {
   margin-top: 12px;
 }
+.eq-profile-container {
+  margin-top: 12px;
+}
+.eq-profile-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: bold;
+}
+.eq-profile-select {
+  width: 100%;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--surface-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
 .eq-title {
   margin: 0 0 8px;
   font-size: 14px;

@@ -266,6 +266,19 @@ const deleteAudioEqProfile = (
   return profiles.filter((profile) => profile.id !== id);
 };
 
+const selectAudioEqProfileAudioEqById = (
+  profiles: AudioEqProfile[],
+  id: string,
+): AudioEqSettings | null => {
+  const profile = profiles.find((entry) => entry.id === id);
+
+  if (!profile) {
+    return null;
+  }
+
+  return cloneAudioEqProfileAudioEq(profile);
+};
+
 export {
   SEEDED_AUDIO_EQ_PROFILES,
   cloneAudioEqProfileAudioEq,
@@ -275,6 +288,7 @@ export {
   isAudioEqProfileDraftDirty,
   normalizeAudioEqProfiles,
   readStoredAudioEqProfiles,
+  selectAudioEqProfileAudioEqById,
   shouldReplaceAudioEqProfileDraft,
   updateAudioEqProfileList,
 };

@@ -9,6 +9,7 @@ import {
   createAudioEqProfile,
   deleteAudioEqProfile,
   isAudioEqProfileDraftDirty,
+  selectAudioEqProfileAudioEqById,
   SEEDED_AUDIO_EQ_PROFILES,
   shouldReplaceAudioEqProfileDraft,
   cloneAudioEqProfileAudioEq,
@@ -273,6 +274,63 @@ test("cloneAudioEqProfileAudioEq returns a detached copy", () => {
     band6k3: 5,
     band16k: 6,
   });
+});
+
+test("selectAudioEqProfileAudioEqById returns a detached copy for song edits", () => {
+  const profiles = [
+    {
+      id: "profile-1",
+      name: "Profile 1",
+      audioEq: {
+        clearBass: 1,
+        band400: 2,
+        band1k: 3,
+        band2k5: 4,
+        band6k3: 5,
+        band16k: 6,
+      },
+    },
+  ];
+
+  const selected = selectAudioEqProfileAudioEqById(profiles, "profile-1");
+
+  if (!selected) {
+    throw new Error("Expected a cloned profile payload");
+  }
+
+  selected.band1k = 10;
+
+  expectEqual(profiles[0].audioEq, {
+    clearBass: 1,
+    band400: 2,
+    band1k: 3,
+    band2k5: 4,
+    band6k3: 5,
+    band16k: 6,
+  });
+  expectEqual(selected, {
+    clearBass: 1,
+    band400: 2,
+    band1k: 10,
+    band2k5: 4,
+    band6k3: 5,
+    band16k: 6,
+  });
+});
+
+test("selectAudioEqProfileAudioEqById returns null for an unknown profile id", () => {
+  const result = selectAudioEqProfileAudioEqById(
+    [
+      {
+        id: "profile-1",
+        name: "Profile 1",
+        audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+      },
+    ],
+    "missing"
+  );
+
+  expectEqual(result, null);
 });
 
 test("createAudioEqProfile trims the name and falls back for blanks", () => {

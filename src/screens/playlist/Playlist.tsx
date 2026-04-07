@@ -277,6 +277,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             }}
             onvolumechange={onvolumechange}
             onAudioEqChange={onAudioEqChange}
+            profiles={audioEqProfiles}
             save={onSave}
             item={playlist.find((x) => x.id === selectItemId)}
           />
