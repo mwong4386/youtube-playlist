@@ -352,13 +352,6 @@ const ensureFloatingPanelStyles = () => {
       line-height: 1.2;
       min-height: 28px;
     }
-    .yt-playlist-eq-panel__scale {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-      font-size: 10px;
-      color: var(--yt-playlist-text-subtle);
-    }
     .yt-playlist-eq-button {
       position: relative;
       display: flex;
@@ -562,11 +555,6 @@ const ensureEqPanel = () => {
       <button class="yt-playlist-panel__close yt-playlist-eq-panel__close" type="button" aria-label="Close EQ panel">x</button>
     </div>
     <div class="yt-playlist-eq-panel__bands">${bandsMarkup}</div>
-    <div class="yt-playlist-eq-panel__scale">
-      <span>${AUDIO_EQ_MIN}</span>
-      <span>0</span>
-      <span>+${AUDIO_EQ_MAX}</span>
-    </div>
   `;
 
   panel
