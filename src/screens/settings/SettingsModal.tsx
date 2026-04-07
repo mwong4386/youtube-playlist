@@ -1,9 +1,10 @@
-import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile from "../../models/AudioEqProfile";
 import Modal from "../modal/Modal";
 import styles from "./SettingsModal.module.css";
 import {
+  getThemePreferenceIndex,
   getThemePreferenceLabel,
+  THEME_PREFERENCE_OPTIONS,
   ThemePreference,
 } from "../../utils/theme";
 
@@ -13,10 +14,6 @@ interface Props {
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
   audioEqProfiles: AudioEqProfile[];
-  saveProfiles: (profiles: AudioEqProfile[]) => void;
-  onCreateProfile: (name: string, audioEq: AudioEqSettings) => void;
-  onUpdateProfile: (profile: AudioEqProfile) => void;
-  onDeleteProfile: (id: string) => void;
 }
 
 const SettingsModal = ({
@@ -25,16 +22,8 @@ const SettingsModal = ({
   themePreference,
   setThemePreference,
   audioEqProfiles,
-  saveProfiles,
-  onCreateProfile,
-  onUpdateProfile,
-  onDeleteProfile,
 }: Props) => {
-  void setThemePreference;
-  void saveProfiles;
-  void onCreateProfile;
-  void onUpdateProfile;
-  void onDeleteProfile;
+  const activeThemeIndex = getThemePreferenceIndex(themePreference);
 
   return (
     <Modal active={active} close={close}>
@@ -63,10 +52,37 @@ const SettingsModal = ({
             </span>
           </div>
           <p className={styles["note"]}>
-            Theme controls will move here in Task 3. The popup is currently using
-            the {getThemePreferenceLabel(themePreference).toLowerCase()} theme
-            preference.
+            Choose how the popup should look. The current preference is{" "}
+            {getThemePreferenceLabel(themePreference).toLowerCase()}.
           </p>
+          <div className={styles["segmented-control"]} role="group" aria-label="Theme">
+            <div
+              className={styles["segment-indicator"]}
+              style={
+                {
+                  "--segment-index": activeThemeIndex,
+                } as React.CSSProperties
+              }
+            />
+            {THEME_PREFERENCE_OPTIONS.map((option) => {
+              const isActive = themePreference === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles["segment-button"]} ${
+                    isActive ? styles["segment-button-active"] : ""
+                  }`}
+                  aria-pressed={isActive}
+                  onClick={() => {
+                    setThemePreference(option.value);
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </section>
         <section className={styles["section"]} aria-labelledby="eq-profiles-section-title">
           <div className={styles["section-header"]}>

@@ -70,3 +70,45 @@
   font-size: 13px;
   line-height: 1.5;
 }
+
+.segmented-control {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-tertiary) 88%, transparent);
+}
+
+.segment-button {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 10px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: color 0.22s ease, transform 0.22s ease;
+}
+
+.segment-button-active {
+  color: var(--text-primary);
+}
+
+.segment-indicator {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: calc((100% - 24px) / 3);
+  height: calc(100% - 12px);
+  border-radius: 12px;
+  background: var(--surface-secondary);
+  box-shadow: 0 10px 18px -14px var(--shadow-color);
+  transform: translateX(calc(var(--segment-index, 0) * (100% + 6px)));
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.24s ease;
+}
