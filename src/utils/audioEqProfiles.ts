@@ -279,12 +279,17 @@ const selectAudioEqProfileAudioEqById = (
   return cloneAudioEqProfileAudioEq(profile);
 };
 
+const hasAudioEqProfileId = (profiles: AudioEqProfile[], id: string) => {
+  return profiles.some((profile) => profile.id === id);
+};
+
 export {
   SEEDED_AUDIO_EQ_PROFILES,
   cloneAudioEqProfileAudioEq,
   createAudioEqProfileDraft,
   createAudioEqProfile,
   deleteAudioEqProfile,
+  hasAudioEqProfileId,
   isAudioEqProfileDraftDirty,
   normalizeAudioEqProfiles,
   readStoredAudioEqProfiles,

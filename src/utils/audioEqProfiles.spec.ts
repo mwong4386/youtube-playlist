@@ -8,6 +8,7 @@ import {
   createAudioEqProfileDraft,
   createAudioEqProfile,
   deleteAudioEqProfile,
+  hasAudioEqProfileId,
   isAudioEqProfileDraftDirty,
   selectAudioEqProfileAudioEqById,
   SEEDED_AUDIO_EQ_PROFILES,
@@ -331,6 +332,19 @@ test("selectAudioEqProfileAudioEqById returns null for an unknown profile id", (
   );
 
   expectEqual(result, null);
+});
+
+test("hasAudioEqProfileId reports whether a saved profile id is still available", () => {
+  const profiles = [
+    {
+      id: "profile-1",
+      name: "Profile 1",
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    },
+  ];
+
+  expectEqual(hasAudioEqProfileId(profiles, "profile-1"), true);
+  expectEqual(hasAudioEqProfileId(profiles, "missing"), false);
 });
 
 test("createAudioEqProfile trims the name and falls back for blanks", () => {

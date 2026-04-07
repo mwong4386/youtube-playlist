@@ -226,13 +226,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       });
     }
   };
-  const onAudioEqChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onAudioEqChange = (audioEq: Partial<AudioEqSettings>) => {
     if (playing && selectItemId === playingId) {
       chrome.runtime.sendMessage({
         name: MsgType.AudioEqChange,
-        audioEq: {
-          [event.currentTarget.id]: Number(event.currentTarget.value),
-        },
+        audioEq,
       });
     }
   };

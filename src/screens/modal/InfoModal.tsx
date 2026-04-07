@@ -8,7 +8,10 @@ import {
   DEFAULT_AUDIO_EQ_SETTINGS,
   normalizeAudioEqSettings,
 } from "../../utils/audioEq";
-import { selectAudioEqProfileAudioEqById } from "../../utils/audioEqProfiles";
+import {
+  hasAudioEqProfileId,
+  selectAudioEqProfileAudioEqById,
+} from "../../utils/audioEqProfiles";
 import Modal from "./Modal";
 import styles from "./Modal.module.css";
 
@@ -23,7 +26,7 @@ interface props {
     audioEq: AudioEqSettings
   ) => void;
   onvolumechange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onAudioEqChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onAudioEqChange: (audioEq: Partial<AudioEqSettings>) => void;
   item: MPlaylistItem | undefined;
   profiles: AudioEqProfile[];
 }
@@ -105,6 +108,16 @@ const InfoModal = ({
     setSelectedProfileId("");
   }, [item, reset]);
 
+  useEffect(() => {
+    if (!selectedProfileId) {
+      return;
+    }
+
+    if (!hasAudioEqProfileId(profiles, selectedProfileId)) {
+      setSelectedProfileId("");
+    }
+  }, [profiles, selectedProfileId]);
+
   const onProfileChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const nextProfileId = event.currentTarget.value;
     setSelectedProfileId(nextProfileId);
@@ -128,6 +141,8 @@ const InfoModal = ({
         shouldTouch: true,
       });
     });
+
+    onAudioEqChange(selectedProfile);
   };
 
   const onSongAudioEqChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +150,9 @@ const InfoModal = ({
       setSelectedProfileId("");
     }
 
-    onAudioEqChange(event);
+    onAudioEqChange({
+      [event.currentTarget.id]: Number(event.currentTarget.value),
+    });
   };
 
   const onSubmit = (data: infoModels) => {
