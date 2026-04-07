@@ -10,6 +10,7 @@ Applying a profile to a song copies the profile's EQ band values into that song'
 
 - Let users manage reusable EQ profiles in popup settings.
 - Seed a few starter profiles for first-time use.
+- Limit saved EQ profiles to a maximum of 10.
 - Let the song edit modal apply a selected profile with one action.
 - Preserve the current per-song EQ editing workflow after a profile is applied.
 
@@ -43,6 +44,7 @@ Users can:
 - Delete any existing profile.
 
 Profile editing happens in the settings modal flow and uses the same EQ band sliders already used for songs so the experience stays familiar.
+The settings UI prevents creating more than 10 total profiles. Once the limit is reached, the create action is disabled or hidden until a profile is deleted.
 
 ### EQ Profiles In Song Edit Modal
 
@@ -129,6 +131,7 @@ Extend audio EQ utilities with:
 
 - If profile storage is missing, load the seeded defaults.
 - If stored profiles are malformed, normalize valid entries and ignore invalid data instead of reseeding starter profiles.
+- If storage contains more than 10 profiles, keep the first 10 normalized entries and ignore the rest.
 - If the selected profile is missing while editing a song, do nothing and keep current song EQ values.
 - If deleting the last profile, allow it; the create action remains available and seeded defaults are still available on a fresh or reset store only.
 
@@ -138,6 +141,7 @@ Add focused tests for:
 
 - profile normalization and seeded fallback behavior
 - malformed profile data is ignored without reseeding starter profiles
+- profile lists are capped at 10 entries
 - clamping invalid stored EQ values inside profiles
 - applying a selected profile copies EQ values instead of linking by reference
 
