@@ -10,6 +10,7 @@ import {
   SEEDED_AUDIO_EQ_PROFILES,
   cloneAudioEqProfileAudioEq,
   normalizeAudioEqProfiles,
+  readStoredAudioEqProfiles,
   updateAudioEqProfileList,
 } from "./audioEqProfiles";
 
@@ -29,6 +30,20 @@ test("normalizeAudioEqProfiles returns seeded defaults when storage key is missi
 
 test("normalizeAudioEqProfiles keeps an intentional empty profile array", () => {
   const result = normalizeAudioEqProfiles([], { hasStoredValue: true });
+
+  expectEqual(result, []);
+});
+
+test("readStoredAudioEqProfiles seeds only when the storage key is missing", () => {
+  const result = readStoredAudioEqProfiles({});
+
+  expectEqual(result, SEEDED_AUDIO_EQ_PROFILES);
+});
+
+test("readStoredAudioEqProfiles keeps an existing empty array", () => {
+  const result = readStoredAudioEqProfiles({
+    [AUDIO_EQ_PROFILE_STORAGE_KEY]: [],
+  });
 
   expectEqual(result, []);
 });

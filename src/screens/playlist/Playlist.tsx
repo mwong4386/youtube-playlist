@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import AudioEqSettings from "../../models/AudioEq";
+import AudioEqProfile, {
+  AUDIO_EQ_PROFILE_STORAGE_KEY,
+} from "../../models/AudioEqProfile";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import PlaybackState, {
   createInitialPlaybackState,
   isPlaybackActive,
 } from "../../models/PlaybackState";
 import { getStorage } from "../../utils/syncStorage";
+import {
+  createAudioEqProfile,
+  deleteAudioEqProfile,
+  readStoredAudioEqProfiles,
+  updateAudioEqProfileList,
+} from "../../utils/audioEqProfiles";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
@@ -14,6 +23,7 @@ import InfoModal from "../modal/InfoModal";
 import MsgType from "../../constants/msgType";
 import { DEV_PLAYLIST } from "../../dev/devPlaylist";
 import { ThemePreference } from "../../utils/theme";
+import SettingsModal from "../settings/SettingsModal";
 
 const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 
@@ -35,6 +45,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   ); //for opening the info modal
+  const [settingsActive, setSettingsActive] = useState(false);
+  const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     const nextState = state || createInitialPlaybackState();
@@ -65,6 +77,26 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       setPlaylist(list);
     };
     getPlaylist();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAudioEqProfiles = () => {
+      chrome.storage.sync.get([AUDIO_EQ_PROFILE_STORAGE_KEY], (result) => {
+        if (!mounted) {
+          return;
+        }
+
+        setAudioEqProfiles(readStoredAudioEqProfiles(result));
+      });
+    };
+
+    loadAudioEqProfiles();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -105,6 +137,19 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       if ("youtube_list" in changes) {
         setPlaylist(changes["youtube_list"].newValue || []);
       }
+      if (
+        namespace === "sync" &&
+        AUDIO_EQ_PROFILE_STORAGE_KEY in changes
+      ) {
+        setAudioEqProfiles(
+          typeof changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue === "undefined"
+            ? readStoredAudioEqProfiles({})
+            : readStoredAudioEqProfiles({
+                [AUDIO_EQ_PROFILE_STORAGE_KEY]:
+                  changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue,
+              })
+        );
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => {
@@ -114,6 +159,30 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   const onDeleteAll = () => {
     chrome.storage.sync.remove("youtube_list");
+  };
+
+  const saveProfiles = (profiles: AudioEqProfile[]) => {
+    setAudioEqProfiles(profiles);
+    chrome.storage.sync.set({
+      [AUDIO_EQ_PROFILE_STORAGE_KEY]: profiles,
+    });
+  };
+
+  const onCreateProfile = (name: string, audioEq: AudioEqSettings) => {
+    saveProfiles(
+      updateAudioEqProfileList(
+        audioEqProfiles,
+        createAudioEqProfile(name, audioEq)
+      )
+    );
+  };
+
+  const onUpdateProfile = (profile: AudioEqProfile) => {
+    saveProfiles(updateAudioEqProfileList(audioEqProfiles, profile));
+  };
+
+  const onDeleteProfile = (id: string) => {
+    saveProfiles(deleteAudioEqProfile(audioEqProfiles, id));
   };
 
   const onSave = (
@@ -172,8 +241,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       <PlaylistHeader
         playlist={playlist}
         onDelete={onDeleteAll}
-        themePreference={themePreference}
-        setThemePreference={setThemePreference}
+        onOpenSettings={() => {
+          setSettingsActive(true);
+        }}
       />
       {playlist.length === 0 ? (
         <div className={styles["empty-container"]}>
@@ -212,6 +282,19 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           />
         </div>
       )}
+      <SettingsModal
+        active={settingsActive}
+        close={() => {
+          setSettingsActive(false);
+        }}
+        themePreference={themePreference}
+        setThemePreference={setThemePreference}
+        audioEqProfiles={audioEqProfiles}
+        saveProfiles={saveProfiles}
+        onCreateProfile={onCreateProfile}
+        onUpdateProfile={onUpdateProfile}
+        onDeleteProfile={onDeleteProfile}
+      />
     </>
   );
 };

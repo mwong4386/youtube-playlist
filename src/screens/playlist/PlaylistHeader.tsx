@@ -8,25 +8,18 @@ import PlaybackState, {
 import { getCurrentTimestamp } from "../../utils/date";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import { parseImportedPlaylist } from "../../utils/playlistImport";
-import {
-  normalizeThemePreference,
-  ThemePreference,
-  THEME_PREFERENCE_KEY,
-} from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
 import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
+  onOpenSettings: () => void;
   playlist: MPlaylistItem[];
-  themePreference: ThemePreference;
-  setThemePreference: (preference: ThemePreference) => void;
 }
 const PlaylistHeader = ({
   playlist,
   onDelete,
-  themePreference,
-  setThemePreference,
+  onOpenSettings,
 }: props) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState()
@@ -76,12 +69,7 @@ const PlaylistHeader = ({
     ctx.open();
   };
 
-  const openMenuWithTheme = (selectedTheme: ThemePreference) => {
-    const onThemeChange = (preference: ThemePreference) => {
-      setThemePreference(preference);
-      openMenuWithTheme(preference);
-    };
-
+  const openMenu = () => {
     ctx.setActionSheet([
       ...(playing
         ? [
@@ -94,9 +82,8 @@ const PlaylistHeader = ({
         : []),
       {
         id: 2,
-        kind: "theme-selector",
-        themePreference: selectedTheme,
-        onThemeChange,
+        description: "Settings",
+        callback: onOpenSettings,
       },
       {
         id: 3,
@@ -115,15 +102,6 @@ const PlaylistHeader = ({
       { id: 7, description: "Delete All", callback: onDelete },
     ]);
     ctx.open();
-  };
-
-  const openMenu = () => {
-    chrome.storage.sync.get([THEME_PREFERENCE_KEY], (result) => {
-      const storedThemePreference = normalizeThemePreference(
-        result[THEME_PREFERENCE_KEY]
-      );
-      openMenuWithTheme(storedThemePreference || themePreference);
-    });
   };
   const onExportJson = () => {
     var result = JSON.stringify(playlist);

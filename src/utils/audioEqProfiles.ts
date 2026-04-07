@@ -1,5 +1,6 @@
 import AudioEqSettings, { DEFAULT_AUDIO_EQ_SETTINGS } from "../models/AudioEq";
 import AudioEqProfile, {
+  AUDIO_EQ_PROFILE_STORAGE_KEY,
   AUDIO_EQ_PROFILE_LIMIT,
 } from "../models/AudioEqProfile";
 import { normalizeAudioEqSettings } from "./audioEq";
@@ -118,6 +119,19 @@ const normalizeAudioEqProfiles = (
   return profiles;
 };
 
+const readStoredAudioEqProfiles = (
+  value: Record<string, unknown>,
+): AudioEqProfile[] => {
+  const hasStoredValue = Object.prototype.hasOwnProperty.call(
+    value,
+    AUDIO_EQ_PROFILE_STORAGE_KEY
+  );
+
+  return normalizeAudioEqProfiles(value[AUDIO_EQ_PROFILE_STORAGE_KEY], {
+    hasStoredValue,
+  });
+};
+
 const cloneAudioEqProfileAudioEq = (profile: AudioEqProfile): AudioEqSettings => {
   return normalizeAudioEqSettings(profile.audioEq);
 };
@@ -184,5 +198,6 @@ export {
   createAudioEqProfile,
   deleteAudioEqProfile,
   normalizeAudioEqProfiles,
+  readStoredAudioEqProfiles,
   updateAudioEqProfileList,
 };
