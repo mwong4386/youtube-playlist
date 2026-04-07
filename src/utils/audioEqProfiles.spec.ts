@@ -381,6 +381,105 @@ test("updateAudioEqProfileList keeps a saved profile valid when next name is bla
   ]);
 });
 
+test("updateAudioEqProfileList appends a new profile and keeps insertion order", () => {
+  const result = updateAudioEqProfileList(
+    [
+      {
+        id: "first",
+        name: "First",
+        audioEq: {
+          clearBass: 1,
+          band400: 0,
+          band1k: 0,
+          band2k5: 0,
+          band6k3: 0,
+          band16k: 0,
+        },
+      },
+      {
+        id: "second",
+        name: "Second",
+        audioEq: {
+          clearBass: 2,
+          band400: 0,
+          band1k: 0,
+          band2k5: 0,
+          band6k3: 0,
+          band16k: 0,
+        },
+      },
+    ],
+    {
+      id: "third",
+      name: "Third",
+      audioEq: {
+        clearBass: 3,
+        band400: 0,
+        band1k: 0,
+        band2k5: 0,
+        band6k3: 0,
+        band16k: 0,
+      },
+    }
+  );
+
+  expectEqual(
+    result.map((profile) => profile.id),
+    ["first", "second", "third"]
+  );
+});
+
+test("updateAudioEqProfileList replaces an existing profile in place", () => {
+  const result = updateAudioEqProfileList(
+    [
+      {
+        id: "first",
+        name: "First",
+        audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+      },
+      {
+        id: "second",
+        name: "Second",
+        audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+      },
+      {
+        id: "third",
+        name: "Third",
+        audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+      },
+    ],
+    {
+      id: "second",
+      name: "Second Updated",
+      audioEq: {
+        clearBass: 4,
+        band400: 3,
+        band1k: 2,
+        band2k5: 1,
+        band6k3: 0,
+        band16k: -1,
+      },
+    }
+  );
+
+  expectEqual(
+    result.map((profile) => profile.id),
+    ["first", "second", "third"]
+  );
+  expectEqual(result[1], {
+    id: "second",
+    name: "Second Updated",
+    audioEq: {
+      clearBass: 4,
+      band400: 3,
+      band1k: 2,
+      band2k5: 1,
+      band6k3: 0,
+      band16k: -1,
+    },
+  });
+});
+
 test("deleteAudioEqProfile removes the matching id without mutating the input list", () => {
   const profiles = [
     {
@@ -416,6 +515,21 @@ test("deleteAudioEqProfile removes the matching id without mutating the input li
       audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
     },
   ]);
+});
+
+test("deleteAudioEqProfile can return an intentional empty array", () => {
+  const result = deleteAudioEqProfile(
+    [
+      {
+        id: "only",
+        name: "Only",
+        audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+      },
+    ],
+    "only"
+  );
+
+  expectEqual(result, []);
 });
 
 test("model constants stay stable", () => {

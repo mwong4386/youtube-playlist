@@ -290,6 +290,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         themePreference={themePreference}
         setThemePreference={setThemePreference}
         audioEqProfiles={audioEqProfiles}
+        onCreateProfile={onCreateProfile}
+        onUpdateProfile={onUpdateProfile}
+        onDeleteProfile={onDeleteProfile}
       />
     </>
   );

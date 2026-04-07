@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import AudioEqProfile from "../../models/AudioEqProfile";
 import Modal from "../modal/Modal";
 import styles from "./SettingsModal.module.css";
@@ -7,6 +8,34 @@ import {
   THEME_PREFERENCE_OPTIONS,
   ThemePreference,
 } from "../../utils/theme";
+import AudioEqSettings from "../../models/AudioEq";
+import {
+  AUDIO_EQ_BANDS,
+  AUDIO_EQ_MAX,
+  AUDIO_EQ_MIN,
+  DEFAULT_AUDIO_EQ_SETTINGS,
+  normalizeAudioEqSettings,
+} from "../../utils/audioEq";
+
+interface ProfileFormState {
+  name: string;
+  audioEq: AudioEqSettings;
+}
+
+const createDefaultProfileFormState = (): ProfileFormState => ({
+  name: "",
+  audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+});
+
+const formatEqValue = (value: number) => {
+  return value > 0 ? `+${value}` : `${value}`;
+};
+
+const getAudioEqSummary = (audioEq: AudioEqSettings) => {
+  return AUDIO_EQ_BANDS.map((band) => {
+    return `${band.shortLabel} ${formatEqValue(audioEq[band.key])}`;
+  }).join(" • ");
+};
 
 interface Props {
   active: boolean;
@@ -14,6 +43,9 @@ interface Props {
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
   audioEqProfiles: AudioEqProfile[];
+  onCreateProfile: (name: string, audioEq: AudioEqSettings) => void;
+  onUpdateProfile: (profile: AudioEqProfile) => void;
+  onDeleteProfile: (id: string) => void;
 }
 
 const SettingsModal = ({
@@ -22,8 +54,94 @@ const SettingsModal = ({
   themePreference,
   setThemePreference,
   audioEqProfiles,
+  onCreateProfile,
+  onUpdateProfile,
+  onDeleteProfile,
 }: Props) => {
   const activeThemeIndex = getThemePreferenceIndex(themePreference);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [profileForm, setProfileForm] = useState<ProfileFormState>(
+    createDefaultProfileFormState()
+  );
+  const hasReachedProfileLimit = audioEqProfiles.length >= 10;
+  const isEditing = editingProfileId !== null;
+
+  useEffect(() => {
+    if (!active) {
+      setEditingProfileId(null);
+      setProfileForm(createDefaultProfileFormState());
+    }
+  }, [active]);
+
+  useEffect(() => {
+    if (!editingProfileId) {
+      return;
+    }
+
+    const profile = audioEqProfiles.find(
+      (candidate) => candidate.id === editingProfileId
+    );
+
+    if (!profile) {
+      setEditingProfileId(null);
+      setProfileForm(createDefaultProfileFormState());
+      return;
+    }
+
+    setProfileForm({
+      name: profile.name,
+      audioEq: normalizeAudioEqSettings(profile.audioEq),
+    });
+  }, [audioEqProfiles, editingProfileId]);
+
+  const startCreatingProfile = () => {
+    setEditingProfileId(null);
+    setProfileForm(createDefaultProfileFormState());
+  };
+
+  const startEditingProfile = (profile: AudioEqProfile) => {
+    setEditingProfileId(profile.id);
+    setProfileForm({
+      name: profile.name,
+      audioEq: normalizeAudioEqSettings(profile.audioEq),
+    });
+  };
+
+  const closeProfileEditor = () => {
+    setEditingProfileId(null);
+    setProfileForm(createDefaultProfileFormState());
+  };
+
+  const resetProfileForm = () => {
+    if (isEditing && editingProfileId) {
+      const profile = audioEqProfiles.find(
+        (candidate) => candidate.id === editingProfileId
+      );
+      if (profile) {
+        setProfileForm({
+          name: profile.name,
+          audioEq: normalizeAudioEqSettings(profile.audioEq),
+        });
+        return;
+      }
+    }
+
+    setProfileForm(createDefaultProfileFormState());
+  };
+
+  const saveProfile = () => {
+    if (isEditing && editingProfileId) {
+      onUpdateProfile({
+        id: editingProfileId,
+        name: profileForm.name,
+        audioEq: profileForm.audioEq,
+      });
+      return;
+    }
+
+    onCreateProfile(profileForm.name, profileForm.audioEq);
+    closeProfileEditor();
+  };
 
   return (
     <Modal active={active} close={close}>
@@ -90,14 +208,162 @@ const SettingsModal = ({
               EQ Profiles
             </h3>
             <span className={styles["badge"]}>
-              {audioEqProfiles.length} profile
-              {audioEqProfiles.length === 1 ? "" : "s"}
+              {audioEqProfiles.length}/10
             </span>
           </div>
           <p className={styles["note"]}>
-            EQ profile management UI is intentionally deferred to Task 3. This
-            shell is keeping the popup state and entry point ready for it.
+            Create up to 10 reusable EQ profiles. Each profile saves all six bands.
           </p>
+          <div className={styles["profile-toolbar"]}>
+            <button
+              type="button"
+              className={styles["primary-button"]}
+              disabled={hasReachedProfileLimit}
+              onClick={startCreatingProfile}
+            >
+              Create profile
+            </button>
+            {hasReachedProfileLimit ? (
+              <span className={styles["limit-note"]}>
+                Delete a profile to add another.
+              </span>
+            ) : null}
+          </div>
+          <div className={styles["profile-list"]}>
+            {audioEqProfiles.length === 0 ? (
+              <div className={styles["empty-state"]}>
+                No EQ profiles yet. Create one to save your favorite curve.
+              </div>
+            ) : (
+              audioEqProfiles.map((profile) => {
+                const isSelected = editingProfileId === profile.id;
+                return (
+                  <article
+                    key={profile.id}
+                    className={`${styles["profile-card"]} ${
+                      isSelected ? styles["profile-card-selected"] : ""
+                    }`}
+                  >
+                    <div className={styles["profile-card-header"]}>
+                      <div>
+                        <h4 className={styles["profile-name"]}>{profile.name}</h4>
+                        <p className={styles["profile-summary"]}>
+                          {getAudioEqSummary(profile.audioEq)}
+                        </p>
+                      </div>
+                      <div className={styles["profile-actions"]}>
+                        <button
+                          type="button"
+                          className={styles["secondary-button"]}
+                          onClick={() => {
+                            startEditingProfile(profile);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className={styles["danger-button"]}
+                          onClick={() => {
+                            onDeleteProfile(profile.id);
+                            if (editingProfileId === profile.id) {
+                              closeProfileEditor();
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+          <section className={styles["editor"]} aria-labelledby="eq-profile-editor-title">
+            <div className={styles["editor-header"]}>
+              <div>
+                <h4 id="eq-profile-editor-title" className={styles["editor-title"]}>
+                  {isEditing ? "Edit profile" : "Create profile"}
+                </h4>
+                <p className={styles["editor-note"]}>
+                  {isEditing
+                    ? "Adjust the name and band levels, then save your changes."
+                    : "Set a name and tune each band before saving the new profile."}
+                </p>
+              </div>
+              {isEditing && !hasReachedProfileLimit ? (
+                <button
+                  type="button"
+                  className={styles["secondary-button"]}
+                  onClick={closeProfileEditor}
+                >
+                  New profile
+                </button>
+              ) : null}
+            </div>
+            <label className={styles["field"]}>
+              <span className={styles["field-label"]}>Profile name</span>
+              <input
+                type="text"
+                value={profileForm.name}
+                maxLength={40}
+                placeholder="New profile"
+                className={styles["text-input"]}
+                onChange={(event) => {
+                  setProfileForm((current) => ({
+                    ...current,
+                    name: event.currentTarget.value,
+                  }));
+                }}
+              />
+            </label>
+            <div className={styles["slider-list"]}>
+              {AUDIO_EQ_BANDS.map((band) => (
+                <label key={band.key} className={styles["slider-row"]}>
+                  <span className={styles["slider-label"]}>{band.label}</span>
+                  <input
+                    type="range"
+                    min={AUDIO_EQ_MIN}
+                    max={AUDIO_EQ_MAX}
+                    step="1"
+                    value={profileForm.audioEq[band.key]}
+                    className={styles["slider-input"]}
+                    onChange={(event) => {
+                      const nextValue = Number(event.currentTarget.value);
+                      setProfileForm((current) => ({
+                        ...current,
+                        audioEq: {
+                          ...current.audioEq,
+                          [band.key]: nextValue,
+                        },
+                      }));
+                    }}
+                  />
+                  <span className={styles["slider-value"]}>
+                    {formatEqValue(profileForm.audioEq[band.key])}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className={styles["editor-actions"]}>
+              <button
+                type="button"
+                className={styles["secondary-button"]}
+                onClick={resetProfileForm}
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                className={styles["primary-button"]}
+                onClick={saveProfile}
+                disabled={!isEditing && hasReachedProfileLimit}
+              >
+                {isEditing ? "Save changes" : "Save profile"}
+              </button>
+            </div>
+          </section>
         </section>
       </div>
     </Modal>
