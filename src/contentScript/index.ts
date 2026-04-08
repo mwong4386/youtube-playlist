@@ -72,6 +72,11 @@ import {
   BOOKMARK_DIALOG_STYLE_TEXT,
 } from "./bookmarkDialogStyles";
 import { sanitizeYoutubeVideoTitle } from "./bookmarkDialogViewModel";
+import {
+  createBookmarkButtonFeedbackController,
+  type BookmarkButtonFeedbackController,
+  type BookmarkButtonVisualState,
+} from "./bookmarkButtonFeedback";
 
 let onCSConfirm: (e: Event) => any;
 export let _duration: number = NaN;
@@ -95,6 +100,9 @@ let currentThemePreference: ThemePreference = DEFAULT_THEME_PREFERENCE;
 let currentResolvedTheme: ResolvedTheme = "light";
 let hasBoundBookmarkDialogHandlers = false;
 let controlInjectionRetryId: number | null = null;
+let currentBookmarkButton: HTMLButtonElement | null = null;
+let bookmarkButtonFeedbackController: BookmarkButtonFeedbackController | null =
+  null;
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
 const PLAYER_VOLUME_RETRY_DELAYS_MS = [120, 320, 700];
@@ -434,9 +442,140 @@ const ensureFloatingPanelStyles = () => {
       transform: translateY(-1px);
       pointer-events: none;
     }
+    .bookmark-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      height: 100%;
+      padding: 0 8px;
+      width: auto;
+      left: 0;
+      color: #ffffff;
+      transition:
+        color 180ms ease,
+        filter 180ms ease,
+        transform 180ms ease;
+    }
+    .bookmark-button__content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      line-height: 1;
+      transform-origin: center;
+      pointer-events: none;
+    }
+    .bookmark-button__plus {
+      line-height: 1;
+      transform: translateY(-1px);
+    }
+    .bookmark-button__icon {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+      filter: drop-shadow(0 0 12px rgba(255, 214, 10, 0.38));
+    }
+    .bookmark-button[data-feedback-state="success"] {
+      color: #ffd60a;
+      filter: drop-shadow(0 0 16px rgba(255, 214, 10, 0.48));
+    }
+    .bookmark-button[data-feedback-state="success"] .bookmark-button__content {
+      animation: yt-playlist-bookmark-wave 1400ms cubic-bezier(0.22, 0.61, 0.36, 1) 1;
+    }
+    @keyframes yt-playlist-bookmark-wave {
+      0% {
+        transform: translateX(-9px) translateY(-5px) scale(0.96);
+      }
+      12.5% {
+        transform: translateX(-6px) translateY(-2px) scale(1);
+      }
+      25% {
+        transform: translateX(-3px) translateY(3px) scale(1.04);
+      }
+      37.5% {
+        transform: translateX(0) translateY(7px) scale(1.08);
+      }
+      50% {
+        transform: translateX(3px) translateY(10px) scale(1.1);
+      }
+      62.5% {
+        transform: translateX(6px) translateY(7px) scale(1.08);
+      }
+      75% {
+        transform: translateX(9px) translateY(2px) scale(1.04);
+      }
+      87.5% {
+        transform: translateX(12px) translateY(-2px) scale(1);
+      }
+      100% {
+        transform: translateX(15px) translateY(-5px) scale(0.98);
+      }
+    }
   `;
 
   document.head.append(style);
+};
+
+const MUSIC_NOTE_ICON = `
+  <svg class="bookmark-button__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M16.5 3.75a.75.75 0 0 0-.93-.73l-6.5 1.63a.75.75 0 0 0-.57.73v9.39a3.26 3.26 0 1 0 1.5 2.73V9.97l5-1.25v4.55a3.25 3.25 0 1 0 1.5 2.73V3.75Z" />
+  </svg>
+`;
+
+const createBookmarkButtonContent = (state: BookmarkButtonVisualState) => {
+  const content = document.createElement("span");
+  content.className = "bookmark-button__content";
+
+  if (state === "success") {
+    content.innerHTML = MUSIC_NOTE_ICON;
+    return content;
+  }
+
+  const plus = document.createElement("span");
+  plus.className = "bookmark-button__plus";
+  plus.textContent = "+";
+  content.append(plus);
+  return content;
+};
+
+const applyBookmarkButtonVisualState = (
+  button: HTMLButtonElement,
+  state: BookmarkButtonVisualState,
+) => {
+  button.dataset.feedbackState = state;
+  button.replaceChildren(createBookmarkButtonContent(state));
+  button.title =
+    state === "success" ? "Added to song list" : "Click to open bookmark dialog";
+  button.setAttribute(
+    "aria-label",
+    state === "success" ? "Added to song list" : "Open add to playlist dialog",
+  );
+  button.disabled = state === "success";
+};
+
+const ensureBookmarkButtonFeedbackController = (button: HTMLButtonElement) => {
+  if (currentBookmarkButton === button && bookmarkButtonFeedbackController) {
+    return bookmarkButtonFeedbackController;
+  }
+
+  bookmarkButtonFeedbackController?.dispose();
+  currentBookmarkButton = button;
+  bookmarkButtonFeedbackController = createBookmarkButtonFeedbackController({
+    applyState: (state) => {
+      applyBookmarkButtonVisualState(button, state);
+    },
+    clearScheduled: (timerId) => {
+      window.clearTimeout(timerId);
+    },
+    schedule: (callback, delayMs) => {
+      return window.setTimeout(callback, delayMs);
+    },
+  });
+
+  return bookmarkButtonFeedbackController;
 };
 
 const ensureBookmarkDialogStyles = () => {
@@ -895,11 +1034,8 @@ const onYoutubeVideoPage = (
     }
     //Add a + button to the youtube control button group, it will open the dialog
     const bookmarkBtn = document.createElement("button");
-    bookmarkBtn.style.cssText =
-      "position: relative; display:flex; align-items:center; justify-content:center; font-size:36px; height:100%; line-height:1; padding:0 8px; left:0;";
     bookmarkBtn.className = "ytp-button bookmark-button";
-    bookmarkBtn.innerText = "+";
-    bookmarkBtn.title = "Click to open bookmark dialog";
+    ensureBookmarkButtonFeedbackController(bookmarkBtn);
 
     bookmarkBtn.addEventListener("click", onCSOpenDialogClickHandler);
     const injected = ensureControlButtonsInjected(bookmarkBtn, eqButton);
@@ -940,6 +1076,7 @@ const onYoutubeVideoPage = (
     getConfirmButton().addEventListener("click", onCSConfirm);
     moveStartPin(getStartTime());
     setPinVisibility(enablePin);
+    ensureBookmarkButtonFeedbackController(bookmark);
     ensureControlButtonsInjected(bookmark, eqButton);
     ensureEqPanel();
   }
@@ -1083,6 +1220,7 @@ const onCSOpenDialogClickHandler = () => {
 
   const dialog = getDialog();
   applyContentScriptTheme();
+  dialog.dataset.theme = currentResolvedTheme;
   getConfirmButton().disabled = false;
   const isUntilEnd = getEndTime() === _duration;
   getUntilEndInput().checked = isUntilEnd;
@@ -1173,6 +1311,10 @@ const onBookmarkSave = (url: string, videoId: string) => {
         }
 
         getDialog().close();
+        const bookmarkButton = getBookmarkButton();
+        if (bookmarkButton) {
+          ensureBookmarkButtonFeedbackController(bookmarkButton).showSuccess();
+        }
       },
     );
   });
