@@ -24,6 +24,11 @@ import MsgType from "../../constants/msgType";
 import { DEV_PLAYLIST } from "../../dev/devPlaylist";
 import { ThemePreference } from "../../utils/theme";
 import SettingsModal from "../settings/SettingsModal";
+import Modal from "../modal/Modal";
+import {
+  cancelDeleteAllConfirmation,
+  confirmDeleteAllConfirmation,
+} from "../../utils/playlistActions";
 
 const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 
@@ -46,6 +51,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     undefined
   ); //for opening the info modal
   const [settingsActive, setSettingsActive] = useState(false);
+  const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
   const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
@@ -158,7 +164,24 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   }, []);
 
   const onDeleteAll = () => {
-    chrome.storage.sync.remove("youtube_list");
+    setDeleteAllModalActive(true);
+  };
+
+  const closeDeleteAllModal = () => {
+    cancelDeleteAllConfirmation(() => {
+      setDeleteAllModalActive(false);
+    });
+  };
+
+  const confirmDeleteAll = () => {
+    confirmDeleteAllConfirmation(
+      () => {
+        chrome.storage.sync.remove("youtube_list");
+      },
+      () => {
+        setDeleteAllModalActive(false);
+      }
+    );
   };
 
   const saveProfiles = (profiles: AudioEqProfile[]) => {
@@ -293,6 +316,42 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
       />
+      <Modal active={deleteAllModalActive} close={closeDeleteAllModal}>
+        <div className={styles["delete-all-modal"]}>
+          <div className={styles["delete-all-modal-header"]}>
+            <div>
+              <h2 className={styles["delete-all-modal-title"]}>Delete all songs</h2>
+              <p className={styles["delete-all-modal-text"]}>
+                This will remove every song from your playlist.
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles["delete-all-close-button"]}
+              onClick={closeDeleteAllModal}
+              aria-label="Close delete all confirmation"
+            >
+              x
+            </button>
+          </div>
+          <div className={styles["delete-all-modal-actions"]}>
+            <button
+              type="button"
+              className={styles["delete-all-cancel-button"]}
+              onClick={closeDeleteAllModal}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={styles["delete-all-confirm-button"]}
+              onClick={confirmDeleteAll}
+            >
+              Delete all
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };

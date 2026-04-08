@@ -158,6 +158,7 @@ Current keys:
 - The project uses Vite with separate configs for the popup, background script, and content script.
 - Built extension artifacts are emitted into `build/`.
 - Existing test coverage appears minimal.
+- After finishing any code or documentation change, run `npm run build` before reporting completion.
 
 ## Browser Validation
 
