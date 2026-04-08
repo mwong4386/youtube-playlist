@@ -448,9 +448,12 @@ const ensureFloatingPanelStyles = () => {
       align-items: center;
       justify-content: center;
       font-size: 36px;
+      width: 38px;
+      min-width: 38px;
+      flex: 0 0 38px;
       height: 100%;
-      padding: 0 8px;
-      width: auto;
+      padding: 0;
+      border-radius: 999px;
       left: 0;
       color: #ffffff;
       transition:
@@ -469,8 +472,12 @@ const ensureFloatingPanelStyles = () => {
       pointer-events: none;
     }
     .bookmark-button__plus {
-      line-height: 1;
-      transform: translateY(-1px);
+      width: 34px;
+      height: 34px;
+      fill: currentColor;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+      transform: scale(1.18);
+      transform-origin: center;
     }
     .bookmark-button__icon {
       width: 30px;
@@ -525,6 +532,12 @@ const MUSIC_NOTE_ICON = `
   </svg>
 `;
 
+const PLUS_ICON = `
+  <svg class="bookmark-button__plus" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M10.25 4a1.5 1.5 0 1 1 3 0v6.25H19.5a1.5 1.5 0 1 1 0 3h-6.25v6.25a1.5 1.5 0 1 1-3 0v-6.25H4a1.5 1.5 0 1 1 0-3h6.25V4Z" />
+  </svg>
+`;
+
 const createBookmarkButtonContent = (state: BookmarkButtonVisualState) => {
   const content = document.createElement("span");
   content.className = "bookmark-button__content";
@@ -534,10 +547,7 @@ const createBookmarkButtonContent = (state: BookmarkButtonVisualState) => {
     return content;
   }
 
-  const plus = document.createElement("span");
-  plus.className = "bookmark-button__plus";
-  plus.textContent = "+";
-  content.append(plus);
+  content.innerHTML = PLUS_ICON;
   return content;
 };
 
