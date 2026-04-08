@@ -15,6 +15,7 @@ const enum MsgType {
   AudioEqChange,
   EnterPip,
   ExitPip,
+  RefreshSavedBadge,
 }
 
 export default MsgType;

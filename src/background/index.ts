@@ -12,6 +12,10 @@ import PlaybackState, {
 import { getRandomInt } from "../utils/math";
 import { getStorage } from "../utils/syncStorage";
 import reducePlaybackState from "./playbackMachine";
+import {
+  SAVED_BADGE_TEXT,
+  shouldShowSavedBadge,
+} from "./actionBadge";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
@@ -97,6 +101,54 @@ const getVideoIdFromUrl = (url?: string | null) => {
   } catch (error) {
     return null;
   }
+};
+
+const setSavedBadgeState = async (tabId: number, url?: string | null) => {
+  const playlist = await getPlaylist();
+  const showBadge = shouldShowSavedBadge(url, playlist);
+
+  await chrome.action.setBadgeText({
+    tabId,
+    text: showBadge ? SAVED_BADGE_TEXT : "",
+  });
+
+  if (!showBadge) {
+    return;
+  }
+
+  await chrome.action.setBadgeBackgroundColor({
+    tabId,
+    color: "#1db954",
+  });
+  await chrome.action.setBadgeTextColor({
+    tabId,
+    color: "#ffffff",
+  });
+};
+
+const refreshSavedBadgeForTab = async (tabId: number) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    await setSavedBadgeState(tabId, tab.url);
+  } catch {
+    await chrome.action.setBadgeText({
+      tabId,
+      text: "",
+    });
+  }
+};
+
+const refreshSavedBadgeForActiveTab = async () => {
+  const tabs = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  const activeTab = tabs[0];
+  if (!activeTab?.id) {
+    return;
+  }
+
+  await setSavedBadgeState(activeTab.id, activeTab.url);
 };
 
 const updateStateToLocalStorage = () => {
@@ -337,7 +389,7 @@ const onAudioEqChange = async (
   }
 };
 
-const onMessageHandler = async (message: any) => {
+const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSender) => {
   switch (message.name) {
     case MsgType.PlayVideo:
       await onPlayVideo(message.item);
@@ -397,6 +449,13 @@ const onMessageHandler = async (message: any) => {
       break;
     case MsgType.AudioEqChange:
       await onAudioEqChange(message.audioEq, message.persist);
+      break;
+    case MsgType.RefreshSavedBadge:
+      if (sender?.tab?.id) {
+        await refreshSavedBadgeForTab(sender.tab.id);
+      } else {
+        await refreshSavedBadgeForActiveTab();
+      }
       break;
     default:
   }
@@ -474,8 +533,8 @@ const getLegacyPlaybackState = (result: {
     },
   );
 
-  chrome.runtime.onMessage.addListener(function (message) {
-    onMessageHandler(message).then(() => {
+  chrome.runtime.onMessage.addListener(function (message, sender) {
+    onMessageHandler(message, sender).then(() => {
       updateStateToLocalStorage();
     });
   });
@@ -556,7 +615,12 @@ const getLegacyPlaybackState = (result: {
       return;
     }
 
+    void setSavedBadgeState(tabId, tab.url);
     void handleYoutubeNavigation(tabId, tab.url);
+  });
+
+  chrome.tabs.onActivated.addListener((activeInfo) => {
+    void refreshSavedBadgeForTab(activeInfo.tabId);
   });
 
   chrome.tabs.onRemoved.addListener((tabId) => {
@@ -574,6 +638,8 @@ const getLegacyPlaybackState = (result: {
     }
 
     const updatedPlaylist = (changes["youtube_list"].newValue || []) as MPlaylistItem[];
+    void refreshSavedBadgeForActiveTab();
+
     if (!playbackState.currentItemId) {
       return;
     }
@@ -582,4 +648,6 @@ const getLegacyPlaybackState = (result: {
       updatedPlaylist.find((item) => item.id === playbackState.currentItemId) || null;
     updateStateToLocalStorage();
   });
+
+  void refreshSavedBadgeForActiveTab();
 })();

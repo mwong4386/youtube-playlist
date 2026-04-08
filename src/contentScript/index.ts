@@ -473,8 +473,8 @@ const ensureFloatingPanelStyles = () => {
       transform: translateY(-1px);
     }
     .bookmark-button__icon {
-      width: 24px;
-      height: 24px;
+      width: 30px;
+      height: 30px;
       fill: currentColor;
       filter: drop-shadow(0 0 12px rgba(255, 214, 10, 0.38));
     }
@@ -1315,6 +1315,9 @@ const onBookmarkSave = (url: string, videoId: string) => {
         if (bookmarkButton) {
           ensureBookmarkButtonFeedbackController(bookmarkButton).showSuccess();
         }
+        chrome.runtime.sendMessage({
+          name: MsgType.RefreshSavedBadge,
+        });
       },
     );
   });

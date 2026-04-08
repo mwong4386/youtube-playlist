@@ -13,6 +13,7 @@
   },
   "include": [
     "src/**/*.spec.ts",
+    "src/background/actionBadge.ts",
     "src/contentScript/bookmarkButtonFeedback.ts",
     "src/models/AudioEqProfile.ts",
     "src/utils/audioEqProfiles.ts",
