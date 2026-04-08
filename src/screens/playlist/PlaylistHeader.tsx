@@ -68,16 +68,22 @@ const PlaylistHeader = ({
   const onToggleVolumeAdjust = () => {
     chrome.runtime.sendMessage({ name: MsgType.ToggleVolumeAdjust });
   };
-  const openPlayMenu = () => {
-    ctx.setActionSheet([
-      { id: 1, description: "Play Orderly", callback: sendPlayOrderly },
-      { id: 2, description: "Play Randomly", callback: sendPlayRandom },
-    ]);
-    ctx.open();
+  const onExportJson = () => {
+    var result = JSON.stringify(playlist);
+    var file = new Blob([result], { type: "application/json" });
+    var url = URL.createObjectURL(file);
+    chrome.downloads.download({
+      url: url,
+      filename: `playlist_${getCurrentTimestamp()}.json`,
+    });
+  };
+  const onImportJson = () => {
+    const file = document.getElementById("uploadfile");
+    file?.click();
   };
 
-  const openMenu = () => {
-    ctx.setActionSheet([
+  const buildMenuItems = (currentThemePreference: ThemePreference) => {
+    return [
       ...(playing
         ? [
             {
@@ -89,9 +95,12 @@ const PlaylistHeader = ({
         : []),
       {
         id: 2,
-        kind: "theme-selector",
-        themePreference,
-        onThemeChange: setThemePreference,
+        kind: "theme-selector" as const,
+        themePreference: currentThemePreference,
+        onThemeChange: (nextPreference: ThemePreference) => {
+          setThemePreference(nextPreference);
+          ctx.setActionSheet(buildMenuItems(nextPreference));
+        },
       },
       {
         id: 3,
@@ -113,21 +122,20 @@ const PlaylistHeader = ({
       { id: 6, description: "Import Playlist", callback: onImportJson },
       { id: 7, description: "Export Playlist", callback: onExportJson },
       { id: 8, description: "Delete All", callback: onDelete },
+    ];
+  };
+
+  const openPlayMenu = () => {
+    ctx.setActionSheet([
+      { id: 1, description: "Play Orderly", callback: sendPlayOrderly },
+      { id: 2, description: "Play Randomly", callback: sendPlayRandom },
     ]);
     ctx.open();
   };
-  const onExportJson = () => {
-    var result = JSON.stringify(playlist);
-    var file = new Blob([result], { type: "application/json" });
-    var url = URL.createObjectURL(file);
-    chrome.downloads.download({
-      url: url,
-      filename: `playlist_${getCurrentTimestamp()}.json`,
-    });
-  };
-  const onImportJson = () => {
-    const file = document.getElementById("uploadfile");
-    file?.click();
+
+  const openMenu = () => {
+    ctx.setActionSheet(buildMenuItems(themePreference));
+    ctx.open();
   };
 
   useEffect(() => {

@@ -3,6 +3,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   publicDir: false,
+  define: {
+    "process.env.NODE_ENV": JSON.stringify("production"),
+  },
   build: {
     outDir: "build",
     emptyOutDir: false,
@@ -15,6 +18,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         extend: true,
+        intro:
+          "var process = globalThis.process || (globalThis.process = { env: {} }); process.env = process.env || {}; process.env.NODE_ENV = process.env.NODE_ENV || 'production';",
       },
     },
   },
