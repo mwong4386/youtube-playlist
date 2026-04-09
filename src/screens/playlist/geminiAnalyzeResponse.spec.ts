@@ -142,6 +142,14 @@ test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking fai
     }),
     expected
   );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: false,
+      code: "bogus-code",
+      message: "not allowed",
+    }),
+    expected
+  );
 });
 
 test("normalizeAnalyzeSongBoundariesResponse preserves successful responses", () => {

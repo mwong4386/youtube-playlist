@@ -25,7 +25,9 @@ import {
   type GeminiSuggestionFormShape,
 } from "./geminiSuggestionForm";
 import {
+  beginAnalyzeRequest,
   shouldApplyAnalyzeResult,
+  syncAnalyzeScope,
   type GeminiAnalyzeScope,
 } from "./geminiAnalyzeRequest";
 
@@ -95,11 +97,11 @@ const InfoModal = ({
   });
 
   useEffect(() => {
-    analyzeScopeRef.current = {
-      active: active && !!item,
-      itemId: item?.id,
-      requestToken: analyzeScopeRef.current.requestToken + 1,
-    };
+    analyzeScopeRef.current = syncAnalyzeScope(
+      analyzeScopeRef.current,
+      active && !!item,
+      item?.id
+    );
 
     if (item) {
       const timestamp = Math.floor(item?.timestamp || 0);
@@ -187,15 +189,9 @@ const InfoModal = ({
       return;
     }
 
-    const request = {
-      itemId: item.id,
-      requestToken: analyzeScopeRef.current.requestToken + 1,
-    };
-    analyzeScopeRef.current = {
-      active: true,
-      itemId: request.itemId,
-      requestToken: request.requestToken,
-    };
+    const startedRequest = beginAnalyzeRequest(analyzeScopeRef.current, item.id);
+    const { request } = startedRequest;
+    analyzeScopeRef.current = startedRequest.scope;
     setAnalyzing(true);
     setAnalyzeMessage("");
 

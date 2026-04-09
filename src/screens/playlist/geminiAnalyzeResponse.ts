@@ -21,12 +21,24 @@ const createAnalyzeSongBoundariesFailure = (
   };
 };
 
+const GEMINI_ANALYZE_ERROR_CODES = new Set<string>([
+  GeminiAnalyzeErrorCode.MissingApiKey,
+  GeminiAnalyzeErrorCode.ItemNotFound,
+  GeminiAnalyzeErrorCode.RequestFailed,
+  GeminiAnalyzeErrorCode.InvalidResponse,
+  GeminiAnalyzeErrorCode.InvalidTimestamps,
+]);
+
 const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
 const isValidTimestamp = (value: unknown) => {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
+};
+
+const isGeminiAnalyzeErrorCode = (value: unknown): value is GeminiAnalyzeErrorCode => {
+  return typeof value === "string" && GEMINI_ANALYZE_ERROR_CODES.has(value);
 };
 
 const isGeminiBoundarySuggestion = (
@@ -54,7 +66,7 @@ const isGeminiAnalyzeResponse = (
   }
 
   return (
-    typeof response.code === "string" &&
+    isGeminiAnalyzeErrorCode(response.code) &&
     typeof response.message === "string"
   );
 };

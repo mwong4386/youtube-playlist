@@ -1,5 +1,9 @@
 import test from "node:test";
-import { shouldApplyAnalyzeResult } from "./geminiAnalyzeRequest";
+import {
+  beginAnalyzeRequest,
+  shouldApplyAnalyzeResult,
+  syncAnalyzeScope,
+} from "./geminiAnalyzeRequest";
 
 const expectEqual = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -67,6 +71,23 @@ test("shouldApplyAnalyzeResult allows only the latest active request for the cur
         requestToken: 3,
       }
     ),
+    false
+  );
+});
+
+test("beginAnalyzeRequest and syncAnalyzeScope ignore a late response after the modal switches items", () => {
+  const initialScope = {
+    active: false,
+    itemId: undefined,
+    requestToken: 0,
+  };
+
+  const openedScope = syncAnalyzeScope(initialScope, true, "song-1");
+  const started = beginAnalyzeRequest(openedScope, "song-1");
+  const switchedScope = syncAnalyzeScope(started.scope, true, "song-2");
+
+  expectEqual(
+    shouldApplyAnalyzeResult(switchedScope, started.request),
     false
   );
 });
