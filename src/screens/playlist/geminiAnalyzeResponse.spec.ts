@@ -110,6 +110,16 @@ test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking suc
     }),
     expected
   );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: 12,
+        endTimestamp: 12,
+      },
+    }),
+    expected
+  );
 });
 
 test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking failure payloads", () => {

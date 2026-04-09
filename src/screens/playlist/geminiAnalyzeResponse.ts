@@ -48,9 +48,17 @@ const isGeminiBoundarySuggestion = (
     return false;
   }
 
+  const startTimestamp = value.startTimestamp as number;
+
+  if (typeof value.endTimestamp === "undefined") {
+    return true;
+  }
+
+  const endTimestamp = value.endTimestamp as number;
+
   return (
-    typeof value.endTimestamp === "undefined" ||
-    isValidTimestamp(value.endTimestamp)
+    isValidTimestamp(endTimestamp) &&
+    endTimestamp > startTimestamp
   );
 };
 
