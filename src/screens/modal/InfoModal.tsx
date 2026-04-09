@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile from "../../models/AudioEqProfile";
+import {
+  GeminiAnalyzeErrorCode,
+  type GeminiAnalyzeFailure,
+  type GeminiAnalyzeSuccess,
+} from "../../models/GeminiSettings";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import {
   AUDIO_EQ_BANDS,
@@ -15,8 +20,12 @@ import {
 } from "../../utils/audioEqProfiles";
 import Modal from "./Modal";
 import styles from "./Modal.module.css";
+import {
+  applyGeminiSuggestionToFormValues,
+  type GeminiSuggestionFormShape,
+} from "./geminiSuggestionForm";
 
-interface props {
+interface Props {
   active: boolean;
   close: () => void;
   save: (
@@ -30,15 +39,12 @@ interface props {
   onAudioEqChange: (audioEq: Partial<AudioEqSettings>) => void;
   item: MPlaylistItem | undefined;
   profiles: AudioEqProfile[];
+  onAnalyzeSongBoundaries: (
+    itemId: string
+  ) => Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>;
 }
-type infoModels = AudioEqSettings & {
-  hours: number;
-  minutes: number;
-  seconds: number;
-  endHours: number;
-  endMinutes: number;
-  endSeconds: number;
-  untilEnd: boolean;
+type InfoModels = AudioEqSettings &
+  GeminiSuggestionFormShape & {
   volume: number;
 };
 
@@ -52,8 +58,11 @@ const InfoModal = ({
   save,
   close,
   profiles,
-}: props) => {
+  onAnalyzeSongBoundaries,
+}: Props) => {
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [isAnalyzing, setAnalyzing] = useState(false);
+  const [analyzeMessage, setAnalyzeMessage] = useState("");
   const {
     register,
     handleSubmit,
@@ -62,7 +71,7 @@ const InfoModal = ({
     setValue,
     formState: { errors },
     reset,
-  } = useForm<infoModels>({
+  } = useForm<InfoModels>({
     defaultValues: {
       hours: 0,
       minutes: 0,
@@ -107,6 +116,8 @@ const InfoModal = ({
       reset();
     }
     setSelectedProfileId("");
+    setAnalyzing(false);
+    setAnalyzeMessage("");
   }, [item, reset]);
 
   useEffect(() => {
@@ -156,7 +167,43 @@ const InfoModal = ({
     });
   };
 
-  const onSubmit = (data: infoModels) => {
+  const onAnalyze = async () => {
+    if (!item || isAnalyzing) {
+      return;
+    }
+
+    setAnalyzing(true);
+    setAnalyzeMessage("");
+
+    const response = await onAnalyzeSongBoundaries(item.id);
+
+    if (!response.ok) {
+      setAnalyzing(false);
+      setAnalyzeMessage(
+        response.code === GeminiAnalyzeErrorCode.MissingApiKey
+          ? "Add a Gemini API key in settings first."
+          : response.message
+      );
+      return;
+    }
+
+    const nextValues = applyGeminiSuggestionToFormValues(
+      response.suggestion,
+      getValues()
+    );
+
+    setValue("hours", nextValues.hours);
+    setValue("minutes", nextValues.minutes);
+    setValue("seconds", nextValues.seconds);
+    setValue("endHours", nextValues.endHours);
+    setValue("endMinutes", nextValues.endMinutes);
+    setValue("endSeconds", nextValues.endSeconds);
+    setValue("untilEnd", nextValues.untilEnd);
+    setAnalyzeMessage("Suggested timestamps loaded.");
+    setAnalyzing(false);
+  };
+
+  const onSubmit = (data: InfoModels) => {
     const timestamp =
       toNumber(data.hours) * 3600 +
       toNumber(data.minutes) * 60 +
@@ -199,6 +246,17 @@ const InfoModal = ({
             {item?.title}
           </p>
           <p className={styles["channel-name"]}>{item?.channelName}</p>
+          <div className={styles["analyze-row"]}>
+            <button
+              type="button"
+              className={styles["analyze-button"]}
+              disabled={isAnalyzing}
+              onClick={onAnalyze}
+            >
+              {isAnalyzing ? "Analyzing..." : "Analyze"}
+            </button>
+            <p className={styles["helper-text"]}>{analyzeMessage}</p>
+          </div>
           <div className={styles["time-container"]}>
             <label className={styles["time-label"]}>Start Time</label>
             <span className={styles["time"]}>

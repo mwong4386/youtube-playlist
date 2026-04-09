@@ -73,6 +73,29 @@
   margin-top: 0px;
   margin-bottom: 12px;
 }
+.analyze-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.analyze-button {
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--accent-color);
+  color: var(--surface-primary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+}
+.analyze-button:disabled {
+  opacity: 0.7;
+}
+.helper-text {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
 .time-container {
   margin: 0;
   margin-bottom: 4px;

@@ -3,7 +3,11 @@ import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile, {
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../../models/AudioEqProfile";
-import { GEMINI_API_KEY_STORAGE_KEY } from "../../models/GeminiSettings";
+import {
+  GEMINI_API_KEY_STORAGE_KEY,
+  type GeminiAnalyzeFailure,
+  type GeminiAnalyzeSuccess,
+} from "../../models/GeminiSettings";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import PlaybackState, {
   createInitialPlaybackState,
@@ -238,6 +242,19 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     await chrome.storage.local.remove(GEMINI_API_KEY_STORAGE_KEY);
   };
 
+  const analyzeSongBoundaries = (itemId: string) => {
+    return new Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>(
+      (resolve) => {
+        chrome.runtime.sendMessage(
+          { name: MsgType.AnalyzeSongBoundaries, itemId },
+          (response) => {
+            resolve(response);
+          }
+        );
+      }
+    );
+  };
+
   const onSave = (
     id: string,
     timestamp: number,
@@ -332,6 +349,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             onAudioEqChange={onAudioEqChange}
             profiles={audioEqProfiles}
             save={onSave}
+            onAnalyzeSongBoundaries={analyzeSongBoundaries}
             item={playlist.find((x) => x.id === selectItemId)}
           />
         </div>
