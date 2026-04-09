@@ -89,7 +89,7 @@ const parseGeminiBoundaryResponse = (
     ok: true,
     suggestion: {
       startTimestamp,
-      endTimestamp,
+      ...(typeof endTimestamp === "undefined" ? {} : { endTimestamp }),
     },
   };
 };

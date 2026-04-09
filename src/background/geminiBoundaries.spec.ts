@@ -56,26 +56,31 @@ test("parseGeminiBoundaryResponse accepts valid timestamps in range", () => {
 });
 
 test("parseGeminiBoundaryResponse keeps endTimestamp undefined when Gemini says play until the end", () => {
-  expectEqual(
-    parseGeminiBoundaryResponse(
-      {
-        candidates: [
-          {
-            content: {
-              parts: [{ text: '{"startTimestamp":8}' }],
-            },
-          },
-        ],
-      },
-      180
-    ),
+  const result = parseGeminiBoundaryResponse(
     {
-      ok: true,
-      suggestion: {
-        startTimestamp: 8,
-      },
-    }
+      candidates: [
+        {
+          content: {
+            parts: [{ text: '{"startTimestamp":8}' }],
+          },
+        },
+      ],
+    },
+    180
   );
+
+  expectEqual(result, {
+    ok: true,
+    suggestion: {
+      startTimestamp: 8,
+    },
+  });
+
+  if (!result.ok) {
+    throw new Error("Expected a successful Gemini boundary suggestion.");
+  }
+
+  expectEqual(Object.hasOwn(result.suggestion, "endTimestamp"), false);
 });
 
 test("parseGeminiBoundaryResponse rejects invalid timestamps", () => {
