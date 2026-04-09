@@ -25,16 +25,20 @@ const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
+const isValidTimestamp = (value: unknown) => {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+};
+
 const isGeminiBoundarySuggestion = (
   value: unknown
 ): value is GeminiAnalyzeSuccess["suggestion"] => {
-  if (!isObject(value) || typeof value.startTimestamp !== "number") {
+  if (!isObject(value) || !isValidTimestamp(value.startTimestamp)) {
     return false;
   }
 
   return (
     typeof value.endTimestamp === "undefined" ||
-    typeof value.endTimestamp === "number"
+    isValidTimestamp(value.endTimestamp)
   );
 };
 

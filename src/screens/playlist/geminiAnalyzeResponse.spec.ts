@@ -73,6 +73,43 @@ test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking suc
     }),
     expected
   );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: NaN,
+      },
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: Infinity,
+      },
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: -1,
+      },
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: 12,
+        endTimestamp: -5,
+      },
+    }),
+    expected
+  );
 });
 
 test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking failure payloads", () => {

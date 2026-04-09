@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile from "../../models/AudioEqProfile";
@@ -24,6 +24,10 @@ import {
   applyGeminiSuggestionToFormValues,
   type GeminiSuggestionFormShape,
 } from "./geminiSuggestionForm";
+import {
+  shouldApplyAnalyzeResult,
+  type GeminiAnalyzeScope,
+} from "./geminiAnalyzeRequest";
 
 interface Props {
   active: boolean;
@@ -63,6 +67,11 @@ const InfoModal = ({
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [isAnalyzing, setAnalyzing] = useState(false);
   const [analyzeMessage, setAnalyzeMessage] = useState("");
+  const analyzeScopeRef = useRef<GeminiAnalyzeScope>({
+    active: false,
+    itemId: undefined,
+    requestToken: 0,
+  });
   const {
     register,
     handleSubmit,
@@ -86,6 +95,12 @@ const InfoModal = ({
   });
 
   useEffect(() => {
+    analyzeScopeRef.current = {
+      active: active && !!item,
+      itemId: item?.id,
+      requestToken: analyzeScopeRef.current.requestToken + 1,
+    };
+
     if (item) {
       const timestamp = Math.floor(item?.timestamp || 0);
       const hours = Math.floor(timestamp / 3600);
@@ -118,7 +133,7 @@ const InfoModal = ({
     setSelectedProfileId("");
     setAnalyzing(false);
     setAnalyzeMessage("");
-  }, [item, reset]);
+  }, [active, item, reset]);
 
   useEffect(() => {
     const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
@@ -172,11 +187,24 @@ const InfoModal = ({
       return;
     }
 
+    const request = {
+      itemId: item.id,
+      requestToken: analyzeScopeRef.current.requestToken + 1,
+    };
+    analyzeScopeRef.current = {
+      active: true,
+      itemId: request.itemId,
+      requestToken: request.requestToken,
+    };
     setAnalyzing(true);
     setAnalyzeMessage("");
 
     try {
-      const response = await onAnalyzeSongBoundaries(item.id);
+      const response = await onAnalyzeSongBoundaries(request.itemId);
+
+      if (!shouldApplyAnalyzeResult(analyzeScopeRef.current, request)) {
+        return;
+      }
 
       if (!response.ok) {
         setAnalyzeMessage(
@@ -201,9 +229,15 @@ const InfoModal = ({
       setValue("untilEnd", nextValues.untilEnd);
       setAnalyzeMessage("Suggested timestamps loaded.");
     } catch {
+      if (!shouldApplyAnalyzeResult(analyzeScopeRef.current, request)) {
+        return;
+      }
+
       setAnalyzeMessage("Couldn't analyze song boundaries. Try again.");
     } finally {
-      setAnalyzing(false);
+      if (shouldApplyAnalyzeResult(analyzeScopeRef.current, request)) {
+        setAnalyzing(false);
+      }
     }
   };
 
