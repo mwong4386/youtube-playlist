@@ -10,7 +10,7 @@ const readStoredGeminiApiKey = (value: Record<string, unknown>) => {
 
 const getMaskedGeminiApiKeyLabel = (value: string) => {
   const normalized = normalizeGeminiApiKey(value);
-  if (normalized.length < 4) {
+  if (normalized.length <= 4) {
     return normalized ? "Saved" : "";
   }
 

@@ -33,6 +33,7 @@ test("readStoredGeminiApiKey returns a normalized key only from the local storag
 
 test("getMaskedGeminiApiKeyLabel only reveals the last four characters", () => {
   expectEqual(getMaskedGeminiApiKeyLabel("abcd1234"), "Saved ••••1234");
+  expectEqual(getMaskedGeminiApiKeyLabel("abcd"), "Saved");
   expectEqual(getMaskedGeminiApiKeyLabel("abc"), "Saved");
 });
 
