@@ -16,7 +16,8 @@ import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
-  onOpenSettings: () => void;
+  onOpenEqSettings: () => void;
+  onOpenGeminiSettings: () => void;
   playlist: MPlaylistItem[];
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
@@ -24,7 +25,8 @@ interface props {
 const PlaylistHeader = ({
   playlist,
   onDelete,
-  onOpenSettings,
+  onOpenEqSettings,
+  onOpenGeminiSettings,
   themePreference,
   setThemePreference,
 }: props) => {
@@ -105,23 +107,28 @@ const PlaylistHeader = ({
       {
         id: 3,
         description: "EQ Profiles",
-        callback: onOpenSettings,
+        callback: onOpenEqSettings,
       },
       {
         id: 4,
+        description: "Gemini",
+        callback: onOpenGeminiSettings,
+      },
+      {
+        id: 5,
         description: `${enablePin ? "Hide" : "Show"} player pin`,
         callback: onTogglePin,
       },
       {
-        id: 5,
+        id: 6,
         description: `${
           enableAdjustVideoVolume ? "Disable" : "Enable"
         } Volume adjust`,
         callback: onToggleVolumeAdjust,
       },
-      { id: 6, description: "Import Playlist", callback: onImportJson },
-      { id: 7, description: "Export Playlist", callback: onExportJson },
-      { id: 8, description: "Delete All", callback: onDelete },
+      { id: 7, description: "Import Playlist", callback: onImportJson },
+      { id: 8, description: "Export Playlist", callback: onExportJson },
+      { id: 9, description: "Delete All", callback: onDelete },
     ];
   };
 

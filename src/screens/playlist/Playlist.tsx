@@ -31,6 +31,7 @@ import MsgType from "../../constants/msgType";
 import { DEV_PLAYLIST } from "../../dev/devPlaylist";
 import { ThemePreference } from "../../utils/theme";
 import SettingsModal from "../settings/SettingsModal";
+import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import Modal from "../modal/Modal";
 import {
   cancelDeleteAllConfirmation,
@@ -57,7 +58,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   ); //for opening the info modal
-  const [settingsActive, setSettingsActive] = useState(false);
+  const [eqSettingsActive, setEqSettingsActive] = useState(false);
+  const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
   const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
   const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
   const [geminiApiKey, setGeminiApiKey] = useState("");
@@ -315,8 +317,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       <PlaylistHeader
         playlist={playlist}
         onDelete={onDeleteAll}
-        onOpenSettings={() => {
-          setSettingsActive(true);
+        onOpenEqSettings={() => {
+          setEqSettingsActive(true);
+        }}
+        onOpenGeminiSettings={() => {
+          setGeminiSettingsActive(true);
         }}
         themePreference={themePreference}
         setThemePreference={setThemePreference}
@@ -361,14 +366,20 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         </div>
       )}
       <SettingsModal
-        active={settingsActive}
+        active={eqSettingsActive}
         close={() => {
-          setSettingsActive(false);
+          setEqSettingsActive(false);
         }}
         audioEqProfiles={audioEqProfiles}
         onCreateProfile={onCreateProfile}
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
+      />
+      <GeminiSettingsModal
+        active={geminiSettingsActive}
+        close={() => {
+          setGeminiSettingsActive(false);
+        }}
         geminiApiKey={geminiApiKey}
         onSaveGeminiApiKey={onSaveGeminiApiKey}
         onRemoveGeminiApiKey={onRemoveGeminiApiKey}

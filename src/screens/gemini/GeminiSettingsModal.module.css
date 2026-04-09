@@ -1,0 +1,130 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px 8px;
+  height: calc(100vh - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.headerMain {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.closeButton {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border-color);
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.textInput {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  font: inherit;
+  padding: 11px 12px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.55;
+}
+
+.primaryButton {
+  background: var(--accent-color);
+  color: var(--surface-primary);
+  border: 0;
+}
+
+.secondaryButton {
+  border: 1px solid var(--border-color);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+
+.secondaryButton:disabled {
+  cursor: default;
+}
+
+.status {
+  margin-top: 14px;
+}
+
+@media (max-height: 860px) {
+  .panel {
+    overflow-y: auto;
+  }
+
+  .section {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
