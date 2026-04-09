@@ -175,6 +175,62 @@ test("parseGeminiBoundaryResponse returns InvalidResponse for unreadable payload
   });
 });
 
+test("parseGeminiBoundaryResponse rejects non-numeric JSON timestamp values", () => {
+  const invalidResult = {
+    ok: false,
+    code: GeminiAnalyzeErrorCode.InvalidTimestamps,
+    message: "Gemini returned invalid timestamps.",
+  };
+
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: '{"startTimestamp":"12","endTimestamp":96}' }],
+            },
+          },
+        ],
+      },
+      180
+    ),
+    invalidResult
+  );
+
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: '{"startTimestamp":12,"endTimestamp":true}' }],
+            },
+          },
+        ],
+      },
+      180
+    ),
+    invalidResult
+  );
+
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: '{"startTimestamp":null,"endTimestamp":96}' }],
+            },
+          },
+        ],
+      },
+      180
+    ),
+    invalidResult
+  );
+});
+
 test("parseGeminiBoundaryResponse rejects invalid timestamps", () => {
   expectEqual(
     parseGeminiBoundaryResponse(

@@ -96,10 +96,17 @@ const parseGeminiBoundaryResponse = (
     return invalidResponse();
   }
 
-  const startTimestamp = Math.floor(Number(parsed.startTimestamp));
+  const startTimestamp =
+    typeof parsed.startTimestamp === "number" &&
+    Number.isFinite(parsed.startTimestamp)
+      ? Math.floor(parsed.startTimestamp)
+      : NaN;
   const hasEndTimestamp = typeof parsed.endTimestamp !== "undefined";
   const endTimestamp = hasEndTimestamp
-    ? Math.floor(Number(parsed.endTimestamp))
+    ? typeof parsed.endTimestamp === "number" &&
+      Number.isFinite(parsed.endTimestamp)
+      ? Math.floor(parsed.endTimestamp)
+      : NaN
     : undefined;
 
   const hasValidStart =
