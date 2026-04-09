@@ -16,6 +16,7 @@ const enum MsgType {
   EnterPip,
   ExitPip,
   RefreshSavedBadge,
+  AnalyzeSongBoundaries,
 }
 
 export default MsgType;

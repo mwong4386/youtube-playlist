@@ -9,13 +9,22 @@ import PlaybackState, {
   isPlaybackActive,
   isQueueModeActive,
 } from "../models/PlaybackState";
+import {
+  GEMINI_API_KEY_STORAGE_KEY,
+  GeminiAnalyzeErrorCode,
+} from "../models/GeminiSettings";
 import { getRandomInt } from "../utils/math";
+import { readStoredGeminiApiKey } from "../utils/geminiSettings";
 import { getStorage } from "../utils/syncStorage";
 import reducePlaybackState from "./playbackMachine";
 import {
   SAVED_BADGE_TEXT,
   shouldShowSavedBadge,
 } from "./actionBadge";
+import {
+  buildGeminiBoundaryRequestBody,
+  parseGeminiBoundaryResponse,
+} from "./geminiBoundaries";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
@@ -316,6 +325,60 @@ const deleteVideo = async (id: string) => {
   });
 };
 
+const analyzeSongBoundaries = async (itemId: string) => {
+  const apiKey = readStoredGeminiApiKey(
+    await chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY]),
+  );
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      code: GeminiAnalyzeErrorCode.MissingApiKey,
+      message: "Add a Gemini API key in settings before analyzing songs.",
+    };
+  }
+
+  const playlist = await getPlaylist();
+  const item = playlist.find((candidate) => candidate.id === itemId);
+
+  if (!item) {
+    return {
+      ok: false,
+      code: GeminiAnalyzeErrorCode.ItemNotFound,
+      message: "The selected song could not be found.",
+    };
+  }
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(buildGeminiBoundaryRequestBody(item)),
+      },
+    );
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.RequestFailed,
+        message: "Gemini could not analyze this song right now.",
+      };
+    }
+
+    return parseGeminiBoundaryResponse(await response.json(), item.maxDuration);
+  } catch {
+    return {
+      ok: false,
+      code: GeminiAnalyzeErrorCode.RequestFailed,
+      message: "Gemini could not analyze this song right now.",
+    };
+  }
+};
+
 const onVolumeChange = async (
   volume: number,
   persist: boolean | undefined,
@@ -457,6 +520,8 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         await refreshSavedBadgeForActiveTab();
       }
       break;
+    case MsgType.AnalyzeSongBoundaries:
+      return analyzeSongBoundaries(message.itemId);
     default:
   }
 };
@@ -533,8 +598,13 @@ const getLegacyPlaybackState = (result: {
     },
   );
 
-  chrome.runtime.onMessage.addListener(function (message, sender) {
-    onMessageHandler(message, sender).then(() => {
+  chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+    if (message?.name === MsgType.AnalyzeSongBoundaries) {
+      void onMessageHandler(message, sender).then(sendResponse);
+      return true;
+    }
+
+    void onMessageHandler(message, sender).then(() => {
       updateStateToLocalStorage();
     });
   });
