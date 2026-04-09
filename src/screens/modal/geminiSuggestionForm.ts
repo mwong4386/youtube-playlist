@@ -36,7 +36,7 @@ const applyGeminiSuggestionToFormValues = (
     endHours: end ? end.hours : 0,
     endMinutes: end ? end.minutes : 0,
     endSeconds: end ? end.seconds : 0,
-    untilEnd: !end,
+    untilEnd: end ? false : currentValues.untilEnd,
   };
 };
 

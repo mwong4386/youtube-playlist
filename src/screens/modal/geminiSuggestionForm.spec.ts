@@ -38,7 +38,7 @@ test("applyGeminiSuggestionToFormValues maps seconds into start and end input fi
   );
 });
 
-test("applyGeminiSuggestionToFormValues keeps untilEnd when endTimestamp is omitted", () => {
+test("applyGeminiSuggestionToFormValues keeps the current untilEnd value when endTimestamp is omitted", () => {
   expectEqual(
     applyGeminiSuggestionToFormValues(
       {
@@ -61,7 +61,7 @@ test("applyGeminiSuggestionToFormValues keeps untilEnd when endTimestamp is omit
       endHours: 0,
       endMinutes: 0,
       endSeconds: 0,
-      untilEnd: true,
+      untilEnd: false,
     }
   );
 });
