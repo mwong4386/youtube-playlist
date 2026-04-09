@@ -4,6 +4,8 @@ import {
   GeminiAnalyzeErrorCode,
 } from "../models/GeminiSettings";
 import {
+  createRemoveGeminiApiKeyFeedback,
+  createSaveGeminiApiKeyFeedback,
   getMaskedGeminiApiKeyLabel,
   normalizeGeminiApiKey,
   readStoredGeminiApiKey,
@@ -35,6 +37,79 @@ test("getMaskedGeminiApiKeyLabel only reveals the last four characters", () => {
   expectEqual(getMaskedGeminiApiKeyLabel("abcd1234"), "Saved ••••1234");
   expectEqual(getMaskedGeminiApiKeyLabel("abcd"), "Saved");
   expectEqual(getMaskedGeminiApiKeyLabel("abc"), "Saved");
+});
+
+test("createSaveGeminiApiKeyFeedback rejects blank input before saving", async () => {
+  let called = false;
+
+  const result = await createSaveGeminiApiKeyFeedback("   ", async () => {
+    called = true;
+  });
+
+  expectEqual(result, {
+    inputValue: "   ",
+    status: "Enter an API key before saving.",
+  });
+  expectEqual(called, false);
+});
+
+test("createSaveGeminiApiKeyFeedback clears the field after a successful save", async () => {
+  let savedValue = "";
+
+  const result = await createSaveGeminiApiKeyFeedback(
+    "  secret-key  ",
+    async (value: string) => {
+      savedValue = value;
+    }
+  );
+
+  expectEqual(savedValue, "secret-key");
+  expectEqual(result, {
+    inputValue: "",
+    status: "Gemini API key saved.",
+  });
+});
+
+test("createSaveGeminiApiKeyFeedback preserves the input when saving fails", async () => {
+  const result = await createSaveGeminiApiKeyFeedback(
+    "secret-key",
+    async () => {
+      throw new Error("storage unavailable");
+    }
+  );
+
+  expectEqual(result, {
+    inputValue: "secret-key",
+    status: "Couldn't save Gemini API key. Try again.",
+  });
+});
+
+test("createRemoveGeminiApiKeyFeedback clears the field after a successful remove", async () => {
+  let called = false;
+
+  const result = await createRemoveGeminiApiKeyFeedback(async () => {
+    called = true;
+  });
+
+  expectEqual(called, true);
+  expectEqual(result, {
+    inputValue: "",
+    status: "Gemini API key removed.",
+  });
+});
+
+test("createRemoveGeminiApiKeyFeedback preserves the input when removing fails", async () => {
+  const result = await createRemoveGeminiApiKeyFeedback(
+    async () => {
+      throw new Error("storage unavailable");
+    },
+    "typed-value"
+  );
+
+  expectEqual(result, {
+    inputValue: "typed-value",
+    status: "Couldn't remove Gemini API key. Try again.",
+  });
 });
 
 test("Gemini settings constants stay stable", () => {

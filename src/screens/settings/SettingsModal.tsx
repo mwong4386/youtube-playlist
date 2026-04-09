@@ -19,8 +19,9 @@ import {
   updateAudioEqProfileDraftName,
 } from "../../utils/audioEqProfiles";
 import {
+  createRemoveGeminiApiKeyFeedback,
+  createSaveGeminiApiKeyFeedback,
   getMaskedGeminiApiKeyLabel,
-  normalizeGeminiApiKey,
 } from "../../utils/geminiSettings";
 
 const formatEqValue = (value: number) => {
@@ -159,21 +160,21 @@ const SettingsModal = ({
   };
 
   const saveGeminiApiKey = async () => {
-    const normalized = normalizeGeminiApiKey(geminiInputValue);
-    if (!normalized) {
-      setGeminiStatus("Enter an API key before saving.");
-      return;
-    }
-
-    await onSaveGeminiApiKey(normalized);
-    setGeminiInputValue("");
-    setGeminiStatus("Gemini API key saved.");
+    const result = await createSaveGeminiApiKeyFeedback(
+      geminiInputValue,
+      onSaveGeminiApiKey
+    );
+    setGeminiInputValue(result.inputValue);
+    setGeminiStatus(result.status);
   };
 
   const removeGeminiApiKey = async () => {
-    await onRemoveGeminiApiKey();
-    setGeminiInputValue("");
-    setGeminiStatus("Gemini API key removed.");
+    const result = await createRemoveGeminiApiKeyFeedback(
+      onRemoveGeminiApiKey,
+      geminiInputValue
+    );
+    setGeminiInputValue(result.inputValue);
+    setGeminiStatus(result.status);
   };
 
   return (
