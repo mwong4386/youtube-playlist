@@ -39,6 +39,74 @@ test("normalizeAnalyzeSongBoundariesResponse returns a handled failure for empty
   });
 });
 
+test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking success payloads", () => {
+  const expected = {
+    ok: false,
+    code: GeminiAnalyzeErrorCode.RequestFailed,
+    message: "Couldn't analyze song boundaries. Try again.",
+  };
+
+  expectEqual(normalizeAnalyzeSongBoundariesResponse({ ok: true }), expected);
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {},
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: "12",
+      },
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: true,
+      suggestion: {
+        startTimestamp: 12,
+        endTimestamp: "96",
+      },
+    }),
+    expected
+  );
+});
+
+test("normalizeAnalyzeSongBoundariesResponse rejects malformed typed-looking failure payloads", () => {
+  const expected = {
+    ok: false,
+    code: GeminiAnalyzeErrorCode.RequestFailed,
+    message: "Couldn't analyze song boundaries. Try again.",
+  };
+
+  expectEqual(normalizeAnalyzeSongBoundariesResponse({ ok: false }), expected);
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: false,
+      code: "x",
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: false,
+      message: "no code",
+    }),
+    expected
+  );
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: false,
+      code: "x",
+      message: 123,
+    }),
+    expected
+  );
+});
+
 test("normalizeAnalyzeSongBoundariesResponse preserves successful responses", () => {
   expectEqual(
     normalizeAnalyzeSongBoundariesResponse({
@@ -52,6 +120,21 @@ test("normalizeAnalyzeSongBoundariesResponse preserves successful responses", ()
       suggestion: {
         startTimestamp: 12,
       },
+    }
+  );
+});
+
+test("normalizeAnalyzeSongBoundariesResponse preserves failure responses", () => {
+  expectEqual(
+    normalizeAnalyzeSongBoundariesResponse({
+      ok: false,
+      code: GeminiAnalyzeErrorCode.ItemNotFound,
+      message: "Song not found.",
+    }),
+    {
+      ok: false,
+      code: GeminiAnalyzeErrorCode.ItemNotFound,
+      message: "Song not found.",
     }
   );
 });

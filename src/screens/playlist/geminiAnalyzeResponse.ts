@@ -21,16 +21,37 @@ const createAnalyzeSongBoundariesFailure = (
   };
 };
 
+const isObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const isGeminiBoundarySuggestion = (
+  value: unknown
+): value is GeminiAnalyzeSuccess["suggestion"] => {
+  if (!isObject(value) || typeof value.startTimestamp !== "number") {
+    return false;
+  }
+
+  return (
+    typeof value.endTimestamp === "undefined" ||
+    typeof value.endTimestamp === "number"
+  );
+};
+
 const isGeminiAnalyzeResponse = (
   response: unknown
 ): response is GeminiAnalyzeResponse => {
-  const candidate = response as { ok?: unknown } | null;
+  if (!isObject(response) || typeof response.ok !== "boolean") {
+    return false;
+  }
+
+  if (response.ok) {
+    return isGeminiBoundarySuggestion(response.suggestion);
+  }
 
   return (
-    typeof response === "object" &&
-    response !== null &&
-    "ok" in response &&
-    typeof candidate?.ok === "boolean"
+    typeof response.code === "string" &&
+    typeof response.message === "string"
   );
 };
 
