@@ -292,8 +292,7 @@ const SettingsModal = ({
               Gemini
             </h3>
             <p className={styles["note"]}>
-              Stored locally in this browser only. Websites and content scripts
-              cannot read it.
+              Stored locally in this browser for this extension.
             </p>
             <input
               type="password"
