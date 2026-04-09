@@ -26,6 +26,7 @@ import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
 import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
+import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import MsgType from "../../constants/msgType";
 import { DEV_PLAYLIST } from "../../dev/devPlaylist";
 import { ThemePreference } from "../../utils/theme";
@@ -248,7 +249,12 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         chrome.runtime.sendMessage(
           { name: MsgType.AnalyzeSongBoundaries, itemId },
           (response) => {
-            resolve(response);
+            resolve(
+              normalizeAnalyzeSongBoundariesResponse(
+                response,
+                chrome.runtime.lastError
+              )
+            );
           }
         );
       }

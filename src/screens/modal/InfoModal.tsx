@@ -175,32 +175,36 @@ const InfoModal = ({
     setAnalyzing(true);
     setAnalyzeMessage("");
 
-    const response = await onAnalyzeSongBoundaries(item.id);
+    try {
+      const response = await onAnalyzeSongBoundaries(item.id);
 
-    if (!response.ok) {
-      setAnalyzing(false);
-      setAnalyzeMessage(
-        response.code === GeminiAnalyzeErrorCode.MissingApiKey
-          ? "Add a Gemini API key in settings first."
-          : response.message
+      if (!response.ok) {
+        setAnalyzeMessage(
+          response.code === GeminiAnalyzeErrorCode.MissingApiKey
+            ? "Add a Gemini API key in settings first."
+            : response.message
+        );
+        return;
+      }
+
+      const nextValues = applyGeminiSuggestionToFormValues(
+        response.suggestion,
+        getValues()
       );
-      return;
+
+      setValue("hours", nextValues.hours);
+      setValue("minutes", nextValues.minutes);
+      setValue("seconds", nextValues.seconds);
+      setValue("endHours", nextValues.endHours);
+      setValue("endMinutes", nextValues.endMinutes);
+      setValue("endSeconds", nextValues.endSeconds);
+      setValue("untilEnd", nextValues.untilEnd);
+      setAnalyzeMessage("Suggested timestamps loaded.");
+    } catch {
+      setAnalyzeMessage("Couldn't analyze song boundaries. Try again.");
+    } finally {
+      setAnalyzing(false);
     }
-
-    const nextValues = applyGeminiSuggestionToFormValues(
-      response.suggestion,
-      getValues()
-    );
-
-    setValue("hours", nextValues.hours);
-    setValue("minutes", nextValues.minutes);
-    setValue("seconds", nextValues.seconds);
-    setValue("endHours", nextValues.endHours);
-    setValue("endMinutes", nextValues.endMinutes);
-    setValue("endSeconds", nextValues.endSeconds);
-    setValue("untilEnd", nextValues.untilEnd);
-    setAnalyzeMessage("Suggested timestamps loaded.");
-    setAnalyzing(false);
   };
 
   const onSubmit = (data: InfoModels) => {

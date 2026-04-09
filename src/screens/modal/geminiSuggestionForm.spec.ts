@@ -49,8 +49,8 @@ test("applyGeminiSuggestionToFormValues keeps the current untilEnd value when en
         minutes: 0,
         seconds: 0,
         endHours: 0,
-        endMinutes: 0,
-        endSeconds: 0,
+        endMinutes: 2,
+        endSeconds: 30,
         untilEnd: false,
       }
     ),
@@ -59,8 +59,8 @@ test("applyGeminiSuggestionToFormValues keeps the current untilEnd value when en
       minutes: 0,
       seconds: 9,
       endHours: 0,
-      endMinutes: 0,
-      endSeconds: 0,
+      endMinutes: 2,
+      endSeconds: 30,
       untilEnd: false,
     }
   );
