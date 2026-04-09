@@ -41,17 +41,48 @@ const invalidTimestamps = (): GeminiAnalyzeFailure => ({
   message: "Gemini returned invalid timestamps.",
 });
 
+const readCandidateText = (payload: unknown) => {
+  if (
+    typeof payload !== "object" ||
+    !payload ||
+    !Array.isArray((payload as any).candidates)
+  ) {
+    return "";
+  }
+
+  const parts = (payload as any).candidates[0]?.content?.parts;
+  if (!Array.isArray(parts)) {
+    return "";
+  }
+
+  return parts
+    .map((part) => (typeof part?.text === "string" ? part.text : ""))
+    .join("")
+    .trim();
+};
+
+const extractJsonText = (text: string) => {
+  const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const normalized = fencedMatch ? fencedMatch[1].trim() : text.trim();
+
+  if (normalized.startsWith("{") && normalized.endsWith("}")) {
+    return normalized;
+  }
+
+  const firstBrace = normalized.indexOf("{");
+  const lastBrace = normalized.lastIndexOf("}");
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    return "";
+  }
+
+  return normalized.slice(firstBrace, lastBrace + 1).trim();
+};
+
 const parseGeminiBoundaryResponse = (
   payload: unknown,
   maxDuration: number,
 ): GeminiAnalyzeSuccess | GeminiAnalyzeFailure => {
-  const text =
-    typeof payload === "object" &&
-    payload &&
-    Array.isArray((payload as any).candidates) &&
-    typeof (payload as any).candidates[0]?.content?.parts?.[0]?.text === "string"
-      ? (payload as any).candidates[0].content.parts[0].text
-      : "";
+  const text = extractJsonText(readCandidateText(payload));
 
   if (!text) {
     return invalidResponse();

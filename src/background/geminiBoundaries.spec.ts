@@ -55,6 +55,90 @@ test("parseGeminiBoundaryResponse accepts valid timestamps in range", () => {
   );
 });
 
+test("parseGeminiBoundaryResponse reads JSON wrapped in markdown code fences", () => {
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: '```json\n{"startTimestamp":12,"endTimestamp":96}\n```',
+                },
+              ],
+            },
+          },
+        ],
+      },
+      180
+    ),
+    {
+      ok: true,
+      suggestion: {
+        startTimestamp: 12,
+        endTimestamp: 96,
+      },
+    }
+  );
+});
+
+test("parseGeminiBoundaryResponse reads JSON split across multiple parts", () => {
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                { text: '{"startTimestamp":' },
+                { text: "12," },
+                { text: '"endTimestamp":96}' },
+              ],
+            },
+          },
+        ],
+      },
+      180
+    ),
+    {
+      ok: true,
+      suggestion: {
+        startTimestamp: 12,
+        endTimestamp: 96,
+      },
+    }
+  );
+});
+
+test("parseGeminiBoundaryResponse reads JSON surrounded by prose", () => {
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: 'Best guess:\n{"startTimestamp":12,"endTimestamp":96}\nUse these values.',
+                },
+              ],
+            },
+          },
+        ],
+      },
+      180
+    ),
+    {
+      ok: true,
+      suggestion: {
+        startTimestamp: 12,
+        endTimestamp: 96,
+      },
+    }
+  );
+});
+
 test("parseGeminiBoundaryResponse keeps endTimestamp undefined when Gemini says play until the end", () => {
   const result = parseGeminiBoundaryResponse(
     {
@@ -81,6 +165,14 @@ test("parseGeminiBoundaryResponse keeps endTimestamp undefined when Gemini says 
   }
 
   expectEqual(Object.hasOwn(result.suggestion, "endTimestamp"), false);
+});
+
+test("parseGeminiBoundaryResponse returns InvalidResponse for unreadable payloads", () => {
+  expectEqual(parseGeminiBoundaryResponse({ candidates: [] }, 180), {
+    ok: false,
+    code: GeminiAnalyzeErrorCode.InvalidResponse,
+    message: "Gemini returned an unreadable response.",
+  });
 });
 
 test("parseGeminiBoundaryResponse rejects invalid timestamps", () => {
