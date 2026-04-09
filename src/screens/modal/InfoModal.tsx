@@ -24,6 +24,7 @@ import {
   applyGeminiSuggestionToFormValues,
   type GeminiSuggestionFormShape,
 } from "./geminiSuggestionForm";
+import { hasValidManualTimestampRange } from "./manualTimestampValidation";
 import {
   beginAnalyzeRequest,
   shouldApplyAnalyzeResult,
@@ -251,6 +252,7 @@ const InfoModal = ({
       data.untilEnd || temp_endtimestamp > (item?.maxDuration as number)
         ? undefined
         : temp_endtimestamp;
+    if (!hasValidManualTimestampRange(timestamp, endtimestamp)) return;
     save(
       item?.id as string,
       timestamp,
