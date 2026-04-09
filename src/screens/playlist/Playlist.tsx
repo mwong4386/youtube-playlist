@@ -3,6 +3,7 @@ import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile, {
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../../models/AudioEqProfile";
+import { GEMINI_API_KEY_STORAGE_KEY } from "../../models/GeminiSettings";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import PlaybackState, {
   createInitialPlaybackState,
@@ -15,6 +16,7 @@ import {
   readStoredAudioEqProfiles,
   updateAudioEqProfileList,
 } from "../../utils/audioEqProfiles";
+import { readStoredGeminiApiKey } from "../../utils/geminiSettings";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
@@ -53,6 +55,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [settingsActive, setSettingsActive] = useState(false);
   const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
   const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
+  const [geminiApiKey, setGeminiApiKey] = useState("");
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     const nextState = state || createInitialPlaybackState();
@@ -106,6 +109,12 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   }, []);
 
   useEffect(() => {
+    chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY], (result) => {
+      setGeminiApiKey(readStoredGeminiApiKey(result));
+    });
+  }, []);
+
+  useEffect(() => {
     chrome.storage.local.get(
       ["playbackState", "isPlaying", "playingItem"],
       (result) => {
@@ -154,6 +163,17 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
                 [AUDIO_EQ_PROFILE_STORAGE_KEY]:
                   changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue,
               })
+        );
+      }
+      if (
+        namespace === "local" &&
+        GEMINI_API_KEY_STORAGE_KEY in changes
+      ) {
+        setGeminiApiKey(
+          readStoredGeminiApiKey({
+            [GEMINI_API_KEY_STORAGE_KEY]:
+              changes[GEMINI_API_KEY_STORAGE_KEY].newValue,
+          })
         );
       }
     };
@@ -206,6 +226,16 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   const onDeleteProfile = (id: string) => {
     saveProfiles(deleteAudioEqProfile(audioEqProfiles, id));
+  };
+
+  const onSaveGeminiApiKey = async (value: string) => {
+    await chrome.storage.local.set({
+      [GEMINI_API_KEY_STORAGE_KEY]: value,
+    });
+  };
+
+  const onRemoveGeminiApiKey = async () => {
+    await chrome.storage.local.remove(GEMINI_API_KEY_STORAGE_KEY);
   };
 
   const onSave = (
@@ -315,6 +345,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onCreateProfile={onCreateProfile}
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
+        geminiApiKey={geminiApiKey}
+        onSaveGeminiApiKey={onSaveGeminiApiKey}
+        onRemoveGeminiApiKey={onRemoveGeminiApiKey}
       />
       <Modal active={deleteAllModalActive} close={closeDeleteAllModal}>
         <div className={styles["delete-all-modal"]}>

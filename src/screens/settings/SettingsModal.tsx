@@ -18,6 +18,10 @@ import {
   updateAudioEqProfileDraftBand,
   updateAudioEqProfileDraftName,
 } from "../../utils/audioEqProfiles";
+import {
+  getMaskedGeminiApiKeyLabel,
+  normalizeGeminiApiKey,
+} from "../../utils/geminiSettings";
 
 const formatEqValue = (value: number) => {
   return value > 0 ? `+${value}` : `${value}`;
@@ -36,6 +40,9 @@ interface Props {
   onCreateProfile: (name: string, audioEq: AudioEqSettings) => void;
   onUpdateProfile: (profile: AudioEqProfile) => void;
   onDeleteProfile: (id: string) => void;
+  geminiApiKey: string;
+  onSaveGeminiApiKey: (value: string) => Promise<void>;
+  onRemoveGeminiApiKey: () => Promise<void>;
 }
 
 const SettingsModal = ({
@@ -45,6 +52,9 @@ const SettingsModal = ({
   onCreateProfile,
   onUpdateProfile,
   onDeleteProfile,
+  geminiApiKey,
+  onSaveGeminiApiKey,
+  onRemoveGeminiApiKey,
 }: Props) => {
   const [isProfileEditorOpen, setProfileEditorOpen] = useState(false);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
@@ -53,6 +63,8 @@ const SettingsModal = ({
   );
   const [editingSourceProfile, setEditingSourceProfile] =
     useState<AudioEqProfile | null>(null);
+  const [geminiInputValue, setGeminiInputValue] = useState("");
+  const [geminiStatus, setGeminiStatus] = useState("");
   const hasReachedProfileLimit = audioEqProfiles.length >= AUDIO_EQ_PROFILE_LIMIT;
   const isEditing = editingProfileId !== null;
   const isProfileFormDirty = isAudioEqProfileDraftDirty(
@@ -67,6 +79,8 @@ const SettingsModal = ({
       setEditingProfileId(null);
       setEditingSourceProfile(null);
       setProfileForm(createAudioEqProfileDraft());
+      setGeminiInputValue("");
+      setGeminiStatus("");
     }
   }, [active]);
 
@@ -142,6 +156,24 @@ const SettingsModal = ({
 
     onCreateProfile(profileForm.name, profileForm.audioEq);
     closeProfileEditor();
+  };
+
+  const saveGeminiApiKey = async () => {
+    const normalized = normalizeGeminiApiKey(geminiInputValue);
+    if (!normalized) {
+      setGeminiStatus("Enter an API key before saving.");
+      return;
+    }
+
+    await onSaveGeminiApiKey(normalized);
+    setGeminiInputValue("");
+    setGeminiStatus("Gemini API key saved.");
+  };
+
+  const removeGeminiApiKey = async () => {
+    await onRemoveGeminiApiKey();
+    setGeminiInputValue("");
+    setGeminiStatus("Gemini API key removed.");
   };
 
   return (
@@ -253,6 +285,47 @@ const SettingsModal = ({
                 </div>
               </section>
             ) : null}
+          </section>
+          <section className={styles["section"]} aria-labelledby="gemini-section-title">
+            <h3 id="gemini-section-title" className={styles["section-title"]}>
+              Gemini
+            </h3>
+            <p className={styles["note"]}>
+              Stored locally in this browser only. Websites and content scripts
+              cannot read it.
+            </p>
+            <input
+              type="password"
+              value={geminiInputValue}
+              onChange={(event) => {
+                setGeminiInputValue(event.currentTarget.value);
+                setGeminiStatus("");
+              }}
+              placeholder="Paste Gemini API key"
+              className={styles["text-input"]}
+            />
+            <div className={styles["profile-toolbar"]}>
+              <button
+                type="button"
+                className={styles["primary-button"]}
+                onClick={saveGeminiApiKey}
+              >
+                Save key
+              </button>
+              <button
+                type="button"
+                className={styles["secondary-button"]}
+                disabled={!geminiApiKey}
+                onClick={removeGeminiApiKey}
+              >
+                Remove key
+              </button>
+            </div>
+            <div className={styles["note"]}>
+              {geminiStatus ||
+                getMaskedGeminiApiKeyLabel(geminiApiKey) ||
+                "No Gemini API key saved."}
+            </div>
           </section>
         </div>
       </Modal>
