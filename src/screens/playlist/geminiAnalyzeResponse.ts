@@ -8,6 +8,10 @@ type GeminiAnalyzeResponse = GeminiAnalyzeSuccess | GeminiAnalyzeFailure;
 type RuntimeMessageError = {
   message?: string;
 } | null | undefined;
+type GeminiAnalyzeResponseLogger = {
+  log: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+};
 
 const ANALYZE_FAILURE_MESSAGE = "Couldn't analyze song boundaries. Try again.";
 
@@ -81,18 +85,24 @@ const isGeminiAnalyzeResponse = (
 
 const normalizeAnalyzeSongBoundariesResponse = (
   response: unknown,
-  runtimeError?: RuntimeMessageError
+  runtimeError?: RuntimeMessageError,
+  logger?: GeminiAnalyzeResponseLogger
 ): GeminiAnalyzeResponse => {
   if (runtimeError) {
+    logger?.warn("[Gemini analyze]", "runtime message error", runtimeError);
     return createAnalyzeSongBoundariesFailure(
       runtimeError.message || ANALYZE_FAILURE_MESSAGE
     );
   }
 
   if (!isGeminiAnalyzeResponse(response)) {
+    logger?.warn("[Gemini analyze]", "malformed background response", {
+      response,
+    });
     return createAnalyzeSongBoundariesFailure();
   }
 
+  logger?.log("[Gemini analyze]", "background response", response);
   return response;
 };
 

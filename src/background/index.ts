@@ -25,6 +25,11 @@ import {
   buildGeminiBoundaryRequestBody,
   parseGeminiBoundaryResponse,
 } from "./geminiBoundaries";
+import {
+  GEMINI_GENERIC_FAILURE_MESSAGE,
+  fetchGeminiGenerateContentWithRetries,
+  readGeminiErrorResponse,
+} from "./geminiRequest";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
@@ -325,12 +330,28 @@ const deleteVideo = async (id: string) => {
   });
 };
 
+const logGeminiAnalyze = (...args: unknown[]) => {
+  console.log("[Gemini analyze]", ...args);
+};
+
+const warnGeminiAnalyze = (...args: unknown[]) => {
+  console.warn("[Gemini analyze]", ...args);
+};
+
 const analyzeSongBoundaries = async (itemId: string) => {
+  logGeminiAnalyze("started", { itemId });
+
   const apiKey = readStoredGeminiApiKey(
     await chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY]),
   );
 
+  logGeminiAnalyze("api key lookup complete", { hasApiKey: Boolean(apiKey) });
+
   if (!apiKey) {
+    warnGeminiAnalyze("stopped before request", {
+      itemId,
+      reason: "missing-api-key",
+    });
     return {
       ok: false,
       code: GeminiAnalyzeErrorCode.MissingApiKey,
@@ -342,6 +363,11 @@ const analyzeSongBoundaries = async (itemId: string) => {
   const item = playlist.find((candidate) => candidate.id === itemId);
 
   if (!item) {
+    warnGeminiAnalyze("stopped before request", {
+      itemId,
+      reason: "item-not-found",
+      playlistSize: playlist.length,
+    });
     return {
       ok: false,
       code: GeminiAnalyzeErrorCode.ItemNotFound,
@@ -350,31 +376,71 @@ const analyzeSongBoundaries = async (itemId: string) => {
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(buildGeminiBoundaryRequestBody(item)),
-      },
-    );
+    const requestBody = buildGeminiBoundaryRequestBody(item);
+    logGeminiAnalyze("sending request", {
+      itemId,
+      videoId: item.videoId,
+      title: item.title,
+      channelName: item.channelName,
+      maxDuration: item.maxDuration,
+      savedStartTimestamp: item.timestamp,
+      savedEndTimestamp: item.endTimestamp,
+      requestBody,
+    });
+
+    const { response, attempt } = await fetchGeminiGenerateContentWithRetries({
+      apiKey,
+      requestBody,
+    });
+
+    logGeminiAnalyze("received response", {
+      itemId,
+      attempt,
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+    });
 
     if (!response.ok) {
+      const errorResponse = await readGeminiErrorResponse(response);
+      warnGeminiAnalyze("request failed", {
+        itemId,
+        attempt,
+        status: response.status,
+        statusText: response.statusText,
+        responseText: errorResponse.responseText,
+      });
       return {
         ok: false,
         code: GeminiAnalyzeErrorCode.RequestFailed,
-        message: "Gemini could not analyze this song right now.",
+        message: errorResponse.message,
       };
     }
 
-    return parseGeminiBoundaryResponse(await response.json(), item.maxDuration);
-  } catch {
+    const payload = await response.json();
+    logGeminiAnalyze("response payload", { itemId, payload });
+
+    const result = parseGeminiBoundaryResponse(
+      payload,
+      item.maxDuration,
+      (reason, details) => {
+        warnGeminiAnalyze("response parse failed", {
+          itemId,
+          reason,
+          ...details,
+        });
+      },
+    );
+
+    logGeminiAnalyze("completed", { itemId, result });
+
+    return result;
+  } catch (error) {
+    warnGeminiAnalyze("request threw", { itemId, error });
     return {
       ok: false,
       code: GeminiAnalyzeErrorCode.RequestFailed,
-      message: "Gemini could not analyze this song right now.",
+      message: GEMINI_GENERIC_FAILURE_MESSAGE,
     };
   }
 };
@@ -598,6 +664,9 @@ const getLegacyPlaybackState = (result: {
     },
   );
 
+  logGeminiAnalyze("background listener registered", {
+    runtimeId: chrome.runtime.id,
+  });
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     if (message?.name === MsgType.AnalyzeSongBoundaries) {
       void onMessageHandler(message, sender).then(sendResponse);

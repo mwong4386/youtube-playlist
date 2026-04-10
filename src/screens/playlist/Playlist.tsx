@@ -246,6 +246,12 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   };
 
   const analyzeSongBoundaries = (itemId: string) => {
+    console.log("[Gemini analyze]", "sending runtime message", {
+      itemId,
+      messageName: MsgType.AnalyzeSongBoundaries,
+      runtimeId: chrome.runtime.id,
+    });
+
     return new Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>(
       (resolve) => {
         chrome.runtime.sendMessage(
@@ -254,7 +260,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             resolve(
               normalizeAnalyzeSongBoundariesResponse(
                 response,
-                chrome.runtime.lastError
+                chrome.runtime.lastError,
+                console
               )
             );
           }

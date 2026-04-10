@@ -5,23 +5,37 @@ import {
   type GeminiAnalyzeSuccess,
 } from "../models/GeminiSettings";
 
+type GeminiBoundaryDiagnosticLogger = (
+  reason: string,
+  details?: Record<string, unknown>,
+) => void;
+
 const buildGeminiBoundaryRequestBody = (item: MPlaylistItem) => {
+  const youtubeUrl = `https://www.youtube.com/watch?v=${item.videoId}`;
+
   return {
     contents: [
       {
         parts: [
           {
             text: [
-              "Identify the most likely music start and stop timestamps for this YouTube song.",
+              "Identify the tight musical performance boundary for this YouTube song.",
+              "Set startTimestamp to the first intentional musical sound, not the video intro, title card, ambient room tone, countdown, spoken intro, or silence.",
+              "Set endTimestamp to the last intentional musical sound, including natural musical reverb or decay, but excluding applause, spoken outro, credits, and post-performance silence.",
+              "For THE FIRST TAKE and live-session videos, prefer the performance itself over branding, setup, dialogue, applause, or after-performance reactions.",
+              "Do not copy the saved timestamps unless they match the actual musical boundary.",
               "Return JSON only with numeric startTimestamp and optional endTimestamp fields.",
+              "Use whole-second precision and choose the closest timestamp you can justify from the video/audio.",
               `title: ${item.title}`,
               `channelName: ${item.channelName}`,
-              `url: ${item.url}`,
               `videoId: ${item.videoId}`,
               `maxDuration: ${item.maxDuration}`,
-              `savedStartTimestamp: ${item.timestamp}`,
-              `savedEndTimestamp: ${item.endTimestamp ?? "until-end"}`,
             ].join("\n"),
+          },
+          {
+            file_data: {
+              file_uri: youtubeUrl,
+            },
           },
         ],
       },
@@ -29,16 +43,39 @@ const buildGeminiBoundaryRequestBody = (item: MPlaylistItem) => {
   };
 };
 
-const invalidResponse = (): GeminiAnalyzeFailure => ({
+const createResponseExcerpt = (text: string) => {
+  const normalized = text.replace(/\s+/g, " ").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.length > 500
+    ? `${normalized.slice(0, 500)}...`
+    : normalized;
+};
+
+const withResponseExcerpt = (message: string, responseText: string) => {
+  const excerpt = createResponseExcerpt(responseText);
+  return excerpt ? `${message} Response: ${excerpt}` : message;
+};
+
+const invalidResponse = (responseText = ""): GeminiAnalyzeFailure => ({
   ok: false,
   code: GeminiAnalyzeErrorCode.InvalidResponse,
-  message: "Gemini returned an unreadable response.",
+  message: withResponseExcerpt(
+    "Gemini returned an unreadable response.",
+    responseText,
+  ),
 });
 
-const invalidTimestamps = (): GeminiAnalyzeFailure => ({
+const invalidTimestamps = (responseText = ""): GeminiAnalyzeFailure => ({
   ok: false,
   code: GeminiAnalyzeErrorCode.InvalidTimestamps,
-  message: "Gemini returned invalid timestamps.",
+  message: withResponseExcerpt(
+    "Gemini returned invalid timestamps.",
+    responseText,
+  ),
 });
 
 const readCandidateText = (payload: unknown) => {
@@ -78,35 +115,59 @@ const extractJsonText = (text: string) => {
   return normalized.slice(firstBrace, lastBrace + 1).trim();
 };
 
+const readTimestampSeconds = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.floor(value);
+  }
+
+  if (typeof value !== "string") {
+    return NaN;
+  }
+
+  const normalized = value.trim();
+  if (!normalized) {
+    return NaN;
+  }
+
+  if (/^\d+(?:\.\d+)?$/.test(normalized)) {
+    return Math.floor(Number(normalized));
+  }
+
+  if (!/^\d+(?::[0-5]?\d){1,2}$/.test(normalized)) {
+    return NaN;
+  }
+
+  const parts = normalized.split(":").map(Number);
+  return parts.reduce((total, part) => total * 60 + part, 0);
+};
+
 const parseGeminiBoundaryResponse = (
   payload: unknown,
   maxDuration: number,
+  reportDiagnostic?: GeminiBoundaryDiagnosticLogger,
 ): GeminiAnalyzeSuccess | GeminiAnalyzeFailure => {
-  const text = extractJsonText(readCandidateText(payload));
+  const candidateText = readCandidateText(payload);
+  const text = extractJsonText(candidateText);
 
   if (!text) {
-    return invalidResponse();
+    reportDiagnostic?.("missing-json", { candidateText, payload });
+    return invalidResponse(candidateText);
   }
 
   let parsed: { startTimestamp?: unknown; endTimestamp?: unknown };
 
   try {
     parsed = JSON.parse(text);
-  } catch {
-    return invalidResponse();
+  } catch (error) {
+    reportDiagnostic?.("json-parse-error", { error, text });
+    return invalidResponse(text);
   }
 
-  const startTimestamp =
-    typeof parsed.startTimestamp === "number" &&
-    Number.isFinite(parsed.startTimestamp)
-      ? Math.floor(parsed.startTimestamp)
-      : NaN;
-  const hasEndTimestamp = typeof parsed.endTimestamp !== "undefined";
+  const startTimestamp = readTimestampSeconds(parsed.startTimestamp);
+  const hasEndTimestamp =
+    typeof parsed.endTimestamp !== "undefined" && parsed.endTimestamp !== null;
   const endTimestamp = hasEndTimestamp
-    ? typeof parsed.endTimestamp === "number" &&
-      Number.isFinite(parsed.endTimestamp)
-      ? Math.floor(parsed.endTimestamp)
-      : NaN
+    ? readTimestampSeconds(parsed.endTimestamp)
     : undefined;
 
   const hasValidStart =
@@ -120,7 +181,13 @@ const parseGeminiBoundaryResponse = (
       endTimestamp <= maxDuration);
 
   if (!hasValidStart || !hasValidEnd) {
-    return invalidTimestamps();
+    reportDiagnostic?.("invalid-timestamps", {
+      parsed,
+      maxDuration,
+      startTimestamp,
+      endTimestamp,
+    });
+    return invalidTimestamps(text);
   }
 
   return {
