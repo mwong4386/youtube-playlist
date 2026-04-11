@@ -2,7 +2,7 @@ import test from "node:test";
 import {
   DEFAULT_PLAYLIST_IMPORT_ERROR_MESSAGE,
   resolvePlaylistImportSubmission,
-} from "./playlistImportResult";
+} from "./playlistImportResult.js";
 
 const expectEqual = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {

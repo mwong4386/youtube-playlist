@@ -19,7 +19,10 @@ interface props {
   onOpenEqSettings: () => void;
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
+  onClearSelection: () => void;
+  onOpenSelectionActions: () => void;
   playlist: MPlaylistItem[];
+  selectedCount: number;
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
 }
@@ -29,6 +32,9 @@ const PlaylistHeader = ({
   onOpenEqSettings,
   onOpenGeminiSettings,
   onOpenImportModal,
+  onClearSelection,
+  onOpenSelectionActions,
+  selectedCount,
   themePreference,
   setThemePreference,
 }: props) => {
@@ -221,28 +227,55 @@ const PlaylistHeader = ({
         accept="application/json"
         onChange={onFileUpload}
       ></input>
-      <div className={styles["header-left-container"]}>
-        <button
-          disabled={playlist.length === 0}
-          onClick={onPlayPauseButton}
-          className={styles["header-button"]}
-        >
-          <img
-            className={styles["header-button-icon"]}
-            src={isPlayAll ? "./assets/pause30.png" : "./assets/play30.png"}
-            alt={isPlayAll ? "pause" : "play all"}
-          />
-        </button>
-      </div>
-      <div className={styles["header-right-container"]}>
-        <button onClick={openMenu} className={styles["header-button"]}>
-          <img
-            className={styles["header-button-icon"]}
-            src={"./assets/menu30.svg"}
-            alt="menu"
-          />
-        </button>
-      </div>
+      {selectedCount > 0 ? (
+        <>
+          <div className={styles["header-left-container"]}>
+            <button
+              type="button"
+              onClick={onClearSelection}
+              className={`${styles["header-button"]} ${styles["selection-header-button"]}`}
+              aria-label="Clear selection"
+            >
+              ×
+            </button>
+            <p className={styles["selection-count"]}>{selectedCount} selected</p>
+          </div>
+          <div className={styles["header-right-container"]}>
+            <button
+              type="button"
+              onClick={onOpenSelectionActions}
+              className={`${styles["header-button"]} ${styles["selection-header-button"]}`}
+            >
+              Actions
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={styles["header-left-container"]}>
+            <button
+              disabled={playlist.length === 0}
+              onClick={onPlayPauseButton}
+              className={styles["header-button"]}
+            >
+              <img
+                className={styles["header-button-icon"]}
+                src={isPlayAll ? "./assets/pause30.png" : "./assets/play30.png"}
+                alt={isPlayAll ? "pause" : "play all"}
+              />
+            </button>
+          </div>
+          <div className={styles["header-right-container"]}>
+            <button onClick={openMenu} className={styles["header-button"]}>
+              <img
+                className={styles["header-button-icon"]}
+                src={"./assets/menu30.svg"}
+                alt="menu"
+              />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

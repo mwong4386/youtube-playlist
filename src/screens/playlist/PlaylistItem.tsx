@@ -5,9 +5,18 @@ interface props {
   item: MPlaylistItem;
   isPlaying: boolean;
   IPlaying: boolean;
+  onToggleSelected: (itemId: string) => void;
+  selected: boolean;
   selectItemId: React.Dispatch<string | undefined>;
 }
-const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
+const PlaylistItem = ({
+  item,
+  isPlaying,
+  IPlaying,
+  onToggleSelected,
+  selected,
+  selectItemId,
+}: props) => {
   const isActivePlayback = isPlaying && IPlaying;
 
   const onPlay = () => {
@@ -18,9 +27,6 @@ const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
     }
   };
 
-  const onDelete = () => {
-    chrome.runtime.sendMessage({ name: MsgType.DeleteVideo, item: item });
-  };
   const onClick = () => {
     selectItemId(item.id);
   };
@@ -31,23 +37,16 @@ const PlaylistItem = ({ item, isPlaying, IPlaying, selectItemId }: props) => {
       }`}
     >
       <div className={styles["state-container"]}>
-        <svg
-          onClick={onDelete}
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          preserveAspectRatio="xMidYMid meet"
-          viewBox="0 0 24 24"
-        >
-          <path
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M6.758 17.243L12.001 12m5.243-5.243L12 12m0 0L6.758 6.757M12.001 12l5.243 5.243"
+        <label className={styles["playlist-item-checkbox"]}>
+          <input
+            type="checkbox"
+            checked={selected}
+            aria-label={`Select ${item.title}`}
+            onChange={() => {
+              onToggleSelected(item.id);
+            }}
           />
-        </svg>
+        </label>
       </div>
       <div className={styles["info-container"]} onClick={onClick}>
         <div className={styles["title-container"]}>

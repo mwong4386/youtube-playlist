@@ -1,10 +1,12 @@
 import test from "node:test";
 import type { AnalyzeImportBatchState } from "../models/PlaylistImport";
+import type MPlaylistItem from "../models/MPlaylistItem";
 import {
   beginAnalyzeImportBatch,
   completeAnalyzeImportBatchItem,
   failAnalyzeImportBatchItem,
-} from "./importBatchState";
+  resolveAnalyzeImportBatchItemIds,
+} from "./importBatchState.js";
 
 const expectEqual = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -60,4 +62,37 @@ test("failAnalyzeImportBatchItem records failures and finishes the batch when ex
   };
 
   expectEqual(failAnalyzeImportBatchItem(started, "song-1"), expected);
+});
+
+test("resolveAnalyzeImportBatchItemIds keeps explicit selected ids in playlist order", () => {
+  const playlist = [
+    { id: "song-1", timestamp: 15 } as MPlaylistItem,
+    { id: "song-2", timestamp: 0 } as MPlaylistItem,
+    { id: "song-3", timestamp: 42 } as MPlaylistItem,
+  ];
+
+  expectEqual(
+    resolveAnalyzeImportBatchItemIds(playlist, ["song-3", "song-1", "song-9"]),
+    ["song-1", "song-3"]
+  );
+});
+
+test("resolveAnalyzeImportBatchItemIds falls back to unresolved songs when no explicit ids are provided", () => {
+  const playlist = [
+    { id: "song-1", timestamp: 0 } as MPlaylistItem,
+    { id: "song-2", timestamp: 12, endTimestamp: 60 } as MPlaylistItem,
+    { id: "song-3", timestamp: 0 } as MPlaylistItem,
+    { id: "song-4", timestamp: 12 } as MPlaylistItem,
+  ];
+
+  expectEqual(resolveAnalyzeImportBatchItemIds(playlist), ["song-1", "song-3"]);
+});
+
+test("resolveAnalyzeImportBatchItemIds returns no songs for an explicit empty selection", () => {
+  const playlist = [
+    { id: "song-1", timestamp: 0 } as MPlaylistItem,
+    { id: "song-2", timestamp: 24 } as MPlaylistItem,
+  ];
+
+  expectEqual(resolveAnalyzeImportBatchItemIds(playlist, []), []);
 });

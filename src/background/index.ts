@@ -30,6 +30,7 @@ import {
   beginAnalyzeImportBatch,
   completeAnalyzeImportBatchItem,
   failAnalyzeImportBatchItem,
+  resolveAnalyzeImportBatchItemIds,
 } from "./importBatchState";
 import {
   GEMINI_GENERIC_FAILURE_MESSAGE,
@@ -37,7 +38,10 @@ import {
   readGeminiErrorResponse,
 } from "./geminiRequest";
 import { importYoutubePlaylist } from "./youtubePlaylistImport";
-import type { AnalyzeImportBatchState } from "../models/PlaylistImport";
+import type {
+  AnalyzeImportBatchRequest,
+  AnalyzeImportBatchState,
+} from "../models/PlaylistImport";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
@@ -464,13 +468,6 @@ const updateAnalyzeImportBatchState = async (
   });
 };
 
-const getAnalyzeImportCandidateIds = async () => {
-  const playlist = await getPlaylist();
-  return playlist
-    .filter((item) => item.timestamp === 0 && typeof item.endTimestamp === "undefined")
-    .map((item) => item.id);
-};
-
 const runAnalyzeImportBatch = async (initialState: AnalyzeImportBatchState) => {
   let batchState = initialState;
   while (batchState.currentItemId) {
@@ -491,7 +488,9 @@ const runAnalyzeImportBatch = async (initialState: AnalyzeImportBatchState) => {
   }
 };
 
-const startAnalyzeImportBatch = async () => {
+const startAnalyzeImportBatch = async (
+  request?: AnalyzeImportBatchRequest,
+) => {
   if (analyzeImportBatchPromise) {
     const result = await chrome.storage.local.get([
       ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
@@ -502,7 +501,10 @@ const startAnalyzeImportBatch = async () => {
     );
   }
 
-  const batchState = beginAnalyzeImportBatch(await getAnalyzeImportCandidateIds());
+  const playlist = await getPlaylist();
+  const batchState = beginAnalyzeImportBatch(
+    resolveAnalyzeImportBatchItemIds(playlist, request?.itemIds),
+  );
   await updateAnalyzeImportBatchState(batchState);
 
   analyzeImportBatchPromise = runAnalyzeImportBatch(batchState).finally(() => {
@@ -661,7 +663,7 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         mode: message.mode,
       });
     case MsgType.AnalyzeImportedPlaylist:
-      return startAnalyzeImportBatch();
+      return startAnalyzeImportBatch({ itemIds: message.itemIds });
     default:
   }
 };

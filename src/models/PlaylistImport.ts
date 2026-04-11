@@ -7,6 +7,10 @@ interface PlaylistImportRequest {
   mode: PlaylistImportMode;
 }
 
+interface AnalyzeImportBatchRequest {
+  itemIds?: string[];
+}
+
 interface PlaylistImportSuccess {
   ok: true;
   importedCount: number;
@@ -42,6 +46,7 @@ interface AnalyzeImportBatchState {
 
 export type {
   AnalyzeImportBatchState,
+  AnalyzeImportBatchRequest,
   PlaylistImportFailure,
   PlaylistImportErrorCode,
   PlaylistImportMode,
