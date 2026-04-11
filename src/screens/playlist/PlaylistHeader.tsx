@@ -141,7 +141,7 @@ const PlaylistHeader = ({
       },
       { id: 8, description: "Import Playlist JSON", callback: onImportJson },
       { id: 9, description: "Export Playlist", callback: onExportJson },
-      { id: 10, description: "Delete All", callback: onDelete },
+      { id: 10, description: "Delete All", callback: onDelete, tone: "danger" },
     ];
   };
 
@@ -233,7 +233,7 @@ const PlaylistHeader = ({
             <button
               type="button"
               onClick={onClearSelection}
-              className={`${styles["header-button"]} ${styles["selection-header-button"]}`}
+              className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-close-button"]}`}
               aria-label="Clear selection"
             >
               ×
@@ -244,7 +244,7 @@ const PlaylistHeader = ({
             <button
               type="button"
               onClick={onOpenSelectionActions}
-              className={`${styles["header-button"]} ${styles["selection-header-button"]}`}
+              className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-action-button"]}`}
             >
               Actions
             </button>

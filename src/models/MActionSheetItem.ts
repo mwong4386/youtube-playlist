@@ -5,6 +5,7 @@ interface MActionSheetItem {
   description?: string;
   callback?: () => any;
   kind?: "action" | "theme-selector";
+  tone?: "default" | "danger";
   themePreference?: ThemePreference;
   onThemeChange?: (preference: ThemePreference) => void;
 }

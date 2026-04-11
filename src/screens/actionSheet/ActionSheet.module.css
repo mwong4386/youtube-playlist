@@ -29,6 +29,10 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+.row-danger{
+    color: color-mix(in srgb, var(--danger-color, #d04a4a) 88%, var(--text-primary));
+}
+
 .control-row{
     cursor: default;
     padding: 14px 12px 16px;

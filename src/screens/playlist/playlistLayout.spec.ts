@@ -77,12 +77,14 @@ test("playlist header source includes selection mode action plumbing", () => {
   expectEqual(playlistHeaderSource.includes("onClearSelection"), true);
   expectEqual(playlistHeaderSource.includes("onOpenSelectionActions"), true);
   expectEqual(playlistHeaderSource.includes("Actions"), true);
+  expectEqual(playlistHeaderSource.includes("tone: \"danger\""), true);
 });
 
 test("playlist source includes selected-song action modal wiring", () => {
   expectEqual(playlistSource.includes("selectionActionsModalActive"), true);
   expectEqual(playlistSource.includes("Analyze Timing"), true);
-  expectEqual(playlistSource.includes("Delete Selected"), true);
+  expectEqual(playlistSource.includes("Delete Songs"), true);
+  expectEqual(playlistSource.includes("Selected songs"), false);
   expectEqual(
     playlistSource.includes("itemIds: selectedItemIds"),
     true
@@ -105,7 +107,14 @@ test("playlist item source renders a checkbox for selection mode", () => {
 
 test("playlist styles include selection header and checkbox classes", () => {
   expectEqual(playlistStyles.includes(".selection-header-button"), true);
+  expectEqual(playlistStyles.includes(".selection-header-action-button"), true);
+  expectEqual(playlistStyles.includes(".selection-header-close-button"), true);
   expectEqual(playlistStyles.includes(".selection-count"), true);
   expectEqual(playlistStyles.includes(".playlist-item-checkbox"), true);
   expectEqual(playlistStyles.includes(".selection-actions-modal"), true);
+  expectEqual(playlistHeaderSource.includes("selection-header-close-button"), true);
+  expectEqual(playlistHeaderSource.includes("selection-header-action-button"), true);
+  expectEqual(playlistStyles.includes("padding: 0 0 16px;"), true);
+  expectEqual(playlistStyles.includes("border-top: 1px solid var(--border-color);"), true);
+  expectEqual(playlistStyles.includes("background-color: var(--surface-secondary);"), true);
 });

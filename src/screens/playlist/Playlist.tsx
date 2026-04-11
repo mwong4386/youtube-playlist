@@ -639,15 +639,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       >
         <div className={styles["selection-actions-modal"]}>
           <div className={styles["selection-actions-modal-header"]}>
-            <div>
-              <h2 className={styles["selection-actions-modal-title"]}>
-                Selected songs
-              </h2>
-              <p className={styles["selection-actions-modal-text"]}>
-                Choose an action for {selectedItemIds.length} selected
-                {selectedItemIds.length === 1 ? " song" : " songs"}.
-              </p>
-            </div>
+            <p className={styles["selection-actions-modal-text"]}>
+              Actions for {selectedItemIds.length} selected
+              {selectedItemIds.length === 1 ? " song" : " songs"}
+            </p>
             <button
               type="button"
               className={styles["selection-actions-close-button"]}
@@ -670,7 +665,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
               className={styles["selection-actions-delete-button"]}
               onClick={onDeleteSelected}
             >
-              Delete Selected
+              Delete Songs
             </button>
             <button
               type="button"

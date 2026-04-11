@@ -52,7 +52,12 @@ const ActionSheetItem = ({ item, close }: props) => {
     close();
   };
   return (
-    <div className={styles["row"]} onClick={onClick}>
+    <div
+      className={`${styles["row"]} ${
+        item.tone === "danger" ? styles["row-danger"] : ""
+      }`}
+      onClick={onClick}
+    >
       <p>{item.description}</p>
     </div>
   );
