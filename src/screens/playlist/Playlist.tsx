@@ -42,6 +42,7 @@ import {
 import {
   cancelDeleteAllConfirmation,
   confirmDeleteAllConfirmation,
+  deleteSelectedPlaylistItems,
 } from "../../utils/playlistActions";
 import PlaylistImportModal from "./PlaylistImportModal";
 import {
@@ -50,10 +51,18 @@ import {
 } from "./playlistImportResult";
 import {
   getAnalyzeImportBannerViewModel,
+  getAnalyzeImportBannerVisibilityKey,
   shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner";
+import {
+  clearSelectedItemIds,
+  getPlaylistHeaderMode,
+  toggleSelectedItemId,
+} from "./playlistSelection";
 
 const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
+const DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY =
+  "dismissedAnalyzeImportBannerKey";
 
 interface Props {
   themePreference: ThemePreference;
@@ -78,10 +87,15 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [playlistImportModalActive, setPlaylistImportModalActive] =
     useState(false);
   const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
+  const [selectionActionsModalActive, setSelectionActionsModalActive] =
+    useState(false);
   const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [analyzeImportBatchState, setAnalyzeImportBatchState] =
     useState<AnalyzeImportBatchState | null>(null);
+  const [dismissedAnalyzeImportBannerKey, setDismissedAnalyzeImportBannerKey] =
+    useState<string | null>(null);
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     const nextState = state || createInitialPlaybackState();
@@ -138,6 +152,12 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY], (result) => {
       setGeminiApiKey(readStoredGeminiApiKey(result));
     });
+  }, []);
+
+  useEffect(() => {
+    setDismissedAnalyzeImportBannerKey(
+      window.localStorage.getItem(DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY)
+    );
   }, []);
 
   useEffect(() => {
@@ -232,6 +252,25 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     };
   }, []);
 
+  useEffect(() => {
+    setSelectedItemIds((currentSelectedItemIds) => {
+      const playlistItemIds = new Set(playlist.map((item) => item.id));
+      const nextSelectedItemIds = currentSelectedItemIds.filter((itemId) =>
+        playlistItemIds.has(itemId)
+      );
+
+      return nextSelectedItemIds.length === currentSelectedItemIds.length
+        ? currentSelectedItemIds
+        : nextSelectedItemIds;
+    });
+  }, [playlist]);
+
+  useEffect(() => {
+    if (selectedItemIds.length === 0 && selectionActionsModalActive) {
+      setSelectionActionsModalActive(false);
+    }
+  }, [selectedItemIds, selectionActionsModalActive]);
+
   const onDeleteAll = () => {
     setDeleteAllModalActive(true);
   };
@@ -244,6 +283,16 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     cancelDeleteAllConfirmation(() => {
       setDeleteAllModalActive(false);
     });
+  };
+
+  const closeSelectionActionsModal = () => {
+    setSelectionActionsModalActive(false);
+  };
+
+  const clearSelection = () => {
+    setSelectedItemIds((currentSelectedItemIds) =>
+      clearSelectedItemIds(currentSelectedItemIds)
+    );
   };
 
   const confirmDeleteAll = () => {
@@ -334,9 +383,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
           if (result.ok) {
             closePlaylistImportModal();
-            chrome.runtime.sendMessage({
-              name: MsgType.AnalyzeImportedPlaylist,
-            });
           }
 
           resolve(result);
@@ -395,10 +441,56 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     }
   };
 
+  const onOpenSelectionActions = () => {
+    if (selectedItemIds.length === 0) {
+      return;
+    }
+
+    setSelectionActionsModalActive(true);
+  };
+
+  const onDeleteSelected = () => {
+    if (selectedItemIds.length === 0) {
+      return;
+    }
+
+    chrome.storage.sync.set(
+      {
+        youtube_list: deleteSelectedPlaylistItems(playlist, selectedItemIds),
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+
+        clearSelection();
+        closeSelectionActionsModal();
+      }
+    );
+  };
+
+  const onAnalyzeSelected = () => {
+    if (selectedItemIds.length === 0) {
+      return;
+    }
+
+    chrome.runtime.sendMessage({
+      name: MsgType.AnalyzeImportedPlaylist,
+      itemIds: selectedItemIds,
+    });
+    clearSelection();
+    closeSelectionActionsModal();
+  };
+
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
     analyzeImportBatchState
   );
-  const showAnalyzeImportBatchState = !!analyzeImportBanner;
+  const analyzeImportBannerVisibilityKey =
+    getAnalyzeImportBannerVisibilityKey(analyzeImportBatchState);
+  const showAnalyzeImportBatchState =
+    !!analyzeImportBanner &&
+    analyzeImportBannerVisibilityKey !== dismissedAnalyzeImportBannerKey;
+  const headerMode = getPlaylistHeaderMode(selectedItemIds);
 
   return (
     <>
@@ -414,82 +506,109 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onOpenImportModal={() => {
           setPlaylistImportModalActive(true);
         }}
+        onClearSelection={clearSelection}
+        onOpenSelectionActions={onOpenSelectionActions}
+        selectedCount={selectedItemIds.length}
         themePreference={themePreference}
         setThemePreference={setThemePreference}
       />
-      {showAnalyzeImportBatchState ? (
-        <div className={styles["analyze-import-banner-container"]}>
-          <div className={styles["analyze-import-banner"]}>
-            <div className={styles["analyze-import-banner-header"]}>
-              <p className={styles["analyze-import-banner-title"]}>
-                {analyzeImportBanner?.title}
-              </p>
-              {analyzeImportBanner?.dismissible ? (
-                <button
-                  type="button"
-                  aria-label="Dismiss import analysis status"
-                  className={styles["analyze-import-banner-close-button"]}
-                  onClick={() => {
-                    if (
-                      shouldClearAnalyzeImportBatchStateOnDismiss(
-                        analyzeImportBatchState
-                      )
-                    ) {
-                      chrome.storage.local.remove(
-                        ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
-                      );
-                    }
-                  }}
-                >
-                  ×
-                </button>
-              ) : null}
-            </div>
-            <p className={styles["analyze-import-banner-detail"]}>
-              {analyzeImportBanner?.detail}
-            </p>
+      <div className={styles["content-container"]}>
+        {playlist.length === 0 ? (
+          <div className={styles["empty-container"]}>
+            <p className={styles["empty-message"]}>The playlist is empty</p>
           </div>
-        </div>
-      ) : null}
-      {playlist.length === 0 ? (
-        <div className={styles["empty-container"]}>
-          <p className={styles["empty-message"]}>The playlist is empty</p>
-        </div>
-      ) : (
-        <div className={styles["playlist-container"]}>
-          {playlist.map((item) => {
-            return (
-              <Draggable
-                key={item.id}
-                id={item.id}
-                isDragging={draggingElementId === item.id}
-                setDraggingElement={setDraggingElement}
-                onMoveTo={onMoveTo}
-              >
+        ) : (
+          <div className={styles["playlist-container"]}>
+            {showAnalyzeImportBatchState ? (
+              <div className={styles["analyze-import-banner-container"]}>
+                <div className={styles["analyze-import-banner"]}>
+                  <div className={styles["analyze-import-banner-header"]}>
+                    <p className={styles["analyze-import-banner-title"]}>
+                      {analyzeImportBanner?.title}
+                    </p>
+                    {analyzeImportBanner?.dismissible ? (
+                      <button
+                        type="button"
+                        aria-label="Dismiss import analysis status"
+                        className={styles["analyze-import-banner-close-button"]}
+                        onClick={() => {
+                          if (analyzeImportBannerVisibilityKey) {
+                            window.localStorage.setItem(
+                              DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY,
+                              analyzeImportBannerVisibilityKey
+                            );
+                            setDismissedAnalyzeImportBannerKey(
+                              analyzeImportBannerVisibilityKey
+                            );
+                          }
+
+                          if (
+                            shouldClearAnalyzeImportBatchStateOnDismiss(
+                              analyzeImportBatchState
+                            )
+                          ) {
+                            chrome.storage.local.remove(
+                              ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
+                            );
+                          }
+                        }}
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
+                  <p className={styles["analyze-import-banner-detail"]}>
+                    {analyzeImportBanner?.detail}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            {playlist.map((item) => {
+              const playlistItem = (
                 <PlaylistItem
                   key={item.id}
                   item={item}
                   isPlaying={playing}
                   IPlaying={playingId === item.id}
+                  onToggleSelected={(itemId) => {
+                    setSelectedItemIds((currentSelectedItemIds) =>
+                      toggleSelectedItemId(currentSelectedItemIds, itemId)
+                    );
+                  }}
+                  selected={selectedItemIds.includes(item.id)}
                   selectItemId={setSelectItemId}
                 />
-              </Draggable>
-            );
-          })}
-          <InfoModal
-            active={!!selectItemId}
-            close={() => {
-              setSelectItemId(undefined);
-            }}
-            onvolumechange={onvolumechange}
-            onAudioEqChange={onAudioEqChange}
-            profiles={audioEqProfiles}
-            save={onSave}
-            onAnalyzeSongBoundaries={analyzeSongBoundaries}
-            item={playlist.find((x) => x.id === selectItemId)}
-          />
-        </div>
-      )}
+              );
+
+              return headerMode === "selection" ? (
+                playlistItem
+              ) : (
+                <Draggable
+                  key={item.id}
+                  id={item.id}
+                  isDragging={draggingElementId === item.id}
+                  setDraggingElement={setDraggingElement}
+                  onMoveTo={onMoveTo}
+                >
+                  {playlistItem}
+                </Draggable>
+              );
+            })}
+            <InfoModal
+              active={!!selectItemId}
+              close={() => {
+                setSelectItemId(undefined);
+              }}
+              onvolumechange={onvolumechange}
+              onAudioEqChange={onAudioEqChange}
+              profiles={audioEqProfiles}
+              save={onSave}
+              onAnalyzeSongBoundaries={analyzeSongBoundaries}
+              item={playlist.find((x) => x.id === selectItemId)}
+            />
+          </div>
+        )}
+      </div>
       <SettingsModal
         active={eqSettingsActive}
         close={() => {
@@ -514,6 +633,55 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         close={closePlaylistImportModal}
         onSubmit={importYoutubePlaylist}
       />
+      <Modal
+        active={selectionActionsModalActive}
+        close={closeSelectionActionsModal}
+      >
+        <div className={styles["selection-actions-modal"]}>
+          <div className={styles["selection-actions-modal-header"]}>
+            <div>
+              <h2 className={styles["selection-actions-modal-title"]}>
+                Selected songs
+              </h2>
+              <p className={styles["selection-actions-modal-text"]}>
+                Choose an action for {selectedItemIds.length} selected
+                {selectedItemIds.length === 1 ? " song" : " songs"}.
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles["selection-actions-close-button"]}
+              onClick={closeSelectionActionsModal}
+              aria-label="Close selected song actions"
+            >
+              x
+            </button>
+          </div>
+          <div className={styles["selection-actions-modal-actions"]}>
+            <button
+              type="button"
+              className={styles["selection-actions-analyze-button"]}
+              onClick={onAnalyzeSelected}
+            >
+              Analyze Timing
+            </button>
+            <button
+              type="button"
+              className={styles["selection-actions-delete-button"]}
+              onClick={onDeleteSelected}
+            >
+              Delete Selected
+            </button>
+            <button
+              type="button"
+              className={styles["selection-actions-cancel-button"]}
+              onClick={closeSelectionActionsModal}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
       <Modal active={deleteAllModalActive} close={closeDeleteAllModal}>
         <div className={styles["delete-all-modal"]}>
           <div className={styles["delete-all-modal-header"]}>

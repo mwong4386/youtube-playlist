@@ -1,6 +1,7 @@
 import test from "node:test";
 import {
   getAnalyzeImportBannerViewModel,
+  getAnalyzeImportBannerVisibilityKey,
   shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner.js";
 
@@ -16,7 +17,7 @@ test("getAnalyzeImportBannerViewModel hides the banner without batch state", () 
   expectEqual(getAnalyzeImportBannerViewModel(null), null);
 });
 
-test("getAnalyzeImportBannerViewModel returns a non-dismissible progress banner while analysis is active", () => {
+test("getAnalyzeImportBannerViewModel returns a dismissible progress banner while analysis is active", () => {
   expectEqual(
     getAnalyzeImportBannerViewModel({
       active: true,
@@ -29,10 +30,42 @@ test("getAnalyzeImportBannerViewModel returns a non-dismissible progress banner 
       currentItemId: "song-3",
     }),
     {
-      title: "Analyzing imported songs 2/3",
+      title: "Analyzing song timings 2/3",
       detail: "1 failed so far",
-      dismissible: false,
+      dismissible: true,
     }
+  );
+});
+
+test("getAnalyzeImportBannerVisibilityKey returns a stable key for the current batch snapshot", () => {
+  expectEqual(
+    getAnalyzeImportBannerVisibilityKey({
+      active: true,
+      totalCount: 3,
+      completedCount: 1,
+      failedCount: 1,
+      pendingItemIds: ["song-3"],
+      completedItemIds: ["song-1"],
+      failedItemIds: ["song-2"],
+      currentItemId: "song-3",
+    }),
+    "active:3:1:1:song-3:song-3:song-1:song-2"
+  );
+});
+
+test("getAnalyzeImportBannerVisibilityKey returns null without visible batch progress", () => {
+  expectEqual(getAnalyzeImportBannerVisibilityKey(null), null);
+  expectEqual(
+    getAnalyzeImportBannerVisibilityKey({
+      active: false,
+      totalCount: 0,
+      completedCount: 0,
+      failedCount: 0,
+      pendingItemIds: [],
+      completedItemIds: [],
+      failedItemIds: [],
+    }),
+    null
   );
 });
 
@@ -48,8 +81,27 @@ test("getAnalyzeImportBannerViewModel returns a dismissible completion banner wh
       failedItemIds: ["song-2", "song-3"],
     }),
     {
-      title: "Imported song analysis finished 1/3 completed",
+      title: "Song timing analysis finished 1/3 completed",
       detail: "2 songs could not be analyzed automatically.",
+      dismissible: true,
+    }
+  );
+});
+
+test("getAnalyzeImportBannerViewModel returns the generalized success detail without failures", () => {
+  expectEqual(
+    getAnalyzeImportBannerViewModel({
+      active: false,
+      totalCount: 2,
+      completedCount: 2,
+      failedCount: 0,
+      pendingItemIds: [],
+      completedItemIds: ["song-1", "song-2"],
+      failedItemIds: [],
+    }),
+    {
+      title: "Song timing analysis finished 2/2 completed",
+      detail: "All eligible songs were analyzed.",
       dismissible: true,
     }
   );

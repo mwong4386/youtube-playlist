@@ -6,6 +6,25 @@ interface AnalyzeImportBannerViewModel {
   dismissible: boolean;
 }
 
+const getAnalyzeImportBannerVisibilityKey = (
+  analyzeImportBatchState: AnalyzeImportBatchState | null
+): string | null => {
+  if (!analyzeImportBatchState || analyzeImportBatchState.totalCount <= 0) {
+    return null;
+  }
+
+  return [
+    analyzeImportBatchState.active ? "active" : "complete",
+    analyzeImportBatchState.totalCount,
+    analyzeImportBatchState.completedCount,
+    analyzeImportBatchState.failedCount,
+    analyzeImportBatchState.currentItemId || "",
+    analyzeImportBatchState.pendingItemIds.join(","),
+    analyzeImportBatchState.completedItemIds.join(","),
+    analyzeImportBatchState.failedItemIds.join(","),
+  ].join(":");
+};
+
 const shouldClearAnalyzeImportBatchStateOnDismiss = (
   analyzeImportBatchState: AnalyzeImportBatchState | null
 ): boolean => {
@@ -21,25 +40,26 @@ const getAnalyzeImportBannerViewModel = (
 
   if (analyzeImportBatchState.active) {
     return {
-      title: `Analyzing imported songs ${analyzeImportBatchState.completedCount + analyzeImportBatchState.failedCount}/${analyzeImportBatchState.totalCount}`,
+      title: `Analyzing song timings ${analyzeImportBatchState.completedCount + analyzeImportBatchState.failedCount}/${analyzeImportBatchState.totalCount}`,
       detail: analyzeImportBatchState.currentItemId
         ? `${analyzeImportBatchState.failedCount} failed so far`
         : "",
-      dismissible: false,
+      dismissible: true,
     };
   }
 
   return {
-    title: `Imported song analysis finished ${analyzeImportBatchState.completedCount}/${analyzeImportBatchState.totalCount} completed`,
+    title: `Song timing analysis finished ${analyzeImportBatchState.completedCount}/${analyzeImportBatchState.totalCount} completed`,
     detail:
       analyzeImportBatchState.failedCount > 0
         ? `${analyzeImportBatchState.failedCount} songs could not be analyzed automatically.`
-        : "All eligible imported songs were analyzed.",
+        : "All eligible songs were analyzed.",
     dismissible: true,
   };
 };
 
 export {
   getAnalyzeImportBannerViewModel,
+  getAnalyzeImportBannerVisibilityKey,
   shouldClearAnalyzeImportBatchStateOnDismiss,
 };

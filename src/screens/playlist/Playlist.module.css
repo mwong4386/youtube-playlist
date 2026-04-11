@@ -22,7 +22,10 @@
 }
 
 .state-container {
-  width: 20px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .title {
@@ -90,18 +93,39 @@
   flex: 1;
   display: flex;
   align-items: stretch;
+  gap: 8px;
 }
 .header-right-container {
   flex: 1;
   display: flex;
   align-items: stretch;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+.selection-header-button {
+  width: auto;
+  min-width: 42px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.selection-count {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 .empty-container {
-  min-height: calc(100vh - 42px);
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 42px;
 }
 
 .empty-message {
@@ -110,17 +134,23 @@
   color: var(--text-secondary);
 }
 
-.playlist-container {
-  padding: 0;
+.content-container {
+  display: flex;
+  flex-direction: column;
   margin-top: 42px;
   height: calc(100vh - 42px);
+}
+
+.playlist-container {
+  padding: 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   background-color: transparent;
 }
 
 .analyze-import-banner-container {
-  margin-top: 42px;
-  padding: 12px 16px 0;
+  padding: 12px 16px;
 }
 
 .analyze-import-banner {
@@ -175,11 +205,96 @@
   background-color: transparent;
 }
 
+.playlist-item-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playlist-item-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
 .delete-all-modal {
   display: flex;
   flex-direction: column;
   gap: 18px;
   padding: 20px 16px 8px;
+}
+
+.selection-actions-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 16px 8px;
+}
+
+.selection-actions-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.selection-actions-modal-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.selection-actions-modal-text {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.selection-actions-close-button {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.selection-actions-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selection-actions-analyze-button,
+.selection-actions-delete-button,
+.selection-actions-cancel-button {
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.selection-actions-analyze-button {
+  border: 1px solid color-mix(in srgb, var(--success-color) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--success-color) 8%, var(--surface-primary));
+  color: var(--text-primary);
+}
+
+.selection-actions-delete-button {
+  border: 1px solid color-mix(in srgb, var(--danger-color, #d04a4a) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--danger-color, #d04a4a) 8%, var(--surface-primary));
+  color: var(--danger-color, #d04a4a);
+}
+
+.selection-actions-cancel-button {
+  border: 1px solid var(--border-color);
+  background: var(--surface-primary);
+  color: var(--text-primary);
 }
 
 .delete-all-modal-header {
