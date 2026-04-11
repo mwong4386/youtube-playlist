@@ -34,9 +34,20 @@ import SettingsModal from "../settings/SettingsModal";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import Modal from "../modal/Modal";
 import {
+  ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
+  type AnalyzeImportBatchState,
+  type PlaylistImportRequest,
+  type PlaylistImportResponse,
+} from "../../models/PlaylistImport";
+import {
   cancelDeleteAllConfirmation,
   confirmDeleteAllConfirmation,
 } from "../../utils/playlistActions";
+import PlaylistImportModal from "./PlaylistImportModal";
+import {
+  resolvePlaylistImportSubmission,
+  type PlaylistImportSubmissionResult,
+} from "./playlistImportResult";
 
 const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 
@@ -60,9 +71,13 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   ); //for opening the info modal
   const [eqSettingsActive, setEqSettingsActive] = useState(false);
   const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
+  const [playlistImportModalActive, setPlaylistImportModalActive] =
+    useState(false);
   const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
   const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [analyzeImportBatchState, setAnalyzeImportBatchState] =
+    useState<AnalyzeImportBatchState | null>(null);
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     const nextState = state || createInitialPlaybackState();
@@ -119,6 +134,19 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY], (result) => {
       setGeminiApiKey(readStoredGeminiApiKey(result));
     });
+  }, []);
+
+  useEffect(() => {
+    chrome.storage.local.get(
+      [ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY],
+      (result) => {
+        setAnalyzeImportBatchState(
+          (result[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY] as
+            | AnalyzeImportBatchState
+            | undefined) || null
+        );
+      }
+    );
   }, []);
 
   useEffect(() => {
@@ -183,6 +211,16 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           })
         );
       }
+      if (
+        namespace === "local" &&
+        ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY in changes
+      ) {
+        setAnalyzeImportBatchState(
+          (changes[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY].newValue as
+            | AnalyzeImportBatchState
+            | undefined) || null
+        );
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => {
@@ -192,6 +230,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   const onDeleteAll = () => {
     setDeleteAllModalActive(true);
+  };
+
+  const closePlaylistImportModal = () => {
+    setPlaylistImportModalActive(false);
   };
 
   const closeDeleteAllModal = () => {
@@ -270,6 +312,35 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     );
   };
 
+  const importYoutubePlaylist = (
+    request: PlaylistImportRequest
+  ): Promise<PlaylistImportSubmissionResult> => {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          name: MsgType.ImportYoutubePlaylist,
+          playlistUrl: request.playlistUrl,
+          mode: request.mode,
+        },
+        (response: PlaylistImportResponse | undefined) => {
+          const result = resolvePlaylistImportSubmission(
+            response,
+            chrome.runtime.lastError ?? null
+          );
+
+          if (result.ok) {
+            closePlaylistImportModal();
+            chrome.runtime.sendMessage({
+              name: MsgType.AnalyzeImportedPlaylist,
+            });
+          }
+
+          resolve(result);
+        }
+      );
+    });
+  };
+
   const onSave = (
     id: string,
     timestamp: number,
@@ -319,6 +390,24 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       });
     }
   };
+
+  const showAnalyzeImportBatchState =
+    !!analyzeImportBatchState && analyzeImportBatchState.totalCount > 0;
+  const analyzeImportBatchLabel = !analyzeImportBatchState
+    ? ""
+    : analyzeImportBatchState.active
+      ? `Analyzing imported songs ${analyzeImportBatchState.completedCount + analyzeImportBatchState.failedCount}/${analyzeImportBatchState.totalCount}`
+      : `Imported song analysis finished ${analyzeImportBatchState.completedCount}/${analyzeImportBatchState.totalCount} completed`;
+  const analyzeImportBatchDetail = !analyzeImportBatchState
+    ? ""
+    : analyzeImportBatchState.active
+      ? analyzeImportBatchState.currentItemId
+        ? `${analyzeImportBatchState.failedCount} failed so far`
+        : ""
+      : analyzeImportBatchState.failedCount > 0
+        ? `${analyzeImportBatchState.failedCount} songs could not be analyzed automatically.`
+        : "All eligible imported songs were analyzed.";
+
   return (
     <>
       <PlaylistHeader
@@ -330,9 +419,41 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onOpenGeminiSettings={() => {
           setGeminiSettingsActive(true);
         }}
+        onOpenImportModal={() => {
+          setPlaylistImportModalActive(true);
+        }}
         themePreference={themePreference}
         setThemePreference={setThemePreference}
       />
+      {showAnalyzeImportBatchState ? (
+        <div
+          style={{
+            padding: "12px 16px 0",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 12,
+              border: "1px solid rgba(29, 185, 84, 0.25)",
+              background: "rgba(29, 185, 84, 0.08)",
+              padding: "12px 14px",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+              {analyzeImportBatchLabel}
+            </p>
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: 12,
+                opacity: 0.8,
+              }}
+            >
+              {analyzeImportBatchDetail}
+            </p>
+          </div>
+        </div>
+      ) : null}
       {playlist.length === 0 ? (
         <div className={styles["empty-container"]}>
           <p className={styles["empty-message"]}>The playlist is empty</p>
@@ -390,6 +511,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         geminiApiKey={geminiApiKey}
         onSaveGeminiApiKey={onSaveGeminiApiKey}
         onRemoveGeminiApiKey={onRemoveGeminiApiKey}
+      />
+      <PlaylistImportModal
+        active={playlistImportModalActive}
+        close={closePlaylistImportModal}
+        onSubmit={importYoutubePlaylist}
       />
       <Modal active={deleteAllModalActive} close={closeDeleteAllModal}>
         <div className={styles["delete-all-modal"]}>

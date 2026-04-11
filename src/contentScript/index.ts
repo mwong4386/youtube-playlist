@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { createElement } from "react";
 import { createRoot, Root } from "react-dom/client";
+import {
+  buildImportedPlaylistItems,
+} from "../background/youtubePlaylistImport";
 import csMsgType from "../constants/csMsgType";
 import MsgType from "../constants/msgType";
 import AudioEqSettings from "../models/AudioEq";
@@ -77,6 +80,7 @@ import {
   type BookmarkButtonFeedbackController,
   type BookmarkButtonVisualState,
 } from "./bookmarkButtonFeedback";
+import { extractPlaylistEntriesFromPage } from "./playlistImportFallback";
 
 let onCSConfirm: (e: Event) => any;
 export let _duration: number = NaN;
@@ -106,7 +110,55 @@ let bookmarkButtonFeedbackController: BookmarkButtonFeedbackController | null =
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
 const PLAYER_VOLUME_RETRY_DELAYS_MS = [120, 320, 700];
+const PLAYLIST_EXTRACTION_RETRY_DELAYS_MS = [250, 750, 1500, 3000];
 const THEME_MEDIA_QUERY = "(prefers-color-scheme: dark)";
+const PLAYLIST_PAGE_PATH = "/playlist";
+let hasSentPlaylistImportFallbackResult = false;
+
+const isPlaylistPage = () => {
+  return window.location.pathname.replace(/\/+$/, "") === PLAYLIST_PAGE_PATH;
+};
+
+const sendPlaylistImportFallbackResult = (
+  payload:
+    | { items: MPlaylistItem[] }
+    | { code: "parse-failed"; message: string }
+) => {
+  if (hasSentPlaylistImportFallbackResult) {
+    return;
+  }
+
+  hasSentPlaylistImportFallbackResult = true;
+  chrome.runtime.sendMessage({
+    name: MsgType.ImportYoutubePlaylistFallbackResult,
+    ...payload,
+  });
+};
+
+const attemptPlaylistImportFallbackExtraction = (attemptIndex = 0) => {
+  if (!isPlaylistPage() || hasSentPlaylistImportFallbackResult) {
+    return;
+  }
+
+  const items = buildImportedPlaylistItems(extractPlaylistEntriesFromPage(document));
+  if (items.length > 0) {
+    sendPlaylistImportFallbackResult({ items });
+    return;
+  }
+
+  const retryDelay = PLAYLIST_EXTRACTION_RETRY_DELAYS_MS[attemptIndex];
+  if (typeof retryDelay === "number") {
+    window.setTimeout(() => {
+      attemptPlaylistImportFallbackExtraction(attemptIndex + 1);
+    }, retryDelay);
+    return;
+  }
+
+  sendPlaylistImportFallbackResult({
+    code: "parse-failed",
+    message: "YouTube playlist data could not be parsed.",
+  });
+};
 
 const getPanelThemeTargets = () => {
   const targets: HTMLElement[] = [];
@@ -1424,6 +1476,18 @@ chrome.storage.onChanged.addListener(
     }
   },
 );
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      attemptPlaylistImportFallbackExtraction();
+    },
+    { once: true }
+  );
+} else {
+  attemptPlaylistImportFallbackExtraction();
+}
 
 const themeMediaQuery = window.matchMedia(THEME_MEDIA_QUERY);
 const onThemeMediaQueryChange = () => {

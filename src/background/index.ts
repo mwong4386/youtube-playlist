@@ -26,13 +26,22 @@ import {
   parseGeminiBoundaryResponse,
 } from "./geminiBoundaries";
 import {
+  ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
+  beginAnalyzeImportBatch,
+  completeAnalyzeImportBatchItem,
+  failAnalyzeImportBatchItem,
+} from "./importBatchState";
+import {
   GEMINI_GENERIC_FAILURE_MESSAGE,
   fetchGeminiGenerateContentWithRetries,
   readGeminiErrorResponse,
 } from "./geminiRequest";
+import { importYoutubePlaylist } from "./youtubePlaylistImport";
+import type { AnalyzeImportBatchState } from "../models/PlaylistImport";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
+let analyzeImportBatchPromise: Promise<void> | null = null;
 
 const normalizePlaylistItem = (item: MPlaylistItem): MPlaylistItem => ({
   ...item,
@@ -58,7 +67,9 @@ const getPlaylist = async () => {
 
 const updatePlaylistItem = async (
   id: string,
-  partial: Partial<Pick<MPlaylistItem, "volume" | "audioEq">>,
+  partial: Partial<
+    Pick<MPlaylistItem, "volume" | "audioEq" | "timestamp" | "endTimestamp">
+  >,
 ) => {
   const playlist = await getPlaylist();
   const nextPlaylist = playlist.map((item) => {
@@ -445,6 +456,62 @@ const analyzeSongBoundaries = async (itemId: string) => {
   }
 };
 
+const updateAnalyzeImportBatchState = async (
+  state: AnalyzeImportBatchState,
+) => {
+  await chrome.storage.local.set({
+    [ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY]: state,
+  });
+};
+
+const getAnalyzeImportCandidateIds = async () => {
+  const playlist = await getPlaylist();
+  return playlist
+    .filter((item) => item.timestamp === 0 && typeof item.endTimestamp === "undefined")
+    .map((item) => item.id);
+};
+
+const runAnalyzeImportBatch = async (initialState: AnalyzeImportBatchState) => {
+  let batchState = initialState;
+  while (batchState.currentItemId) {
+    const itemId = batchState.currentItemId;
+    const result = await analyzeSongBoundaries(itemId);
+
+    if (result.ok) {
+      await updatePlaylistItem(itemId, {
+        timestamp: result.suggestion.startTimestamp,
+        endTimestamp: result.suggestion.endTimestamp,
+      });
+      batchState = completeAnalyzeImportBatchItem(batchState, itemId);
+    } else {
+      batchState = failAnalyzeImportBatchItem(batchState, itemId);
+    }
+
+    await updateAnalyzeImportBatchState(batchState);
+  }
+};
+
+const startAnalyzeImportBatch = async () => {
+  if (analyzeImportBatchPromise) {
+    const result = await chrome.storage.local.get([
+      ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
+    ]);
+    return (
+      (result[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY] as AnalyzeImportBatchState | undefined) ||
+      beginAnalyzeImportBatch([])
+    );
+  }
+
+  const batchState = beginAnalyzeImportBatch(await getAnalyzeImportCandidateIds());
+  await updateAnalyzeImportBatchState(batchState);
+
+  analyzeImportBatchPromise = runAnalyzeImportBatch(batchState).finally(() => {
+    analyzeImportBatchPromise = null;
+  });
+
+  return batchState;
+};
+
 const onVolumeChange = async (
   volume: number,
   persist: boolean | undefined,
@@ -588,6 +655,13 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
       break;
     case MsgType.AnalyzeSongBoundaries:
       return analyzeSongBoundaries(message.itemId);
+    case MsgType.ImportYoutubePlaylist:
+      return importYoutubePlaylist({
+        playlistUrl: message.playlistUrl,
+        mode: message.mode,
+      });
+    case MsgType.AnalyzeImportedPlaylist:
+      return startAnalyzeImportBatch();
     default:
   }
 };
@@ -668,7 +742,11 @@ const getLegacyPlaybackState = (result: {
     runtimeId: chrome.runtime.id,
   });
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    if (message?.name === MsgType.AnalyzeSongBoundaries) {
+    if (
+      message?.name === MsgType.AnalyzeSongBoundaries ||
+      message?.name === MsgType.ImportYoutubePlaylist ||
+      message?.name === MsgType.AnalyzeImportedPlaylist
+    ) {
       void onMessageHandler(message, sender).then(sendResponse);
       return true;
     }

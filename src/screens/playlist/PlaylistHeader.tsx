@@ -18,6 +18,7 @@ interface props {
   onDelete: () => void;
   onOpenEqSettings: () => void;
   onOpenGeminiSettings: () => void;
+  onOpenImportModal: () => void;
   playlist: MPlaylistItem[];
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
@@ -27,6 +28,7 @@ const PlaylistHeader = ({
   onDelete,
   onOpenEqSettings,
   onOpenGeminiSettings,
+  onOpenImportModal,
   themePreference,
   setThemePreference,
 }: props) => {
@@ -126,9 +128,14 @@ const PlaylistHeader = ({
         } Volume adjust`,
         callback: onToggleVolumeAdjust,
       },
-      { id: 7, description: "Import Playlist", callback: onImportJson },
-      { id: 8, description: "Export Playlist", callback: onExportJson },
-      { id: 9, description: "Delete All", callback: onDelete },
+      {
+        id: 7,
+        description: "Import from YouTube Playlist",
+        callback: onOpenImportModal,
+      },
+      { id: 8, description: "Import Playlist JSON", callback: onImportJson },
+      { id: 9, description: "Export Playlist", callback: onExportJson },
+      { id: 10, description: "Delete All", callback: onDelete },
     ];
   };
 
