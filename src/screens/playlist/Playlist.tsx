@@ -48,6 +48,10 @@ import {
   resolvePlaylistImportSubmission,
   type PlaylistImportSubmissionResult,
 } from "./playlistImportResult";
+import {
+  getAnalyzeImportBannerViewModel,
+  shouldClearAnalyzeImportBatchStateOnDismiss,
+} from "./analyzeImportBanner";
 
 const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 
@@ -391,22 +395,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     }
   };
 
-  const showAnalyzeImportBatchState =
-    !!analyzeImportBatchState && analyzeImportBatchState.totalCount > 0;
-  const analyzeImportBatchLabel = !analyzeImportBatchState
-    ? ""
-    : analyzeImportBatchState.active
-      ? `Analyzing imported songs ${analyzeImportBatchState.completedCount + analyzeImportBatchState.failedCount}/${analyzeImportBatchState.totalCount}`
-      : `Imported song analysis finished ${analyzeImportBatchState.completedCount}/${analyzeImportBatchState.totalCount} completed`;
-  const analyzeImportBatchDetail = !analyzeImportBatchState
-    ? ""
-    : analyzeImportBatchState.active
-      ? analyzeImportBatchState.currentItemId
-        ? `${analyzeImportBatchState.failedCount} failed so far`
-        : ""
-      : analyzeImportBatchState.failedCount > 0
-        ? `${analyzeImportBatchState.failedCount} songs could not be analyzed automatically.`
-        : "All eligible imported songs were analyzed.";
+  const analyzeImportBanner = getAnalyzeImportBannerViewModel(
+    analyzeImportBatchState
+  );
+  const showAnalyzeImportBatchState = !!analyzeImportBanner;
 
   return (
     <>
@@ -426,30 +418,35 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         setThemePreference={setThemePreference}
       />
       {showAnalyzeImportBatchState ? (
-        <div
-          style={{
-            padding: "12px 16px 0",
-          }}
-        >
-          <div
-            style={{
-              borderRadius: 12,
-              border: "1px solid rgba(29, 185, 84, 0.25)",
-              background: "rgba(29, 185, 84, 0.08)",
-              padding: "12px 14px",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-              {analyzeImportBatchLabel}
-            </p>
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: 12,
-                opacity: 0.8,
-              }}
-            >
-              {analyzeImportBatchDetail}
+        <div className={styles["analyze-import-banner-container"]}>
+          <div className={styles["analyze-import-banner"]}>
+            <div className={styles["analyze-import-banner-header"]}>
+              <p className={styles["analyze-import-banner-title"]}>
+                {analyzeImportBanner?.title}
+              </p>
+              {analyzeImportBanner?.dismissible ? (
+                <button
+                  type="button"
+                  aria-label="Dismiss import analysis status"
+                  className={styles["analyze-import-banner-close-button"]}
+                  onClick={() => {
+                    if (
+                      shouldClearAnalyzeImportBatchStateOnDismiss(
+                        analyzeImportBatchState
+                      )
+                    ) {
+                      chrome.storage.local.remove(
+                        ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
+                      );
+                    }
+                  }}
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
+            <p className={styles["analyze-import-banner-detail"]}>
+              {analyzeImportBanner?.detail}
             </p>
           </div>
         </div>

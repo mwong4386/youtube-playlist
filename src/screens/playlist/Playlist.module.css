@@ -118,6 +118,53 @@
   background-color: transparent;
 }
 
+.analyze-import-banner-container {
+  margin-top: 42px;
+  padding: 12px 16px 0;
+}
+
+.analyze-import-banner {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--success-color) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--success-color) 12%, var(--surface-secondary));
+  padding: 12px 14px;
+  box-shadow: 0 12px 24px -22px var(--shadow-color);
+}
+
+.analyze-import-banner-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.analyze-import-banner-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.analyze-import-banner-detail {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.analyze-import-banner-close-button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .delete-button {
   width: 16px;
   height: 16px;
