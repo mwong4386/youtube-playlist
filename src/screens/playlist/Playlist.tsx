@@ -55,8 +55,10 @@ import {
   shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner";
 import {
+  areAllPlaylistItemsSelected,
   clearSelectedItemIds,
   getPlaylistHeaderMode,
+  toggleAllSelectedItemIds,
   toggleSelectedItemId,
 } from "./playlistSelection";
 
@@ -491,6 +493,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     !!analyzeImportBanner &&
     analyzeImportBannerVisibilityKey !== dismissedAnalyzeImportBannerKey;
   const headerMode = getPlaylistHeaderMode(selectedItemIds);
+  const allSelected = areAllPlaylistItemsSelected(playlist, selectedItemIds);
+  const someSelected = selectedItemIds.length > 0;
 
   return (
     <>
@@ -507,7 +511,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           setPlaylistImportModalActive(true);
         }}
         onClearSelection={clearSelection}
+        onToggleSelectAll={() => {
+          setSelectedItemIds((currentSelectedItemIds) =>
+            toggleAllSelectedItemIds(playlist, currentSelectedItemIds)
+          );
+        }}
         onOpenSelectionActions={onOpenSelectionActions}
+        allSelected={allSelected}
+        someSelected={someSelected}
         selectedCount={selectedItemIds.length}
         themePreference={themePreference}
         setThemePreference={setThemePreference}

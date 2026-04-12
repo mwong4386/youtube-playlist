@@ -103,6 +103,13 @@
   gap: 8px;
 }
 
+.header-center-container {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
 .selection-header-button {
   width: auto;
   min-width: 42px;
@@ -113,12 +120,28 @@
   color: var(--text-primary);
 }
 
-.selection-header-close-button {
-  font-size: 22px;
-}
-
 .selection-header-action-button {
   color: var(--success-color);
+}
+
+.selection-header-home-button {
+  min-width: 42px;
+  padding: 0 10px;
+}
+
+.selection-header-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  margin-left: 10px;
+  padding: 0;
+}
+
+.selection-header-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 
 .selection-count {
@@ -128,6 +151,11 @@
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.selection-header-home-icon {
+  width: 20px;
+  height: 20px;
 }
 .empty-container {
   flex: 1;

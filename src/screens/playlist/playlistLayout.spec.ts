@@ -75,7 +75,11 @@ test("playlist selection mode uses shared helpers and disables dragging", () => 
 test("playlist header source includes selection mode action plumbing", () => {
   expectEqual(playlistHeaderSource.includes("selectedCount"), true);
   expectEqual(playlistHeaderSource.includes("onClearSelection"), true);
+  expectEqual(playlistHeaderSource.includes("onToggleSelectAll"), true);
   expectEqual(playlistHeaderSource.includes("onOpenSelectionActions"), true);
+  expectEqual(playlistHeaderSource.includes('type="checkbox"'), true);
+  expectEqual(playlistHeaderSource.includes("selection-header-home-button"), true);
+  expectEqual(playlistHeaderSource.includes("selection-header-home-icon"), true);
   expectEqual(playlistHeaderSource.includes("Actions"), true);
   expectEqual(playlistHeaderSource.includes("tone: \"danger\""), true);
 });
@@ -108,12 +112,17 @@ test("playlist item source renders a checkbox for selection mode", () => {
 test("playlist styles include selection header and checkbox classes", () => {
   expectEqual(playlistStyles.includes(".selection-header-button"), true);
   expectEqual(playlistStyles.includes(".selection-header-action-button"), true);
-  expectEqual(playlistStyles.includes(".selection-header-close-button"), true);
+  expectEqual(playlistStyles.includes(".selection-header-home-button"), true);
+  expectEqual(playlistStyles.includes(".selection-header-home-icon"), true);
+  expectEqual(playlistStyles.includes(".selection-header-checkbox"), true);
   expectEqual(playlistStyles.includes(".selection-count"), true);
   expectEqual(playlistStyles.includes(".playlist-item-checkbox"), true);
   expectEqual(playlistStyles.includes(".selection-actions-modal"), true);
-  expectEqual(playlistHeaderSource.includes("selection-header-close-button"), true);
+  expectEqual(playlistStyles.includes(".header-center-container"), true);
+  expectEqual(playlistHeaderSource.includes("selection-header-home-button"), true);
   expectEqual(playlistHeaderSource.includes("selection-header-action-button"), true);
+  expectEqual(playlistStyles.includes("margin-left: 10px;"), true);
+  expectEqual(playlistStyles.includes("width: 28px;"), true);
   expectEqual(playlistStyles.includes("padding: 0 0 16px;"), true);
   expectEqual(playlistStyles.includes("border-top: 1px solid var(--border-color);"), true);
   expectEqual(playlistStyles.includes("background-color: var(--surface-secondary);"), true);

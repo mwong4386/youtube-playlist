@@ -17,6 +17,24 @@ const clearSelectedItemIds = (_selectedItemIds: string[]): string[] => {
   return [];
 };
 
+const areAllPlaylistItemsSelected = (
+  playlist: MPlaylistItem[],
+  selectedItemIds: string[]
+): boolean => {
+  return playlist.length > 0 && selectedItemIds.length === playlist.length;
+};
+
+const toggleAllSelectedItemIds = (
+  playlist: MPlaylistItem[],
+  selectedItemIds: string[]
+): string[] => {
+  if (areAllPlaylistItemsSelected(playlist, selectedItemIds)) {
+    return [];
+  }
+
+  return playlist.map((item) => item.id);
+};
+
 const filterPlaylistBySelectedIds = (
   playlist: MPlaylistItem[],
   selectedItemIds: string[]
@@ -31,9 +49,11 @@ const getPlaylistHeaderMode = (
 };
 
 export {
+  areAllPlaylistItemsSelected,
   clearSelectedItemIds,
   filterPlaylistBySelectedIds,
   getPlaylistHeaderMode,
+  toggleAllSelectedItemIds,
   toggleSelectedItemId,
 };
 export type { PlaylistHeaderMode };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MsgType from "../../constants/msgType";
 import PlaybackState, {
   createInitialPlaybackState,
@@ -20,8 +20,11 @@ interface props {
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
   onClearSelection: () => void;
+  onToggleSelectAll: () => void;
   onOpenSelectionActions: () => void;
   playlist: MPlaylistItem[];
+  allSelected: boolean;
+  someSelected: boolean;
   selectedCount: number;
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
@@ -33,8 +36,11 @@ const PlaylistHeader = ({
   onOpenGeminiSettings,
   onOpenImportModal,
   onClearSelection,
+  onToggleSelectAll,
   onOpenSelectionActions,
   selectedCount,
+  allSelected,
+  someSelected,
   themePreference,
   setThemePreference,
 }: props) => {
@@ -42,6 +48,7 @@ const PlaylistHeader = ({
     createInitialPlaybackState()
   );
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
+  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null);
   const ctx = useActionSheet();
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
@@ -190,6 +197,14 @@ const PlaylistHeader = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!selectAllCheckboxRef.current) {
+      return;
+    }
+
+    selectAllCheckboxRef.current.indeterminate = someSelected && !allSelected;
+  }, [allSelected, someSelected]);
+
   const onFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.currentTarget.files;
     if (files && files?.length > 0) {
@@ -230,15 +245,38 @@ const PlaylistHeader = ({
       {selectedCount > 0 ? (
         <>
           <div className={styles["header-left-container"]}>
+            <label className={styles["selection-header-checkbox"]}>
+              <input
+                ref={selectAllCheckboxRef}
+                type="checkbox"
+                checked={allSelected}
+                onChange={onToggleSelectAll}
+                aria-label={
+                  allSelected ? "Deselect all songs" : "Select all songs"
+                }
+              />
+            </label>
+            <p className={styles["selection-count"]}>{selectedCount} selected</p>
+          </div>
+          <div className={styles["header-center-container"]}>
             <button
               type="button"
               onClick={onClearSelection}
-              className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-close-button"]}`}
-              aria-label="Clear selection"
+              className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-home-button"]}`}
+              aria-label="Return to playlist"
             >
-              ×
+              <svg
+                className={styles["selection-header-home-icon"]}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M12 3.5a1 1 0 0 1 .64.23l7 5.83a1 1 0 0 1-.64 1.77H18.5v7a1 1 0 0 1-1 1h-4.25a1 1 0 0 1-1-1V14h-1.5v4.25a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1v-7H5a1 1 0 0 1-.64-1.77l7-5.83A1 1 0 0 1 12 3.5Z"
+                />
+              </svg>
             </button>
-            <p className={styles["selection-count"]}>{selectedCount} selected</p>
           </div>
           <div className={styles["header-right-container"]}>
             <button
