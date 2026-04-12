@@ -8,21 +8,28 @@ import PlaybackState, {
 import { getCurrentTimestamp } from "../../utils/date";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import { parseImportedPlaylist } from "../../utils/playlistImport";
+import { type SongListRecord } from "../../models/SongList";
 import {
   ThemePreference,
 } from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
+import { getSongListOptions } from "./songListsViewModel";
 import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
+  onImportJson: (playlist: MPlaylistItem[]) => void;
   onOpenEqSettings: () => void;
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
+  onOpenNewSongListModal: () => void;
+  onSelectSongList: (name: string) => void;
   onClearSelection: () => void;
   onToggleSelectAll: () => void;
   onOpenSelectionActions: () => void;
   playlist: MPlaylistItem[];
+  songLists: Record<string, SongListRecord>;
+  activeSongListName: string;
   allSelected: boolean;
   someSelected: boolean;
   selectedCount: number;
@@ -32,13 +39,18 @@ interface props {
 const PlaylistHeader = ({
   playlist,
   onDelete,
+  onImportJson,
   onOpenEqSettings,
   onOpenGeminiSettings,
   onOpenImportModal,
+  onOpenNewSongListModal,
+  onSelectSongList,
   onClearSelection,
   onToggleSelectAll,
   onOpenSelectionActions,
   selectedCount,
+  songLists,
+  activeSongListName,
   allSelected,
   someSelected,
   themePreference,
@@ -50,6 +62,7 @@ const PlaylistHeader = ({
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null);
   const ctx = useActionSheet();
+  const songListNames = getSongListOptions(songLists);
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     setPlaybackState(state || createInitialPlaybackState());
@@ -89,12 +102,28 @@ const PlaylistHeader = ({
     var result = JSON.stringify(playlist);
     var file = new Blob([result], { type: "application/json" });
     var url = URL.createObjectURL(file);
-    chrome.downloads.download({
-      url: url,
-      filename: `playlist_${getCurrentTimestamp()}.json`,
-    });
+    let revoked = false;
+    const revokeUrl = () => {
+      if (revoked) {
+        return;
+      }
+
+      revoked = true;
+      URL.revokeObjectURL(url);
+    };
+
+    chrome.downloads.download(
+      {
+        url: url,
+        filename: `playlist_${getCurrentTimestamp()}.json`,
+      },
+      () => {
+        revokeUrl();
+      }
+    );
+    window.setTimeout(revokeUrl, 1000);
   };
-  const onImportJson = () => {
+  const openImportJsonPicker = () => {
     const file = document.getElementById("uploadfile");
     file?.click();
   };
@@ -146,7 +175,7 @@ const PlaylistHeader = ({
         description: "Import from YouTube Playlist",
         callback: onOpenImportModal,
       },
-      { id: 8, description: "Import Playlist JSON", callback: onImportJson },
+      { id: 8, description: "Import Playlist JSON", callback: openImportJsonPicker },
       { id: 9, description: "Export Playlist", callback: onExportJson },
       { id: 10, description: "Delete All", callback: onDelete, tone: "danger" },
     ];
@@ -162,6 +191,19 @@ const PlaylistHeader = ({
 
   const openMenu = () => {
     ctx.setActionSheet(buildMenuItems(themePreference));
+    ctx.open();
+  };
+
+  const openSongListMenu = () => {
+    ctx.setActionSheet(
+      songListNames.map((name, index) => ({
+        id: index + 1,
+        description: name,
+        callback: () => {
+          onSelectSongList(name);
+        },
+      }))
+    );
     ctx.open();
   };
 
@@ -218,9 +260,7 @@ const PlaylistHeader = ({
               parseImportedPlaylist(content);
 
             if (importedPlaylist) {
-              chrome.storage.sync.set({
-                youtube_list: importedPlaylist,
-              });
+              onImportJson(importedPlaylist);
             } else if (error) {
               window.alert(error);
             }
@@ -302,6 +342,24 @@ const PlaylistHeader = ({
                 alt={isPlayAll ? "pause" : "play all"}
               />
             </button>
+          </div>
+          <div className={styles["header-center-container"]}>
+            <div className={styles["header-center-actions"]}>
+              <button
+                type="button"
+                onClick={openSongListMenu}
+                className={`${styles["header-button"]} ${styles["header-song-list-button"]}`}
+              >
+                {activeSongListName}
+              </button>
+              <button
+                type="button"
+                onClick={onOpenNewSongListModal}
+                className={`${styles["header-button"]} ${styles["header-new-list-button"]}`}
+              >
+                New List
+              </button>
+            </div>
           </div>
           <div className={styles["header-right-container"]}>
             <button onClick={openMenu} className={styles["header-button"]}>

@@ -67,11 +67,16 @@ import {
   toggleSelectedItemId,
 } from "./playlistSelection";
 import {
+  createSongList,
   buildDefaultSongListsState,
   normalizeSongListsState,
   updateActiveSongListItems,
 } from "../../utils/songLists";
-import { getVisiblePlaylistForActiveList } from "./songListsViewModel";
+import NewSongListModal from "./NewSongListModal";
+import {
+  getSongListCreationError,
+  getVisiblePlaylistForActiveList,
+} from "./songListsViewModel";
 
 const DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY =
   "dismissedAnalyzeImportBannerKey";
@@ -104,12 +109,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
   const [playlistImportModalActive, setPlaylistImportModalActive] =
     useState(false);
+  const [newSongListModalActive, setNewSongListModalActive] = useState(false);
   const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
   const [selectionActionsModalActive, setSelectionActionsModalActive] =
     useState(false);
   const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [newSongListError, setNewSongListError] = useState("");
   const [analyzeImportBatchState, setAnalyzeImportBatchState] =
     useState<AnalyzeImportBatchState | null>(null);
   const [dismissedAnalyzeImportBannerKey, setDismissedAnalyzeImportBannerKey] =
@@ -359,8 +366,17 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setDeleteAllModalActive(true);
   };
 
+  const onImportJson = (importedPlaylist: typeof playlist) => {
+    persistActiveSongListItems(importedPlaylist);
+  };
+
   const closePlaylistImportModal = () => {
     setPlaylistImportModalActive(false);
+  };
+
+  const closeNewSongListModal = () => {
+    setNewSongListError("");
+    setNewSongListModalActive(false);
   };
 
   const closeDeleteAllModal = () => {
@@ -546,6 +562,35 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setSelectionActionsModalActive(true);
   };
 
+  const onSelectSongList = (name: string) => {
+    if (name === activeSongListName) {
+      return;
+    }
+
+    persistSongListsState({
+      songLists: songListsState.songLists,
+      activeSongListName: name,
+    });
+  };
+
+  const onCreateSongList = (rawName: string) => {
+    const error = getSongListCreationError(
+      rawName,
+      Object.keys(songListsState.songLists)
+    );
+
+    if (error) {
+      setNewSongListError(error);
+      return;
+    }
+
+    const nextSongListsState = createSongList(songListsState, rawName);
+    setNewSongListError("");
+    persistSongListsState(nextSongListsState, () => {
+      setNewSongListModalActive(false);
+    });
+  };
+
   const onDeleteSelected = () => {
     if (selectedItemIds.length === 0) {
       return;
@@ -638,7 +683,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     <>
       <PlaylistHeader
         playlist={playlist}
+        songLists={songListsState.songLists}
+        activeSongListName={activeSongListName}
         onDelete={onDeleteAll}
+        onImportJson={onImportJson}
         onOpenEqSettings={() => {
           setEqSettingsActive(true);
         }}
@@ -647,6 +695,13 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         }}
         onOpenImportModal={() => {
           setPlaylistImportModalActive(true);
+        }}
+        onOpenNewSongListModal={() => {
+          setNewSongListError("");
+          setNewSongListModalActive(true);
+        }}
+        onSelectSongList={(name) => {
+          onSelectSongList(name);
         }}
         onClearSelection={clearSelection}
         onToggleSelectAll={() => {
@@ -794,6 +849,12 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         active={playlistImportModalActive}
         close={closePlaylistImportModal}
         onSubmit={importYoutubePlaylist}
+      />
+      <NewSongListModal
+        active={newSongListModalActive}
+        close={closeNewSongListModal}
+        errorMessage={newSongListError}
+        onSubmit={onCreateSongList}
       />
       <Modal
         active={selectionActionsModalActive}

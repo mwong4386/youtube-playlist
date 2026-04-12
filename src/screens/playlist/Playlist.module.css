@@ -110,6 +110,32 @@
   justify-content: center;
 }
 
+.header-center-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-song-list-button,
+.header-new-list-button {
+  width: auto;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.header-song-list-button {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-new-list-button {
+  color: var(--success-color);
+}
+
 .selection-header-button {
   width: auto;
   min-width: 42px;
