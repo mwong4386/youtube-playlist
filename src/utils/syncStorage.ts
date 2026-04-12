@@ -20,3 +20,12 @@ export const getStorage = async (key: string) => {
     });
   });
 };
+
+export const getStorageMap = async (keys: string[]) => {
+  return new Promise<Record<string, unknown>>((resolve, reject) => {
+    chrome.storage.sync.get(keys, (result) => {
+      if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+      resolve(result);
+    });
+  });
+};
