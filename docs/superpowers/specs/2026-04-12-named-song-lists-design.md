@@ -84,7 +84,6 @@ Add a small utility layer to:
 - update the active list's items
 - switch the active list name
 
-Keeping this logic out of `Playlist.tsx` reduces the risk of scattered storage updates and makes the migration testable.
 Keeping this logic out of `Playlist.tsx` reduces the risk of scattered storage updates and makes the storage behavior easier to test.
 
 ### Playlist Screen
