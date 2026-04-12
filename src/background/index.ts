@@ -13,9 +13,18 @@ import {
   GEMINI_API_KEY_STORAGE_KEY,
   GeminiAnalyzeErrorCode,
 } from "../models/GeminiSettings";
+import {
+  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  SONG_LISTS_STORAGE_KEY,
+} from "../models/SongList";
 import { getRandomInt } from "../utils/math";
 import { readStoredGeminiApiKey } from "../utils/geminiSettings";
-import { getStorage } from "../utils/syncStorage";
+import { getStorageMap } from "../utils/syncStorage";
+import {
+  buildActiveSongListStorageUpdate,
+  readActiveSongListItems,
+  readActiveSongListItemsFromStorageMap,
+} from "../utils/songLists";
 import reducePlaybackState from "./playbackMachine";
 import {
   SAVED_BADGE_TEXT,
@@ -68,8 +77,8 @@ const resetPlaybackState = () => {
 };
 
 const getPlaylist = async () => {
-  const items = await getStorage("youtube_list");
-  return ((items || []) as MPlaylistItem[]).map(normalizePlaylistItem);
+  const items = await readActiveSongListItems();
+  return items.map(normalizePlaylistItem);
 };
 
 const updatePlaylistItem = async (
@@ -86,7 +95,13 @@ const updatePlaylistItem = async (
     >
   >,
 ) => {
-  const playlist = await getPlaylist();
+  const storageMap = await getStorageMap([
+    SONG_LISTS_STORAGE_KEY,
+    ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  ]);
+  const playlist = readActiveSongListItemsFromStorageMap(storageMap).map(
+    normalizePlaylistItem
+  );
   const nextPlaylist = playlist.map((item) => {
     if (item.id !== id) {
       return item;
@@ -98,12 +113,14 @@ const updatePlaylistItem = async (
       audioEq: partial.audioEq
         ? normalizeAudioEqSettings(partial.audioEq)
         : item.audioEq,
-    };
+      };
   });
 
-  await chrome.storage.sync.set({
-    youtube_list: nextPlaylist,
-  });
+  const songListsStorageUpdate = buildActiveSongListStorageUpdate(
+    storageMap,
+    nextPlaylist
+  );
+  await chrome.storage.sync.set(songListsStorageUpdate);
 };
 
 const getCurrentItem = async () => {
@@ -349,11 +366,19 @@ const onVideoEnd = async (videoId?: string) => {
 };
 
 const deleteVideo = async (id: string) => {
-  const playlist = await getPlaylist();
+  const storageMap = await getStorageMap([
+    SONG_LISTS_STORAGE_KEY,
+    ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  ]);
+  const playlist = readActiveSongListItemsFromStorageMap(storageMap).map(
+    normalizePlaylistItem
+  );
   const newPlaylist = playlist.filter((item) => item.id !== id);
-  await chrome.storage.sync.set({
-    youtube_list: newPlaylist,
-  });
+  const songListsStorageUpdate = buildActiveSongListStorageUpdate(
+    storageMap,
+    newPlaylist
+  );
+  await chrome.storage.sync.set(songListsStorageUpdate);
 };
 
 const logGeminiAnalyze = (...args: unknown[]) => {
@@ -923,20 +948,29 @@ const getLegacyPlaybackState = (result: {
   });
 
   chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace !== "sync" || !("youtube_list" in changes)) {
+    if (
+      namespace !== "sync" ||
+      (!(
+        SONG_LISTS_STORAGE_KEY in changes
+      ) &&
+        !(ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes))
+    ) {
       return;
     }
 
-    const updatedPlaylist = (changes["youtube_list"].newValue || []) as MPlaylistItem[];
-    void refreshSavedBadgeForActiveTab();
+    void (async () => {
+      const updatedPlaylist = await getPlaylist();
+      await refreshSavedBadgeForActiveTab();
 
-    if (!playbackState.currentItemId) {
-      return;
-    }
+      if (!playbackState.currentItemId) {
+        return;
+      }
 
-    playingItem =
-      updatedPlaylist.find((item) => item.id === playbackState.currentItemId) || null;
-    updateStateToLocalStorage();
+      playingItem =
+        updatedPlaylist.find((item) => item.id === playbackState.currentItemId) ||
+        null;
+      updateStateToLocalStorage();
+    })();
   });
 
   void refreshSavedBadgeForActiveTab();

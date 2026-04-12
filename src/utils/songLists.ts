@@ -6,6 +6,28 @@ import {
   type SongListRecord,
   type SongListsState,
 } from "../models/SongList";
+import { getStorageMap } from "./syncStorage";
+
+declare const chrome: {
+  storage: {
+    sync: {
+      set: (items: Record<string, unknown>) => Promise<void>;
+    };
+  };
+};
+
+type ReadSongListsStorageMap = (
+  keys: string[]
+) => Promise<Record<string, unknown>>;
+type WriteSongListsStorageMap = (
+  items: Record<string, unknown>
+) => Promise<void>;
+
+const SONG_LIST_STORAGE_KEYS = [
+  SONG_LISTS_STORAGE_KEY,
+  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+];
+const RESERVED_SONG_LIST_NAMES = new Set(["__proto__"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -13,6 +35,35 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 const hasOwn = (object: object, key: string) => {
   return Object.prototype.hasOwnProperty.call(object, key);
+};
+
+const createSongListsMap = (): SongListsState["songLists"] =>
+  Object.create(null) as SongListsState["songLists"];
+
+const copySongLists = (
+  songLists: Record<string, SongListRecord>
+): SongListsState["songLists"] => {
+  const nextSongLists = createSongListsMap();
+
+  for (const [name, record] of Object.entries(songLists)) {
+    nextSongLists[name] = record;
+  }
+
+  return nextSongLists;
+};
+
+const replaceSongListItems = (
+  songLists: Record<string, SongListRecord>,
+  targetListName: string,
+  items: MPlaylistItem[]
+): SongListsState["songLists"] => {
+  const nextSongLists = copySongLists(songLists);
+  nextSongLists[targetListName] = { items };
+  return nextSongLists;
+};
+
+const isReservedSongListName = (name: string) => {
+  return RESERVED_SONG_LIST_NAMES.has(name);
 };
 
 const isStoredSongListItem = (value: unknown): value is MPlaylistItem => {
@@ -53,12 +104,15 @@ const normalizeSongListRecord = (value: unknown): SongListRecord => {
   };
 };
 
-export const buildDefaultSongListsState = (): SongListsState => ({
-  songLists: {
-    [DEFAULT_SONG_LIST_NAME]: { items: [] },
-  },
-  activeSongListName: DEFAULT_SONG_LIST_NAME,
-});
+export const buildDefaultSongListsState = (): SongListsState => {
+  const songLists = createSongListsMap();
+  songLists[DEFAULT_SONG_LIST_NAME] = { items: [] };
+
+  return {
+    songLists,
+    activeSongListName: DEFAULT_SONG_LIST_NAME,
+  };
+};
 
 export const normalizeSongListsState = (
   result: Record<string, unknown>
@@ -70,12 +124,11 @@ export const normalizeSongListsState = (
     return buildDefaultSongListsState();
   }
 
-  const songLists = Object.entries(storedSongLists).reduce<
-    SongListsState["songLists"]
-  >((acc, [name, value]) => {
-    acc[name] = normalizeSongListRecord(value);
-    return acc;
-  }, {});
+  const songLists = createSongListsMap();
+
+  for (const [name, value] of Object.entries(storedSongLists)) {
+    songLists[name] = normalizeSongListRecord(value);
+  }
 
   if (!hasOwn(songLists, DEFAULT_SONG_LIST_NAME)) {
     songLists[DEFAULT_SONG_LIST_NAME] = { items: [] };
@@ -103,15 +156,16 @@ export const createSongList = (
     throw new Error("Song list name is required.");
   }
 
+  if (isReservedSongListName(name)) {
+    throw new Error("That song list name is reserved.");
+  }
+
   if (hasOwn(state.songLists, name)) {
     throw new Error("A song list with that name already exists.");
   }
 
   return {
-    songLists: {
-      ...state.songLists,
-      [name]: { items: [] },
-    },
+    songLists: replaceSongListItems(state.songLists, name, []),
     activeSongListName: name,
   };
 };
@@ -120,9 +174,45 @@ export const updateActiveSongListItems = (
   state: SongListsState,
   items: MPlaylistItem[]
 ): SongListsState => ({
-  songLists: {
-    ...state.songLists,
-    [state.activeSongListName]: { items },
-  },
+  songLists: replaceSongListItems(
+    state.songLists,
+    state.activeSongListName,
+    items
+  ),
   activeSongListName: state.activeSongListName,
 });
+
+export const readActiveSongListItemsFromStorageMap = (
+  result: Record<string, unknown>
+): MPlaylistItem[] => {
+  const state = normalizeSongListsState(result);
+  return state.songLists[state.activeSongListName].items;
+};
+
+export const buildActiveSongListStorageUpdate = (
+  result: Record<string, unknown>,
+  items: MPlaylistItem[]
+): Record<string, unknown> => {
+  const nextState = updateActiveSongListItems(normalizeSongListsState(result), items);
+
+  return {
+    [SONG_LISTS_STORAGE_KEY]: nextState.songLists,
+  };
+};
+
+export const readActiveSongListItems = async (
+  readStorageMap: ReadSongListsStorageMap = getStorageMap
+): Promise<MPlaylistItem[]> => {
+  const result = await readStorageMap(SONG_LIST_STORAGE_KEYS);
+  return readActiveSongListItemsFromStorageMap(result);
+};
+
+export const writeActiveSongListItems = async (
+  items: MPlaylistItem[],
+  readStorageMap: ReadSongListsStorageMap = getStorageMap,
+  writeStorageMap: WriteSongListsStorageMap = (nextItems) =>
+    chrome.storage.sync.set(nextItems)
+): Promise<void> => {
+  const result = await readStorageMap(SONG_LIST_STORAGE_KEYS);
+  await writeStorageMap(buildActiveSongListStorageUpdate(result, items));
+};

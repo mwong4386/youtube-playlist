@@ -9,7 +9,10 @@ import type {
 } from "../models/PlaylistImport";
 import MPlaylistItem from "../models/MPlaylistItem";
 import { mergeImportedPlaylist } from "../utils/playlistMerge";
-import { getStorage } from "../utils/syncStorage";
+import {
+  readActiveSongListItems,
+  writeActiveSongListItems,
+} from "../utils/songLists";
 
 declare const chrome: {
   runtime: {
@@ -29,9 +32,7 @@ declare const chrome: {
     };
   };
   storage: {
-    sync: {
-      set: (items: { youtube_list: MPlaylistItem[] }) => Promise<void>;
-    };
+    sync: Record<string, unknown>;
   };
   tabs: {
     create: (properties: {
@@ -464,37 +465,36 @@ const resolveYoutubePlaylistByTab = async (playlistUrl: string) => {
   let tabId: number | undefined;
 
   try {
-    const tab = await chrome.tabs.create({
-      url: playlistUrl,
-      active: false,
-    });
-    tabId = tab.id;
-  } catch (error) {
-    throw createPlaylistImportError(
-      "playlist-unavailable",
-      "YouTube playlist is unavailable.",
-      error
-    );
-  }
-
-  if (typeof tabId !== "number") {
-    throw createPlaylistImportError(
-      "playlist-unavailable",
-      "YouTube playlist is unavailable."
-    );
-  }
-
-  try {
     return await new Promise<MPlaylistItem[]>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      let settled = false;
+
+      const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        chrome.runtime.onMessage.removeListener(onMessage);
+      };
+
+      const rejectOnce = (error: PlaylistImportError) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
         cleanup();
-        reject(
-          createPlaylistImportError(
-            "playlist-unavailable",
-            "YouTube playlist is unavailable."
-          )
-        );
-      }, PLAYLIST_FALLBACK_TIMEOUT_MS);
+        reject(error);
+      };
+
+      const resolveOnce = (items: MPlaylistItem[]) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        resolve(items);
+      };
 
       const onMessage = (
         message: unknown,
@@ -508,15 +508,13 @@ const resolveYoutubePlaylistByTab = async (playlistUrl: string) => {
           return;
         }
 
-        cleanup();
-
         if (Array.isArray(message.items)) {
-          resolve(message.items as MPlaylistItem[]);
+          resolveOnce(message.items as MPlaylistItem[]);
           return;
         }
 
         if (typeof message.code === "string") {
-          reject(
+          rejectOnce(
             createPlaylistImportError(
               message.code as PlaylistImportErrorCode,
               typeof message.message === "string"
@@ -527,7 +525,7 @@ const resolveYoutubePlaylistByTab = async (playlistUrl: string) => {
           return;
         }
 
-        reject(
+        rejectOnce(
           createPlaylistImportError(
             "parse-failed",
             "YouTube playlist data could not be parsed."
@@ -535,18 +533,51 @@ const resolveYoutubePlaylistByTab = async (playlistUrl: string) => {
         );
       };
 
-      const cleanup = () => {
-        clearTimeout(timeoutId);
-        chrome.runtime.onMessage.removeListener(onMessage);
-      };
+      timeoutId = setTimeout(() => {
+        rejectOnce(
+          createPlaylistImportError(
+            "playlist-unavailable",
+            "YouTube playlist is unavailable."
+          )
+        );
+      }, PLAYLIST_FALLBACK_TIMEOUT_MS);
 
       chrome.runtime.onMessage.addListener(onMessage);
+
+      void chrome.tabs
+        .create({
+          url: playlistUrl,
+          active: false,
+        })
+        .then((tab) => {
+          tabId = tab.id;
+
+          if (typeof tabId !== "number") {
+            rejectOnce(
+              createPlaylistImportError(
+                "playlist-unavailable",
+                "YouTube playlist is unavailable."
+              )
+            );
+          }
+        })
+        .catch((error) => {
+          rejectOnce(
+            createPlaylistImportError(
+              "playlist-unavailable",
+              "YouTube playlist is unavailable.",
+              error
+            )
+          );
+        });
     });
   } finally {
-    try {
-      await chrome.tabs.remove(tabId);
-    } catch {
-      // Ignore tab removal errors for temporary fallback tabs.
+    if (typeof tabId === "number") {
+      try {
+        await chrome.tabs.remove(tabId);
+      } catch {
+        // Ignore tab removal errors for temporary fallback tabs.
+      }
     }
   }
 };
@@ -583,14 +614,11 @@ const resolveYoutubePlaylist = async (
 };
 
 const readStoredPlaylist: ReadPlaylist = async () => {
-  const playlist = await getStorage("youtube_list");
-  return Array.isArray(playlist) ? (playlist as MPlaylistItem[]) : [];
+  return readActiveSongListItems();
 };
 
 const writeStoredPlaylist: WritePlaylist = async (playlist) => {
-  await chrome.storage.sync.set({
-    youtube_list: playlist,
-  });
+  await writeActiveSongListItems(playlist);
 };
 
 const importYoutubePlaylist = async (

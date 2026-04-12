@@ -1,4 +1,5 @@
 import test from "node:test";
+import MsgType from "../constants/msgType";
 import {
   buildImportedPlaylistItems,
   extractPlaylistEntriesFromHtml,
@@ -372,6 +373,106 @@ test("resolveYoutubePlaylist falls back to temporary tab extraction when fetch p
   ]);
 });
 
+test("resolveYoutubePlaylist registers the fallback listener before opening the temporary tab", async () => {
+  const originalChrome = (globalThis as { chrome?: unknown }).chrome;
+  const imported = [
+    createPlaylistItem("fast-fallback-video", {
+      id: "fast-fallback-video-0",
+    }),
+  ];
+  let messageListener:
+    | ((
+        message: unknown,
+        sender?: { tab?: { id?: number } }
+      ) => void)
+    | null = null;
+
+  (globalThis as {
+    chrome?: {
+      runtime: {
+        onMessage: {
+          addListener: (
+            callback: (
+              message: unknown,
+              sender?: { tab?: { id?: number } }
+            ) => void
+          ) => void;
+          removeListener: (
+            callback: (
+              message: unknown,
+              sender?: { tab?: { id?: number } }
+            ) => void
+          ) => void;
+        };
+      };
+      storage: {
+        sync: Record<string, unknown>;
+      };
+      tabs: {
+        create: (properties: {
+          url: string;
+          active: boolean;
+        }) => Promise<{ id?: number }>;
+        remove: (tabId: number) => Promise<void>;
+      };
+    };
+  }).chrome = {
+    runtime: {
+      onMessage: {
+        addListener: (callback) => {
+          messageListener = callback;
+        },
+        removeListener: (callback) => {
+          if (messageListener === callback) {
+            messageListener = null;
+          }
+        },
+      },
+    },
+    storage: {
+      sync: {},
+    },
+    tabs: {
+      create: async () => {
+        if (!messageListener) {
+          throw new Error("listener missing before tab creation");
+        }
+
+        const tabId = 99;
+        setTimeout(() => {
+          messageListener?.(
+            {
+              name: MsgType.ImportYoutubePlaylistFallbackResult,
+              items: imported,
+            },
+            { tab: { id: tabId } }
+          );
+        }, 0);
+
+        return { id: tabId };
+      },
+      remove: async () => undefined,
+    },
+  };
+
+  try {
+    const items = await resolveYoutubePlaylist(
+      "https://www.youtube.com/watch?v=abc123&list=PL123",
+      {
+        fetchPlaylist: async () => {
+          const error = new Error("parse failed") as Error & { code?: string };
+          error.code = "parse-failed";
+          throw error;
+        },
+      }
+    );
+
+    expectEqual(items, imported);
+  } finally {
+    (globalThis as { chrome?: unknown }).chrome = originalChrome;
+  }
+});
+
 test("importYoutubePlaylist appends new imported items and writes the merged playlist", async () => {
   const existing = [createPlaylistItem("existing-video")];
   const imported = [
@@ -455,6 +556,86 @@ test("importYoutubePlaylist replaces the saved playlist in replace mode", async 
     skippedDuplicates: 0,
   });
   expectEqual(writes, [imported]);
+});
+
+test("importYoutubePlaylist default storage path updates only the active named song list", async () => {
+  const originalChrome = (globalThis as { chrome?: unknown }).chrome;
+  const imported = [createPlaylistItem("imported-video")];
+  const writes: Record<string, unknown>[] = [];
+
+  (globalThis as {
+    chrome?: {
+      runtime: { onMessage: { addListener: () => void; removeListener: () => void } };
+      storage: {
+        sync: {
+          get: (
+            keys: string[],
+            callback: (result: Record<string, unknown>) => void
+          ) => void;
+          set: (items: Record<string, unknown>) => Promise<void>;
+        };
+      };
+      tabs: {
+        create: (properties: { url: string; active: boolean }) => Promise<{ id?: number }>;
+        remove: (tabId: number) => Promise<void>;
+      };
+    };
+  }).chrome = {
+    runtime: {
+      onMessage: {
+        addListener: () => undefined,
+        removeListener: () => undefined,
+      },
+    },
+    storage: {
+      sync: {
+        get: (_keys, callback) => {
+          callback({
+            songLists: {
+              default: { items: [createPlaylistItem("default-video")] },
+              aimer: { items: [createPlaylistItem("aimer-video")] },
+            },
+            activeSongListName: "aimer",
+          });
+        },
+        set: async (items) => {
+          writes.push(items);
+        },
+      },
+    },
+    tabs: {
+      create: async () => ({ id: 1 }),
+      remove: async () => undefined,
+    },
+  };
+
+  try {
+    const response = await importYoutubePlaylist(
+      {
+        playlistUrl: "https://www.youtube.com/watch?v=abc123&list=PL123",
+        mode: "replace",
+      },
+      {
+        resolvePlaylist: async () => imported,
+      }
+    );
+
+    expectEqual(response, {
+      ok: true,
+      importedCount: 1,
+      skippedDuplicates: 0,
+    });
+    expectEqual(writes, [
+      {
+        songLists: {
+          default: { items: [createPlaylistItem("default-video")] },
+          aimer: { items: imported },
+        },
+      },
+    ]);
+  } finally {
+    (globalThis as { chrome?: unknown }).chrome = originalChrome;
+  }
 });
 
 test("importYoutubePlaylist returns invalid-url without reading or writing", async () => {

@@ -11,6 +11,10 @@ import AudioEqProfile, {
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../models/AudioEqProfile";
 import {
+  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  SONG_LISTS_STORAGE_KEY,
+} from "../models/SongList";
+import {
   cloneAudioEqSettings,
   AUDIO_EQ_BANDS,
   normalizeAudioEqSettings,
@@ -31,6 +35,11 @@ import {
   THEME_PREFERENCE_KEY,
   ThemePreference,
 } from "../utils/theme";
+import {
+  buildActiveSongListStorageUpdate,
+  readActiveSongListItemsFromStorageMap,
+} from "../utils/songLists";
+import { getStorageMap } from "../utils/syncStorage";
 import {
   createStartPin,
   createStopPin,
@@ -1350,39 +1359,33 @@ const onBookmarkSave = (url: string, videoId: string) => {
     audioEq,
   };
 
-  chrome.storage.sync.get("youtube_list", (result) => {
-    if (chrome.runtime.lastError) {
-      console.log(chrome.runtime.lastError);
+  void (async () => {
+    try {
+      const storageMap = await getStorageMap([
+        SONG_LISTS_STORAGE_KEY,
+        ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+      ]);
+      const list = readActiveSongListItemsFromStorageMap(storageMap);
+      const songListsStorageUpdate = buildActiveSongListStorageUpdate(
+        storageMap,
+        [...list, data]
+      );
+
+      await chrome.storage.sync.set(songListsStorageUpdate);
+
+      getDialog().close();
+      const bookmarkButton = getBookmarkButton();
+      if (bookmarkButton) {
+        ensureBookmarkButtonFeedbackController(bookmarkButton).showSuccess();
+      }
+      chrome.runtime.sendMessage({
+        name: MsgType.RefreshSavedBadge,
+      });
+    } catch (error) {
+      console.log(error);
       getConfirmButton().disabled = false;
-      return;
     }
-
-    const list = Array.isArray(result["youtube_list"])
-      ? (result["youtube_list"] as MPlaylistItem[])
-      : [];
-
-    chrome.storage.sync.set(
-      {
-        youtube_list: [...list, data],
-      },
-      () => {
-        if (chrome.runtime.lastError) {
-          console.log(chrome.runtime.lastError);
-          getConfirmButton().disabled = false;
-          return;
-        }
-
-        getDialog().close();
-        const bookmarkButton = getBookmarkButton();
-        if (bookmarkButton) {
-          ensureBookmarkButtonFeedbackController(bookmarkButton).showSuccess();
-        }
-        chrome.runtime.sendMessage({
-          name: MsgType.RefreshSavedBadge,
-        });
-      },
-    );
-  });
+  })();
 };
 
 const onPlayVideo = () => {
