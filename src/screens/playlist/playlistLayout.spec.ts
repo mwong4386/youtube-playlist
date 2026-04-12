@@ -103,6 +103,96 @@ test("playlist import success path does not auto-start analysis", () => {
   expectEqual(playlistSource.includes("shouldStartAnalyzeAfterImport"), false);
 });
 
+test("playlist source initializes and syncs visible playlist from named song-list storage", () => {
+  expectEqual(playlistSource.includes("SONG_LISTS_STORAGE_KEY"), true);
+  expectEqual(
+    playlistSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY"),
+    true
+  );
+  expectEqual(playlistSource.includes("getStorageMap("), true);
+  expectEqual(playlistSource.includes("normalizeSongListsState("), true);
+  expectEqual(
+    playlistSource.includes("const [songListsState, setSongListsState]"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("const [activeSongListName, setActiveSongListName]"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("getVisiblePlaylistForActiveList("),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("chrome.storage.onChanged.addListener(listener)"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("SONG_LISTS_STORAGE_KEY in changes"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes"),
+    true
+  );
+});
+
+test("playlist source writes active-list updates through named song-list helpers", () => {
+  expectEqual(
+    playlistSource.includes("updateActiveSongListItems(songListsState"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("[SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes(
+      "[ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName"
+    ),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("youtube_list: playlist"),
+    false
+  );
+  expectEqual(
+    playlistSource.includes("youtube_list: temp"),
+    false
+  );
+  expectEqual(
+    playlistSource.includes("youtube_list: deleteSelectedPlaylistItems(playlist, selectedItemIds)"),
+    false
+  );
+});
+
+test("playlist source guards reorder targets and preserves selection on analyze send failures", () => {
+  expectEqual(
+    playlistSource.includes("if (newIndex < 0) return;"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("(_response?: unknown) =>"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("if (chrome.runtime.lastError) {"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("clearSelection();"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("closeSelectionActionsModal();"),
+    true
+  );
+  expectEqual(
+    playlistSource.includes("name: MsgType.AnalyzeImportedPlaylist"),
+    true
+  );
+});
+
 test("playlist item source renders a checkbox for selection mode", () => {
   expectEqual(playlistItemSource.includes('type="checkbox"'), true);
   expectEqual(playlistItemSource.includes("checked={selected}"), true);

@@ -9,12 +9,16 @@ import {
   type GeminiAnalyzeFailure,
   type GeminiAnalyzeSuccess,
 } from "../../models/GeminiSettings";
-import MPlaylistItem from "../../models/MPlaylistItem";
 import PlaybackState, {
   createInitialPlaybackState,
   isPlaybackActive,
 } from "../../models/PlaybackState";
-import { getStorage } from "../../utils/syncStorage";
+import {
+  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  SONG_LISTS_STORAGE_KEY,
+  type SongListsState,
+} from "../../models/SongList";
+import { getStorageMap } from "../../utils/syncStorage";
 import {
   createAudioEqProfile,
   deleteAudioEqProfile,
@@ -29,7 +33,6 @@ import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
 import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import MsgType from "../../constants/msgType";
-import { DEV_PLAYLIST } from "../../dev/devPlaylist";
 import { ThemePreference } from "../../utils/theme";
 import SettingsModal from "../settings/SettingsModal";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
@@ -63,10 +66,16 @@ import {
   toggleAllSelectedItemIds,
   toggleSelectedItemId,
 } from "./playlistSelection";
+import {
+  buildDefaultSongListsState,
+  normalizeSongListsState,
+  updateActiveSongListItems,
+} from "../../utils/songLists";
+import { getVisiblePlaylistForActiveList } from "./songListsViewModel";
 
-const shouldSeedPlaylist = import.meta.env.VITE_SEED_PLAYLIST === "true";
 const DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY =
   "dismissedAnalyzeImportBannerKey";
+const DEFAULT_SONG_LISTS_STATE = buildDefaultSongListsState();
 
 interface Props {
   themePreference: ThemePreference;
@@ -74,7 +83,12 @@ interface Props {
 }
 
 const Playlist = ({ themePreference, setThemePreference }: Props) => {
-  const [playlist, setPlaylist] = useState<MPlaylistItem[]>([]);
+  const [songListsState, setSongListsState] = useState<SongListsState>(
+    DEFAULT_SONG_LISTS_STATE
+  );
+  const [activeSongListName, setActiveSongListName] = useState(
+    DEFAULT_SONG_LISTS_STATE.activeSongListName
+  );
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState()
   );
@@ -100,6 +114,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     useState<AnalyzeImportBatchState | null>(null);
   const [dismissedAnalyzeImportBannerKey, setDismissedAnalyzeImportBannerKey] =
     useState<string | null>(null);
+  const playlist = getVisiblePlaylistForActiveList(
+    songListsState.songLists,
+    activeSongListName
+  );
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     const nextState = state || createInitialPlaybackState();
@@ -108,28 +126,86 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setPlayingId(nextState.currentItemId || undefined);
   };
 
+  const applySongListsState = (nextSongListsState: SongListsState) => {
+    setSongListsState(nextSongListsState);
+    setActiveSongListName(nextSongListsState.activeSongListName);
+  };
+
+  const syncSongListsState = async () => {
+    const storedSongLists = await getStorageMap([
+      SONG_LISTS_STORAGE_KEY,
+      ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+    ]);
+    const nextSongListsState = normalizeSongListsState(storedSongLists);
+
+    applySongListsState(nextSongListsState);
+
+    if (
+      !(SONG_LISTS_STORAGE_KEY in storedSongLists) ||
+      !(ACTIVE_SONG_LIST_NAME_STORAGE_KEY in storedSongLists)
+    ) {
+      chrome.storage.sync.set({
+        [SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists,
+        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName,
+      });
+    }
+  };
+
+  const persistSongListsState = (
+    nextSongListsState: SongListsState,
+    callback?: () => void
+  ) => {
+    applySongListsState(nextSongListsState);
+    chrome.storage.sync.set(
+      {
+        [SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists,
+        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName,
+      },
+      callback
+    );
+  };
+
+  const persistActiveSongListItems = (
+    items: typeof playlist,
+    callback?: () => void
+  ) => {
+    const nextSongListsState = updateActiveSongListItems(songListsState, items);
+    persistSongListsState(nextSongListsState, callback);
+  };
+
   useEffect(() => {
-    const getPlaylist = async () => {
-      const storedList = (await getStorage("youtube_list")) as
-        | MPlaylistItem[]
-        | undefined;
-      if (storedList && storedList.length > 0) {
-        setPlaylist(storedList);
+    let mounted = true;
+
+    const loadSongLists = async () => {
+      const storedSongLists = await getStorageMap([
+        SONG_LISTS_STORAGE_KEY,
+        ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+      ]);
+      const storedSongListsState = normalizeSongListsState(storedSongLists);
+
+      if (!mounted) {
         return;
       }
 
-      if (shouldSeedPlaylist) {
+      applySongListsState(storedSongListsState);
+
+      if (
+        !(SONG_LISTS_STORAGE_KEY in storedSongLists) ||
+        !(ACTIVE_SONG_LIST_NAME_STORAGE_KEY in storedSongLists)
+      ) {
         chrome.storage.sync.set({
-          youtube_list: DEV_PLAYLIST,
+          [SONG_LISTS_STORAGE_KEY]: storedSongListsState.songLists,
+          [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:
+            storedSongListsState.activeSongListName,
         });
-        setPlaylist(DEV_PLAYLIST);
-        return;
       }
-
-      const list: MPlaylistItem[] = [];
-      setPlaylist(list);
     };
-    getPlaylist();
+
+    void loadSongLists();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -212,8 +288,12 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       if ("isPlaying" in changes) {
         setPlaying(!!changes["isPlaying"].newValue);
       }
-      if ("youtube_list" in changes) {
-        setPlaylist(changes["youtube_list"].newValue || []);
+      if (
+        namespace === "sync" &&
+        (SONG_LISTS_STORAGE_KEY in changes ||
+          ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes)
+      ) {
+        void syncSongListsState();
       }
       if (
         namespace === "sync" &&
@@ -302,7 +382,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const confirmDeleteAll = () => {
     confirmDeleteAllConfirmation(
       () => {
-        chrome.storage.sync.remove("youtube_list");
+        persistActiveSongListItems([]);
       },
       () => {
         setDeleteAllModalActive(false);
@@ -405,17 +485,26 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   ) => {
     const item = playlist.find((x) => x.id === id);
     if (!item) return;
-    item.timestamp = timestamp;
-    item.endTimestamp = endTimestamp;
-    item.volume = volume;
-    item.audioEq = audioEq;
-    if (geminiSuggestion) {
-      item.geminiSuggestedStartTimestamp = geminiSuggestion.startTimestamp;
-      item.geminiSuggestedEndTimestamp = geminiSuggestion.endTimestamp;
-    }
-    chrome.storage.sync.set({
-      youtube_list: playlist,
+    const nextPlaylist = playlist.map((playlistItem) => {
+      if (playlistItem.id !== id) {
+        return playlistItem;
+      }
+
+      return {
+        ...playlistItem,
+        timestamp,
+        endTimestamp,
+        volume,
+        audioEq,
+        ...(geminiSuggestion
+          ? {
+              geminiSuggestedStartTimestamp: geminiSuggestion.startTimestamp,
+              geminiSuggestedEndTimestamp: geminiSuggestion.endTimestamp,
+            }
+          : {}),
+      };
     });
+    persistActiveSongListItems(nextPlaylist);
   };
   const onMoveTo = (toId: string) => {
     if (draggingElementId && draggingElementId !== toId) {
@@ -423,11 +512,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       const item = playlist.find((x) => x.id === draggingElementId);
       if (!item) return;
       const newIndex = playlist.findIndex((x) => x.id === toId);
+      if (newIndex < 0) return;
       const temp = playlist.filter((x) => x.id !== draggingElementId);
       temp.splice(newIndex, 0, item);
-      chrome.storage.sync.set({
-        youtube_list: temp,
-      });
+      persistActiveSongListItems(temp);
     }
   };
   const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -463,10 +551,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       return;
     }
 
-    chrome.storage.sync.set(
-      {
-        youtube_list: deleteSelectedPlaylistItems(playlist, selectedItemIds),
-      },
+    persistActiveSongListItems(
+      deleteSelectedPlaylistItems(playlist, selectedItemIds),
       () => {
         if (chrome.runtime.lastError) {
           return;
@@ -483,12 +569,20 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       return;
     }
 
-    chrome.runtime.sendMessage({
-      name: MsgType.AnalyzeImportedPlaylist,
-      itemIds: selectedItemIds,
-    });
-    clearSelection();
-    closeSelectionActionsModal();
+    chrome.runtime.sendMessage(
+      {
+        name: MsgType.AnalyzeImportedPlaylist,
+        itemIds: selectedItemIds,
+      },
+      (_response?: unknown) => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+
+        clearSelection();
+        closeSelectionActionsModal();
+      }
+    );
   };
 
   const onAnalyzeUncalibratedSelected = () => {
@@ -501,13 +595,21 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       return;
     }
 
-    chrome.runtime.sendMessage({
-      name: MsgType.AnalyzeImportedPlaylist,
-      itemIds: uncalibratedItemIds,
-      scope: "uncalibrated",
-    });
-    clearSelection();
-    closeSelectionActionsModal();
+    chrome.runtime.sendMessage(
+      {
+        name: MsgType.AnalyzeImportedPlaylist,
+        itemIds: uncalibratedItemIds,
+        scope: "uncalibrated",
+      },
+      (_response?: unknown) => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+
+        clearSelection();
+        closeSelectionActionsModal();
+      }
+    );
   };
 
   const onStopAnalyzeImportBatch = () => {
