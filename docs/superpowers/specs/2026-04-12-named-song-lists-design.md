@@ -9,7 +9,6 @@ Add support for multiple named song lists in the popup. The current single saved
 - Preserve the current playlist experience while allowing multiple saved lists.
 - Keep the first version simple: create a list, switch lists, and persist the active list.
 - Reuse as much of the existing playlist UI and storage flow as possible.
-- Migrate existing users without losing their saved songs.
 
 ## Non-Goals
 
@@ -22,9 +21,8 @@ Add support for multiple named song lists in the popup. The current single saved
 
 ### Default Behavior
 
-- Existing users keep their current playlist content.
-- On first load after the feature ships, that content becomes the `default` song list.
-- New users start with an empty `default` song list.
+- The app starts with a `default` song list.
+- The `default` list can be empty until the user adds songs.
 
 ### Creating A Song List
 
@@ -75,26 +73,6 @@ Example persisted shape:
 
 This shape is preferred over a raw `Record<string, MPlaylistItem[]>` because it leaves room for future per-list metadata without another storage migration.
 
-## Migration
-
-### Existing Storage
-
-The app currently stores a single playlist in `chrome.storage.sync.youtube_list`.
-
-### Migration Rules
-
-- On popup startup, if `songLists` does not exist yet:
-  - read `youtube_list`
-  - create `songLists.default.items` from that value, or an empty array if nothing exists
-  - set `activeSongListName` to `default`
-- After the migration succeeds, the popup should read and write through the new keys only.
-- The old `youtube_list` key may remain for one release if desired for safety, but it should no longer be the source of truth.
-
-### Safety
-
-- Migration must be idempotent. If `songLists` already exists, do not rebuild it from `youtube_list`.
-- Migration must not destroy existing songs when users reopen the popup multiple times.
-
 ## Technical Design
 
 ### Storage Helpers
@@ -105,9 +83,9 @@ Add a small utility layer to:
 - create a new list
 - update the active list's items
 - switch the active list name
-- perform first-run migration from `youtube_list`
 
 Keeping this logic out of `Playlist.tsx` reduces the risk of scattered storage updates and makes the migration testable.
+Keeping this logic out of `Playlist.tsx` reduces the risk of scattered storage updates and makes the storage behavior easier to test.
 
 ### Playlist Screen
 
@@ -117,6 +95,7 @@ Keeping this logic out of `Playlist.tsx` reduces the risk of scattered storage u
 - track the active list name
 - update only the active list when songs change
 - listen for storage changes to both `songLists` and `activeSongListName`
+- create an empty `default` list in storage if no named-list data exists yet
 
 The playlist screen should continue exposing `playlist` as the currently loaded list for the rest of the UI, so most existing item-level interactions can stay unchanged.
 
@@ -179,8 +158,7 @@ This feature should not change the `MPlaylistItem` shape.
 
 Add or update tests for:
 
-- migrating `youtube_list` into `songLists.default`
-- skipping migration when `songLists` already exists
+- creating the initial empty `default` list when no named-list data exists
 - creating a new empty list with a typed name
 - rejecting duplicate or empty names
 - switching the active list and loading the correct songs
@@ -199,5 +177,5 @@ Add or update tests for:
 ## Implementation Notes
 
 - Prefer introducing named constants for the new storage keys.
-- Centralize the migration and read/write logic so background popup behavior stays predictable.
+- Centralize the read/write logic so popup behavior stays predictable.
 - Keep the first UI iteration lightweight and consistent with existing modal or action-sheet patterns rather than adding a complex new management screen.
