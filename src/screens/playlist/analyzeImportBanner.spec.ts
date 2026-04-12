@@ -17,7 +17,7 @@ test("getAnalyzeImportBannerViewModel hides the banner without batch state", () 
   expectEqual(getAnalyzeImportBannerViewModel(null), null);
 });
 
-test("getAnalyzeImportBannerViewModel returns a dismissible progress banner while analysis is active", () => {
+test("getAnalyzeImportBannerViewModel returns a stoppable progress banner while analysis is active", () => {
   expectEqual(
     getAnalyzeImportBannerViewModel({
       active: true,
@@ -30,9 +30,10 @@ test("getAnalyzeImportBannerViewModel returns a dismissible progress banner whil
       currentItemId: "song-3",
     }),
     {
-      title: "Analyzing song timings 2/3",
-      detail: "1 failed so far",
-      dismissible: true,
+      title: "Analyzing song timings 2/3 done",
+      detail: "1 succeeded, 1 failed",
+      dismissible: false,
+      actionLabel: "Stop",
     }
   );
 });
@@ -81,8 +82,8 @@ test("getAnalyzeImportBannerViewModel returns a dismissible completion banner wh
       failedItemIds: ["song-2", "song-3"],
     }),
     {
-      title: "Song timing analysis finished 1/3 completed",
-      detail: "2 songs could not be analyzed automatically.",
+      title: "Song timing analysis finished",
+      detail: "1 succeeded, 2 failed",
       dismissible: true,
     }
   );
@@ -100,8 +101,8 @@ test("getAnalyzeImportBannerViewModel returns the generalized success detail wit
       failedItemIds: [],
     }),
     {
-      title: "Song timing analysis finished 2/2 completed",
-      detail: "All eligible songs were analyzed.",
+      title: "Song timing analysis finished",
+      detail: "2 succeeded, 0 failed",
       dismissible: true,
     }
   );

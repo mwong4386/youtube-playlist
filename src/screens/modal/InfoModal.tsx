@@ -4,6 +4,7 @@ import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile from "../../models/AudioEqProfile";
 import {
   GeminiAnalyzeErrorCode,
+  type GeminiBoundarySuggestion,
   type GeminiAnalyzeFailure,
   type GeminiAnalyzeSuccess,
 } from "../../models/GeminiSettings";
@@ -40,7 +41,8 @@ interface Props {
     timestamp: number,
     endTimestamp: number | undefined,
     volume: number,
-    audioEq: AudioEqSettings
+    audioEq: AudioEqSettings,
+    geminiSuggestion?: GeminiBoundarySuggestion
   ) => void;
   onvolumechange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onAudioEqChange: (audioEq: Partial<AudioEqSettings>) => void;
@@ -70,6 +72,8 @@ const InfoModal = ({
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [isAnalyzing, setAnalyzing] = useState(false);
   const [analyzeMessage, setAnalyzeMessage] = useState("");
+  const [latestGeminiSuggestion, setLatestGeminiSuggestion] =
+    useState<GeminiBoundarySuggestion | undefined>(undefined);
   const analyzeScopeRef = useRef<GeminiAnalyzeScope>({
     active: false,
     itemId: undefined,
@@ -136,6 +140,7 @@ const InfoModal = ({
     setSelectedProfileId("");
     setAnalyzing(false);
     setAnalyzeMessage("");
+    setLatestGeminiSuggestion(undefined);
   }, [active, item, reset]);
 
   useEffect(() => {
@@ -224,6 +229,7 @@ const InfoModal = ({
       setValue("endMinutes", nextValues.endMinutes);
       setValue("endSeconds", nextValues.endSeconds);
       setValue("untilEnd", nextValues.untilEnd);
+      setLatestGeminiSuggestion(response.suggestion);
       setAnalyzeMessage("Suggested timestamps loaded.");
     } catch {
       if (!shouldApplyAnalyzeResult(analyzeScopeRef.current, request)) {
@@ -258,7 +264,8 @@ const InfoModal = ({
       timestamp,
       endtimestamp,
       data.volume,
-      normalizeAudioEqSettings(data)
+      normalizeAudioEqSettings(data),
+      latestGeminiSuggestion
     );
     close();
   };

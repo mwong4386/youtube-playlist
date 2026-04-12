@@ -20,6 +20,8 @@ test("parseImportedPlaylist accepts a valid playlist and normalizes values", () 
         videoId: "123",
         timestamp: 12.9,
         endTimestamp: 48.2,
+        geminiSuggestedStartTimestamp: 13.6,
+        geminiSuggestedEndTimestamp: 49.4,
         maxDuration: 60.7,
         volume: 104.4,
         audioEq: {
@@ -44,6 +46,8 @@ test("parseImportedPlaylist accepts a valid playlist and normalizes values", () 
       videoId: "123",
       timestamp: 12,
       endTimestamp: 48,
+      geminiSuggestedStartTimestamp: 13,
+      geminiSuggestedEndTimestamp: 49,
       maxDuration: 60,
       volume: 100,
       audioEq: {

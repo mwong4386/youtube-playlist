@@ -3,6 +3,7 @@ import {
   areAllPlaylistItemsSelected,
   clearSelectedItemIds,
   filterPlaylistBySelectedIds,
+  filterUncalibratedPlaylistItemIds,
   getPlaylistHeaderMode,
   toggleAllSelectedItemIds,
   toggleSelectedItemId,
@@ -62,6 +63,20 @@ test("filterPlaylistBySelectedIds removes only selected songs", () => {
   expectEqual(
     filterPlaylistBySelectedIds(playlist, [playlist[1].id]).map((item) => item.id),
     [playlist[0].id, playlist[2].id]
+  );
+});
+
+test("filterUncalibratedPlaylistItemIds keeps only selected songs with default timing boundaries", () => {
+  const playlist = [
+    { id: "song-1", timestamp: 0, endTimestamp: undefined } as MPlaylistItem,
+    { id: "song-2", timestamp: 12, endTimestamp: undefined } as MPlaylistItem,
+    { id: "song-3", timestamp: 0, endTimestamp: 45 } as MPlaylistItem,
+    { id: "song-4", timestamp: 0, endTimestamp: undefined } as MPlaylistItem,
+  ];
+
+  expectEqual(
+    filterUncalibratedPlaylistItemIds(playlist, ["song-1", "song-2", "song-4"]),
+    ["song-1", "song-4"]
   );
 });
 

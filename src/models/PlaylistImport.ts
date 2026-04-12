@@ -9,6 +9,7 @@ interface PlaylistImportRequest {
 
 interface AnalyzeImportBatchRequest {
   itemIds?: string[];
+  scope?: "default" | "uncalibrated";
 }
 
 interface PlaylistImportSuccess {

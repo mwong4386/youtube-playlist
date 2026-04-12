@@ -6,6 +6,7 @@ import {
   completeAnalyzeImportBatchItem,
   failAnalyzeImportBatchItem,
   resolveAnalyzeImportBatchItemIds,
+  stopAnalyzeImportBatch,
 } from "./importBatchState.js";
 
 const expectEqual = (actual: unknown, expected: unknown) => {
@@ -64,6 +65,23 @@ test("failAnalyzeImportBatchItem records failures and finishes the batch when ex
   expectEqual(failAnalyzeImportBatchItem(started, "song-1"), expected);
 });
 
+test("stopAnalyzeImportBatch ends the batch without counting the current item as failed", () => {
+  const started = beginAnalyzeImportBatch(["song-1", "song-2", "song-3"]);
+  const progressed = completeAnalyzeImportBatchItem(started, "song-1");
+
+  const expected: AnalyzeImportBatchState = {
+    active: false,
+    totalCount: 3,
+    completedCount: 1,
+    failedCount: 0,
+    pendingItemIds: [],
+    completedItemIds: ["song-1"],
+    failedItemIds: [],
+  };
+
+  expectEqual(stopAnalyzeImportBatch(progressed), expected);
+});
+
 test("resolveAnalyzeImportBatchItemIds keeps explicit selected ids in playlist order", () => {
   const playlist = [
     { id: "song-1", timestamp: 15 } as MPlaylistItem,
@@ -72,7 +90,9 @@ test("resolveAnalyzeImportBatchItemIds keeps explicit selected ids in playlist o
   ];
 
   expectEqual(
-    resolveAnalyzeImportBatchItemIds(playlist, ["song-3", "song-1", "song-9"]),
+    resolveAnalyzeImportBatchItemIds(playlist, {
+      itemIds: ["song-3", "song-1", "song-9"],
+    }),
     ["song-1", "song-3"]
   );
 });
@@ -94,5 +114,22 @@ test("resolveAnalyzeImportBatchItemIds returns no songs for an explicit empty se
     { id: "song-2", timestamp: 24 } as MPlaylistItem,
   ];
 
-  expectEqual(resolveAnalyzeImportBatchItemIds(playlist, []), []);
+  expectEqual(resolveAnalyzeImportBatchItemIds(playlist, { itemIds: [] }), []);
+});
+
+test("resolveAnalyzeImportBatchItemIds keeps only uncalibrated songs for explicit uncalibrated analysis", () => {
+  const playlist = [
+    { id: "song-1", timestamp: 0, endTimestamp: undefined } as MPlaylistItem,
+    { id: "song-2", timestamp: 15, endTimestamp: undefined } as MPlaylistItem,
+    { id: "song-3", timestamp: 0, endTimestamp: 45 } as MPlaylistItem,
+    { id: "song-4", timestamp: 0, endTimestamp: undefined } as MPlaylistItem,
+  ];
+
+  expectEqual(
+    resolveAnalyzeImportBatchItemIds(playlist, {
+      itemIds: ["song-1", "song-2", "song-4"],
+      scope: "uncalibrated",
+    }),
+    ["song-1", "song-4"]
+  );
 });

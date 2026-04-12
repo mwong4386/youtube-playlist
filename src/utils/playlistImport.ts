@@ -53,6 +53,8 @@ const parsePlaylistItem = (
     videoId,
     timestamp,
     endTimestamp,
+    geminiSuggestedStartTimestamp,
+    geminiSuggestedEndTimestamp,
     maxDuration,
     volume,
     audioEq,
@@ -137,6 +139,58 @@ const parsePlaylistItem = (
     };
   }
 
+  if (
+    geminiSuggestedStartTimestamp !== undefined &&
+    !isFiniteNumber(geminiSuggestedStartTimestamp)
+  ) {
+    return {
+      error: getItemError(
+        index,
+        "geminiSuggestedStartTimestamp",
+        "expected a finite number"
+      ),
+    };
+  }
+
+  if (
+    geminiSuggestedEndTimestamp !== undefined &&
+    !isFiniteNumber(geminiSuggestedEndTimestamp)
+  ) {
+    return {
+      error: getItemError(
+        index,
+        "geminiSuggestedEndTimestamp",
+        "expected a finite number"
+      ),
+    };
+  }
+
+  if (
+    isFiniteNumber(geminiSuggestedStartTimestamp) &&
+    geminiSuggestedStartTimestamp < 0
+  ) {
+    return {
+      error: getItemError(
+        index,
+        "geminiSuggestedStartTimestamp",
+        "expected a non-negative number"
+      ),
+    };
+  }
+
+  if (
+    isFiniteNumber(geminiSuggestedEndTimestamp) &&
+    geminiSuggestedEndTimestamp < 0
+  ) {
+    return {
+      error: getItemError(
+        index,
+        "geminiSuggestedEndTimestamp",
+        "expected a non-negative number"
+      ),
+    };
+  }
+
   const normalizedId =
     isNonEmptyString(id) && !usedIds.has(id) ? id : `${videoId}-${index}`;
 
@@ -154,6 +208,20 @@ const parsePlaylistItem = (
         endTimestamp === undefined
           ? undefined
           : Math.min(Math.floor(endTimestamp), Math.floor(maxDuration)),
+      geminiSuggestedStartTimestamp:
+        geminiSuggestedStartTimestamp === undefined
+          ? undefined
+          : Math.min(
+              Math.floor(geminiSuggestedStartTimestamp),
+              Math.floor(maxDuration)
+            ),
+      geminiSuggestedEndTimestamp:
+        geminiSuggestedEndTimestamp === undefined
+          ? undefined
+          : Math.min(
+              Math.floor(geminiSuggestedEndTimestamp),
+              Math.floor(maxDuration)
+            ),
       maxDuration: Math.floor(maxDuration),
       volume: clamp(Math.round(volume), 0, 100),
       audioEq: normalizeAudioEqSettings(

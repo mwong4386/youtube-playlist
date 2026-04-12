@@ -4,6 +4,7 @@ interface AnalyzeImportBannerViewModel {
   title: string;
   detail: string;
   dismissible: boolean;
+  actionLabel?: "Stop";
 }
 
 const getAnalyzeImportBannerVisibilityKey = (
@@ -40,20 +41,16 @@ const getAnalyzeImportBannerViewModel = (
 
   if (analyzeImportBatchState.active) {
     return {
-      title: `Analyzing song timings ${analyzeImportBatchState.completedCount + analyzeImportBatchState.failedCount}/${analyzeImportBatchState.totalCount}`,
-      detail: analyzeImportBatchState.currentItemId
-        ? `${analyzeImportBatchState.failedCount} failed so far`
-        : "",
-      dismissible: true,
+      title: `Analyzing song timings ${analyzeImportBatchState.completedCount + analyzeImportBatchState.failedCount}/${analyzeImportBatchState.totalCount} done`,
+      detail: `${analyzeImportBatchState.completedCount} succeeded, ${analyzeImportBatchState.failedCount} failed`,
+      dismissible: false,
+      actionLabel: "Stop",
     };
   }
 
   return {
-    title: `Song timing analysis finished ${analyzeImportBatchState.completedCount}/${analyzeImportBatchState.totalCount} completed`,
-    detail:
-      analyzeImportBatchState.failedCount > 0
-        ? `${analyzeImportBatchState.failedCount} songs could not be analyzed automatically.`
-        : "All eligible songs were analyzed.",
+    title: "Song timing analysis finished",
+    detail: `${analyzeImportBatchState.completedCount} succeeded, ${analyzeImportBatchState.failedCount} failed`,
     dismissible: true,
   };
 };

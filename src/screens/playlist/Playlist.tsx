@@ -5,6 +5,7 @@ import AudioEqProfile, {
 } from "../../models/AudioEqProfile";
 import {
   GEMINI_API_KEY_STORAGE_KEY,
+  type GeminiBoundarySuggestion,
   type GeminiAnalyzeFailure,
   type GeminiAnalyzeSuccess,
 } from "../../models/GeminiSettings";
@@ -57,6 +58,7 @@ import {
 import {
   areAllPlaylistItemsSelected,
   clearSelectedItemIds,
+  filterUncalibratedPlaylistItemIds,
   getPlaylistHeaderMode,
   toggleAllSelectedItemIds,
   toggleSelectedItemId,
@@ -398,7 +400,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     timestamp: number,
     endTimestamp: number | undefined,
     volume: number,
-    audioEq: AudioEqSettings
+    audioEq: AudioEqSettings,
+    geminiSuggestion?: GeminiBoundarySuggestion
   ) => {
     const item = playlist.find((x) => x.id === id);
     if (!item) return;
@@ -406,6 +409,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     item.endTimestamp = endTimestamp;
     item.volume = volume;
     item.audioEq = audioEq;
+    if (geminiSuggestion) {
+      item.geminiSuggestedStartTimestamp = geminiSuggestion.startTimestamp;
+      item.geminiSuggestedEndTimestamp = geminiSuggestion.endTimestamp;
+    }
     chrome.storage.sync.set({
       youtube_list: playlist,
     });
@@ -484,6 +491,31 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     closeSelectionActionsModal();
   };
 
+  const onAnalyzeUncalibratedSelected = () => {
+    const uncalibratedItemIds = filterUncalibratedPlaylistItemIds(
+      playlist,
+      selectedItemIds
+    );
+
+    if (uncalibratedItemIds.length === 0) {
+      return;
+    }
+
+    chrome.runtime.sendMessage({
+      name: MsgType.AnalyzeImportedPlaylist,
+      itemIds: uncalibratedItemIds,
+      scope: "uncalibrated",
+    });
+    clearSelection();
+    closeSelectionActionsModal();
+  };
+
+  const onStopAnalyzeImportBatch = () => {
+    chrome.runtime.sendMessage({
+      name: MsgType.StopAnalyzeImportedPlaylist,
+    });
+  };
+
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
     analyzeImportBatchState
   );
@@ -495,6 +527,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const headerMode = getPlaylistHeaderMode(selectedItemIds);
   const allSelected = areAllPlaylistItemsSelected(playlist, selectedItemIds);
   const someSelected = selectedItemIds.length > 0;
+  const selectedUncalibratedCount = filterUncalibratedPlaylistItemIds(
+    playlist,
+    selectedItemIds
+  ).length;
 
   return (
     <>
@@ -537,6 +573,19 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
                     <p className={styles["analyze-import-banner-title"]}>
                       {analyzeImportBanner?.title}
                     </p>
+                    {analyzeImportBanner?.actionLabel === "Stop" ? (
+                      <button
+                        type="button"
+                        aria-label="Stop import analysis"
+                        className={styles["analyze-import-banner-stop-button"]}
+                        onClick={onStopAnalyzeImportBatch}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={styles["analyze-import-banner-stop-icon"]}
+                        />
+                      </button>
+                    ) : null}
                     {analyzeImportBanner?.dismissible ? (
                       <button
                         type="button"
@@ -670,6 +719,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
               onClick={onAnalyzeSelected}
             >
               Analyze Timing
+            </button>
+            <button
+              type="button"
+              className={styles["selection-actions-analyze-button"]}
+              onClick={onAnalyzeUncalibratedSelected}
+              disabled={selectedUncalibratedCount === 0}
+            >
+              Analyze Uncalibrated
             </button>
             <button
               type="button"

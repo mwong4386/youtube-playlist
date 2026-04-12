@@ -31,6 +31,7 @@ import {
   completeAnalyzeImportBatchItem,
   failAnalyzeImportBatchItem,
   resolveAnalyzeImportBatchItemIds,
+  stopAnalyzeImportBatch,
 } from "./importBatchState";
 import {
   GEMINI_GENERIC_FAILURE_MESSAGE,
@@ -46,6 +47,8 @@ import type {
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
 let analyzeImportBatchPromise: Promise<void> | null = null;
+let analyzeImportAbortController: AbortController | null = null;
+let analyzeImportStopRequested = false;
 
 const normalizePlaylistItem = (item: MPlaylistItem): MPlaylistItem => ({
   ...item,
@@ -72,7 +75,15 @@ const getPlaylist = async () => {
 const updatePlaylistItem = async (
   id: string,
   partial: Partial<
-    Pick<MPlaylistItem, "volume" | "audioEq" | "timestamp" | "endTimestamp">
+    Pick<
+      MPlaylistItem,
+      | "volume"
+      | "audioEq"
+      | "timestamp"
+      | "endTimestamp"
+      | "geminiSuggestedStartTimestamp"
+      | "geminiSuggestedEndTimestamp"
+    >
   >,
 ) => {
   const playlist = await getPlaylist();
@@ -406,6 +417,7 @@ const analyzeSongBoundaries = async (itemId: string) => {
     const { response, attempt } = await fetchGeminiGenerateContentWithRetries({
       apiKey,
       requestBody,
+      signal: analyzeImportAbortController?.signal,
     });
 
     logGeminiAnalyze("received response", {
@@ -451,6 +463,10 @@ const analyzeSongBoundaries = async (itemId: string) => {
 
     return result;
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      warnGeminiAnalyze("request aborted", { itemId });
+      throw error;
+    }
     warnGeminiAnalyze("request threw", { itemId, error });
     return {
       ok: false,
@@ -472,20 +488,66 @@ const runAnalyzeImportBatch = async (initialState: AnalyzeImportBatchState) => {
   let batchState = initialState;
   while (batchState.currentItemId) {
     const itemId = batchState.currentItemId;
-    const result = await analyzeSongBoundaries(itemId);
+    analyzeImportAbortController = new AbortController();
 
-    if (result.ok) {
-      await updatePlaylistItem(itemId, {
-        timestamp: result.suggestion.startTimestamp,
-        endTimestamp: result.suggestion.endTimestamp,
-      });
-      batchState = completeAnalyzeImportBatchItem(batchState, itemId);
-    } else {
-      batchState = failAnalyzeImportBatchItem(batchState, itemId);
+    try {
+      const result = await analyzeSongBoundaries(itemId);
+
+      if (analyzeImportStopRequested) {
+        batchState = stopAnalyzeImportBatch(batchState);
+        await updateAnalyzeImportBatchState(batchState);
+        break;
+      }
+
+      if (result.ok) {
+        await updatePlaylistItem(itemId, {
+          timestamp: result.suggestion.startTimestamp,
+          endTimestamp: result.suggestion.endTimestamp,
+          geminiSuggestedStartTimestamp: result.suggestion.startTimestamp,
+          geminiSuggestedEndTimestamp: result.suggestion.endTimestamp,
+        });
+        batchState = completeAnalyzeImportBatchItem(batchState, itemId);
+      } else {
+        batchState = failAnalyzeImportBatchItem(batchState, itemId);
+      }
+
+      await updateAnalyzeImportBatchState(batchState);
+    } catch (error) {
+      if (
+        analyzeImportStopRequested &&
+        error instanceof Error &&
+        error.name === "AbortError"
+      ) {
+        batchState = stopAnalyzeImportBatch(batchState);
+        await updateAnalyzeImportBatchState(batchState);
+        break;
+      }
+
+      throw error;
+    } finally {
+      analyzeImportAbortController = null;
     }
-
-    await updateAnalyzeImportBatchState(batchState);
   }
+};
+
+const stopAnalyzeImportBatchRun = async () => {
+  analyzeImportStopRequested = true;
+  analyzeImportAbortController?.abort();
+
+  const result = await chrome.storage.local.get([
+    ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
+  ]);
+  const batchState = result[
+    ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
+  ] as AnalyzeImportBatchState | undefined;
+
+  if (!batchState?.active) {
+    return batchState || beginAnalyzeImportBatch([]);
+  }
+
+  const stoppedState = stopAnalyzeImportBatch(batchState);
+  await updateAnalyzeImportBatchState(stoppedState);
+  return stoppedState;
 };
 
 const startAnalyzeImportBatch = async (
@@ -503,11 +565,14 @@ const startAnalyzeImportBatch = async (
 
   const playlist = await getPlaylist();
   const batchState = beginAnalyzeImportBatch(
-    resolveAnalyzeImportBatchItemIds(playlist, request?.itemIds),
+    resolveAnalyzeImportBatchItemIds(playlist, request),
   );
   await updateAnalyzeImportBatchState(batchState);
+  analyzeImportStopRequested = false;
 
   analyzeImportBatchPromise = runAnalyzeImportBatch(batchState).finally(() => {
+    analyzeImportAbortController = null;
+    analyzeImportStopRequested = false;
     analyzeImportBatchPromise = null;
   });
 
@@ -663,7 +728,12 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         mode: message.mode,
       });
     case MsgType.AnalyzeImportedPlaylist:
-      return startAnalyzeImportBatch({ itemIds: message.itemIds });
+      return startAnalyzeImportBatch({
+        itemIds: message.itemIds,
+        scope: message.scope,
+      });
+    case MsgType.StopAnalyzeImportedPlaylist:
+      return stopAnalyzeImportBatchRun();
     default:
   }
 };
@@ -747,7 +817,8 @@ const getLegacyPlaybackState = (result: {
     if (
       message?.name === MsgType.AnalyzeSongBoundaries ||
       message?.name === MsgType.ImportYoutubePlaylist ||
-      message?.name === MsgType.AnalyzeImportedPlaylist
+      message?.name === MsgType.AnalyzeImportedPlaylist ||
+      message?.name === MsgType.StopAnalyzeImportedPlaylist
     ) {
       void onMessageHandler(message, sender).then(sendResponse);
       return true;

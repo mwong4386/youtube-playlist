@@ -20,6 +20,7 @@ const enum MsgType {
   ImportYoutubePlaylist,
   ImportYoutubePlaylistFallbackResult,
   AnalyzeImportedPlaylist,
+  StopAnalyzeImportedPlaylist,
 }
 
 export default MsgType;

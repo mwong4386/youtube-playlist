@@ -379,6 +379,8 @@ const buildImportedPlaylistItems = (
     videoId: entry.videoId,
     timestamp: 0,
     endTimestamp: undefined,
+    geminiSuggestedStartTimestamp: undefined,
+    geminiSuggestedEndTimestamp: undefined,
     maxDuration: entry.durationSeconds ?? 0,
     volume: 100,
     audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },

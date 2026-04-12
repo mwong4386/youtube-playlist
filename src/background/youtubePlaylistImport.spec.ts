@@ -148,6 +148,8 @@ test("buildImportedPlaylistItems assigns default playback settings", () => {
         videoId: "abc123",
         timestamp: 0,
         endTimestamp: undefined,
+        geminiSuggestedStartTimestamp: undefined,
+        geminiSuggestedEndTimestamp: undefined,
         maxDuration: 203,
         volume: 100,
         audioEq: DEFAULT_AUDIO_EQ_SETTINGS,

@@ -10,6 +10,7 @@ type GeminiFetchInit = {
   method: "POST";
   headers: Record<string, string>;
   body: string;
+  signal?: AbortSignal;
 };
 
 type GeminiFetch = (
@@ -25,6 +26,7 @@ type GeminiFetchWithRetriesOptions = {
   fetcher?: GeminiFetch;
   wait?: GeminiWait;
   retryDelaysMs?: number[];
+  signal?: AbortSignal;
 };
 
 type GeminiErrorResponse = {
@@ -82,6 +84,7 @@ const fetchGeminiGenerateContentWithRetries = async ({
   fetcher = fetch as GeminiFetch,
   wait: waitForRetry = wait,
   retryDelaysMs = GEMINI_RETRY_DELAYS_MS,
+  signal,
 }: GeminiFetchWithRetriesOptions) => {
   const url = buildGeminiGenerateContentUrl(apiKey);
 
@@ -92,6 +95,7 @@ const fetchGeminiGenerateContentWithRetries = async ({
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
+      signal,
     });
 
     if (response.ok || !isRetryableGeminiResponse(response)) {

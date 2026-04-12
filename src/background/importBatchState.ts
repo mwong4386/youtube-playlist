@@ -1,6 +1,7 @@
 import {
   ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
   type AnalyzeImportBatchState,
+  type AnalyzeImportBatchRequest,
 } from "../models/PlaylistImport";
 import type MPlaylistItem from "../models/MPlaylistItem";
 
@@ -68,24 +69,41 @@ const failAnalyzeImportBatchItem = (
   return updateAnalyzeImportBatchState(state, itemId, "failedItemIds");
 };
 
+const stopAnalyzeImportBatch = (
+  state: AnalyzeImportBatchState,
+): AnalyzeImportBatchState => {
+  return {
+    active: false,
+    totalCount: state.totalCount,
+    completedCount: state.completedCount,
+    failedCount: state.failedCount,
+    pendingItemIds: [],
+    completedItemIds: [...state.completedItemIds],
+    failedItemIds: [...state.failedItemIds],
+  };
+};
+
 const resolveAnalyzeImportBatchItemIds = (
   playlist: MPlaylistItem[],
-  explicitItemIds?: string[],
+  request?: AnalyzeImportBatchRequest,
 ): string[] => {
+  const shouldIncludeItem = (item: MPlaylistItem) =>
+    item.timestamp === 0 && typeof item.endTimestamp === "undefined";
+
+  const explicitItemIds = request?.itemIds;
   if (explicitItemIds) {
     const explicitItemIdSet = new Set(explicitItemIds);
 
     return playlist
-      .filter((item) => explicitItemIdSet.has(item.id))
+      .filter(
+        (item) =>
+          explicitItemIdSet.has(item.id) &&
+          (request?.scope !== "uncalibrated" || shouldIncludeItem(item))
+      )
       .map((item) => item.id);
   }
 
-  return playlist
-    .filter(
-      (item) =>
-        item.timestamp === 0 && typeof item.endTimestamp === "undefined",
-    )
-    .map((item) => item.id);
+  return playlist.filter(shouldIncludeItem).map((item) => item.id);
 };
 
 export {
@@ -94,4 +112,5 @@ export {
   completeAnalyzeImportBatchItem,
   failAnalyzeImportBatchItem,
   resolveAnalyzeImportBatchItemIds,
+  stopAnalyzeImportBatch,
 };

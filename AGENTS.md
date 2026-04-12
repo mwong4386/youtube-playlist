@@ -32,6 +32,15 @@ The codebase is built with React + TypeScript and packaged as a Manifest V3 exte
 - `src/utils/syncStorage.ts`
   Thin wrapper around `chrome.storage.sync`.
 
+## Popup Design Language
+
+- The popup uses a dark, layered sheet style with a fixed top header and a scrollable content region underneath.
+- The main playlist header is always fixed at the top of the popup. Content below it should usually live inside a flex column with `margin-top: 42px` and a scrollable body so banners or helper panels do not hide playlist rows.
+- Menu-style surfaces use flat full-width rows separated by subtle borders instead of isolated card buttons.
+- Status callouts, such as import-analysis progress, can use softer tinted panels inside the scroll flow rather than fixed overlays above it.
+- Destructive actions use a softer red text treatment instead of bright alert blocks unless the flow is a real destructive confirmation.
+- Positive or forward actions can use the success green accent, but should still preserve the existing restrained sheet styling.
+
 ## Data Model
 
 Playlist items are stored in `chrome.storage.sync` under the key `youtube_list`.
@@ -98,6 +107,17 @@ Relevant code:
 - `src/screens/playlist/PlaylistItem.tsx`
 - `src/screens/modal/InfoModal.tsx`
 
+Current popup interaction patterns:
+
+- The default header exposes play/menu actions.
+- When one or more songs are selected, the header switches into selection mode with:
+  - a left-side clear-selection `×`
+  - a selected-count label
+  - a right-side green `Actions` trigger
+- The selection actions open in a bottom sheet and currently include analyze timing, delete songs, and cancel.
+- The main settings/menu also opens as a bottom sheet and includes the theme segmented control, playlist import/export actions, Gemini/EQ settings, and a danger-toned `Delete All` row.
+- Import-analysis progress is surfaced as a dismissible banner inside the playlist scroll area so it does not permanently reduce visible list height.
+
 ### 3. Playback orchestration
 
 - The background service worker owns the current playback state.
@@ -143,6 +163,7 @@ Current keys:
 - Sync:
   - `youtube_list`
 - Local:
+  - `playbackState`
   - `tabId`
   - `playingItem`
   - `isPlaying`
@@ -151,6 +172,12 @@ Current keys:
   - `isRandom`
   - `enablePin`
   - `enableAdjustVideoVolume`
+  - `gemini_api_key`
+  - `analyzeImportBatchState`
+
+Additional popup-only UI state:
+
+- The popup uses `window.localStorage` for the dismissed import-analysis banner snapshot key so a stuck banner can stay hidden without mutating the underlying batch state.
 
 ## Build Notes
 
@@ -174,6 +201,8 @@ Current keys:
 - The background service worker restores state from `chrome.storage.local` on startup.
 - Some logic assumes a single active controlled YouTube tab.
 - Item creation currently always appends a new record; it does not deduplicate by `videoId`.
+- Popup layout is height-sensitive. If you add banners, helper rows, or new panels near the top of the popup, prefer putting them inside the scrollable content area instead of above it.
+- Reuse the action-sheet and modal patterns before inventing new popup surfaces; the UI now depends on those shared sheet styles for consistency.
 
 ## Good Places To Add Features
 
@@ -198,6 +227,8 @@ The active checklist now lives in `CHECKLIST.md` so feature planning stays separ
 - The real project root is this folder, not the parent directory.
 - Favor small, targeted changes because the app relies on message passing and shared storage state.
 - Verify feature changes across popup, background, and content script together when the feature touches playback.
+- For popup UI work, inspect `Playlist.module.css`, `PlaylistHeader.tsx`, `ActionSheet.module.css`, and `Modal.module.css` before inventing new patterns; most current visual rules live there.
+- When changing action labels or selection flows, check both the fixed header and the bottom-sheet actions because they intentionally mirror each other.
 
 ## Workspace Boundary
 

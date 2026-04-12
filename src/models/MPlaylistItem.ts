@@ -8,6 +8,8 @@ interface MPlaylistItem {
   videoId: string;
   timestamp: number;
   endTimestamp: number | undefined;
+  geminiSuggestedStartTimestamp?: number;
+  geminiSuggestedEndTimestamp?: number;
   maxDuration: number;
   volume: number;
   audioEq: AudioEqSettings;

@@ -42,6 +42,24 @@ const filterPlaylistBySelectedIds = (
   return playlist.filter((item) => !selectedItemIds.includes(item.id));
 };
 
+const isUncalibratedPlaylistItem = (item: MPlaylistItem): boolean => {
+  return item.timestamp === 0 && typeof item.endTimestamp === "undefined";
+};
+
+const filterUncalibratedPlaylistItemIds = (
+  playlist: MPlaylistItem[],
+  selectedItemIds: string[]
+): string[] => {
+  const selectedItemIdSet = new Set(selectedItemIds);
+
+  return playlist
+    .filter(
+      (item) =>
+        selectedItemIdSet.has(item.id) && isUncalibratedPlaylistItem(item)
+    )
+    .map((item) => item.id);
+};
+
 const getPlaylistHeaderMode = (
   selectedItemIds: string[]
 ): PlaylistHeaderMode => {
@@ -52,7 +70,9 @@ export {
   areAllPlaylistItemsSelected,
   clearSelectedItemIds,
   filterPlaylistBySelectedIds,
+  filterUncalibratedPlaylistItemIds,
   getPlaylistHeaderMode,
+  isUncalibratedPlaylistItem,
   toggleAllSelectedItemIds,
   toggleSelectedItemId,
 };

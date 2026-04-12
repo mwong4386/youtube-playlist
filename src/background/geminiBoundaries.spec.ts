@@ -270,6 +270,30 @@ test("parseGeminiBoundaryResponse accepts timestamp strings and null until-end v
   );
 });
 
+test("parseGeminiBoundaryResponse normalizes compact numeric clock values when plain seconds are out of range", () => {
+  expectEqual(
+    parseGeminiBoundaryResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: '{"startTimestamp":46,"endTimestamp":500}' }],
+            },
+          },
+        ],
+      },
+      301
+    ),
+    {
+      ok: true,
+      suggestion: {
+        startTimestamp: 46,
+        endTimestamp: 300,
+      },
+    }
+  );
+});
+
 test("parseGeminiBoundaryResponse returns InvalidResponse for unreadable payloads", () => {
   expectEqual(parseGeminiBoundaryResponse({ candidates: [] }, 180), {
     ok: false,

@@ -115,6 +115,68 @@ const extractJsonText = (text: string) => {
   return normalized.slice(firstBrace, lastBrace + 1).trim();
 };
 
+const parseColonTimestampSeconds = (value: string) => {
+  if (!/^\d+(?::[0-5]?\d){1,2}$/.test(value)) {
+    return NaN;
+  }
+
+  const parts = value.split(":").map(Number);
+  return parts.reduce((total, part) => total * 60 + part, 0);
+};
+
+const parseCompactClockSeconds = (value: number) => {
+  if (!Number.isInteger(value) || value < 0 || value < 100) {
+    return NaN;
+  }
+
+  const normalized = String(value);
+
+  if (normalized.length === 3 || normalized.length === 4) {
+    const minutes = Number(normalized.slice(0, -2));
+    const seconds = Number(normalized.slice(-2));
+    return seconds < 60 ? minutes * 60 + seconds : NaN;
+  }
+
+  if (normalized.length === 5 || normalized.length === 6) {
+    const hours = Number(normalized.slice(0, -4));
+    const minutes = Number(normalized.slice(-4, -2));
+    const seconds = Number(normalized.slice(-2));
+    return minutes < 60 && seconds < 60
+      ? hours * 3600 + minutes * 60 + seconds
+      : NaN;
+  }
+
+  return NaN;
+};
+
+const normalizeTimestampSeconds = (
+  value: unknown,
+  maxDuration: number | undefined,
+) => {
+  const seconds = readTimestampSeconds(value);
+
+  if (
+    Number.isFinite(seconds) &&
+    (typeof maxDuration !== "number" || seconds <= maxDuration)
+  ) {
+    return seconds;
+  }
+
+  if (
+    typeof maxDuration === "number" &&
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ) {
+    const compactClockSeconds = parseCompactClockSeconds(Math.floor(value));
+
+    if (Number.isFinite(compactClockSeconds) && compactClockSeconds <= maxDuration) {
+      return compactClockSeconds;
+    }
+  }
+
+  return seconds;
+};
+
 const readTimestampSeconds = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.floor(value);
@@ -133,12 +195,7 @@ const readTimestampSeconds = (value: unknown) => {
     return Math.floor(Number(normalized));
   }
 
-  if (!/^\d+(?::[0-5]?\d){1,2}$/.test(normalized)) {
-    return NaN;
-  }
-
-  const parts = normalized.split(":").map(Number);
-  return parts.reduce((total, part) => total * 60 + part, 0);
+  return parseColonTimestampSeconds(normalized);
 };
 
 const parseGeminiBoundaryResponse = (
@@ -163,11 +220,14 @@ const parseGeminiBoundaryResponse = (
     return invalidResponse(text);
   }
 
-  const startTimestamp = readTimestampSeconds(parsed.startTimestamp);
+  const startTimestamp = normalizeTimestampSeconds(
+    parsed.startTimestamp,
+    maxDuration,
+  );
   const hasEndTimestamp =
     typeof parsed.endTimestamp !== "undefined" && parsed.endTimestamp !== null;
   const endTimestamp = hasEndTimestamp
-    ? readTimestampSeconds(parsed.endTimestamp)
+    ? normalizeTimestampSeconds(parsed.endTimestamp, maxDuration)
     : undefined;
 
   const hasValidStart =
