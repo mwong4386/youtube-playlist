@@ -703,7 +703,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         songLists={songListsState.songLists}
         activeSongListName={activeSongListName}
         onDelete={onDeleteAll}
-        onImportJson={onImportJson}
         onOpenEqSettings={() => {
           setEqSettingsActive(true);
         }}
@@ -866,6 +865,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       <PlaylistImportModal
         active={playlistImportModalActive}
         close={closePlaylistImportModal}
+        onImportJson={onImportJson}
         onSubmit={importYoutubePlaylist}
       />
       <NewSongListModal

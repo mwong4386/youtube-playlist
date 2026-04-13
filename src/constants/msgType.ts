@@ -9,7 +9,6 @@ const enum MsgType {
   VideoEnd,
   DeleteVideo,
   OpenPictureInWindow,
-  TogglePin,
   ToggleVolumeAdjust,
   VolumeChange,
   AudioEqChange,

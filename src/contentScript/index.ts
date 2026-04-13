@@ -41,18 +41,6 @@ import {
 } from "../utils/songLists";
 import { getStorageMap } from "../utils/syncStorage";
 import {
-  createStartPin,
-  createStopPin,
-  getEndTime,
-  getStartTime,
-  moveEndPin,
-  moveStartPin,
-  setEndTime,
-  setMaxX,
-  setPinVisibility,
-  setStartTime,
-} from "./MovingPin";
-import {
   getAutonavCancelButton,
   getAutonavCountdownOverlay,
   getBookmarkButton,
@@ -64,7 +52,6 @@ import {
   getEndMinuteInput,
   getEndSecondInput,
   getErrorContainer,
-  getPlayerControls,
   getResetStartTimeButton,
   getRightControls,
   getStartHourInput,
@@ -116,6 +103,8 @@ let controlInjectionRetryId: number | null = null;
 let currentBookmarkButton: HTMLButtonElement | null = null;
 let bookmarkButtonFeedbackController: BookmarkButtonFeedbackController | null =
   null;
+let dialogStartTime = 0;
+let dialogEndTime = 0;
 
 const YT_VOLUME_EVENT = "youtube-playlist:set-volume";
 const PLAYER_VOLUME_RETRY_DELAYS_MS = [120, 320, 700];
@@ -1021,7 +1010,6 @@ const onYoutubeVideoPage = (
   videoId: string,
   isPlayTab: boolean,
   endTimestamp: number | undefined,
-  enablePin: boolean,
   volume: number | false | undefined,
   audioEq?: AudioEqSettings,
 ) => {
@@ -1029,24 +1017,23 @@ const onYoutubeVideoPage = (
   currentEqPanelProfileSelectionId = "";
   ensureBookmarkDialog();
   const bookmark = getBookmarkButton();
-  setStartTime(0);
+  dialogStartTime = 0;
   let video: HTMLVideoElement = getYoutubePlayer();
   const eqButton = ensureEqButton();
 
   //The video may not yet have the meta data, those case will be handle later
   if (video.duration > 0) {
     _duration = Math.floor(video.duration);
-    setEndTime(_duration);
+    dialogEndTime = _duration;
   } else {
-    setEndTime(0);
+    dialogEndTime = 0;
   }
 
   //bookmark will serve as flag as well
   if (!bookmark) {
     const durationChangeHandler = () => {
       _duration = Math.floor(video.duration);
-      setEndTime(_duration);
-      moveEndPin(getEndTime());
+      dialogEndTime = _duration;
     };
     video.addEventListener("durationchange", durationChangeHandler);
     video.addEventListener("loadedmetadata", durationChangeHandler);
@@ -1055,19 +1042,6 @@ const onYoutubeVideoPage = (
       getConfirmButton().disabled = true;
       onBookmarkSave(url, videoId);
     };
-
-    const player = getPlayerControls();
-    if (player) {
-      //Accomodate the pin when resizing the control panel
-      new ResizeObserver((e) => {
-        const entry = e[0];
-        if (entry.contentRect) {
-          setMaxX(entry.contentRect.width);
-          moveStartPin(getStartTime());
-          moveEndPin(getEndTime());
-        }
-      }).observe(player);
-    }
     if (!hasBoundBookmarkDialogHandlers) {
       // Add confirm button handler
       getConfirmButton().addEventListener("click", onCSConfirm);
@@ -1131,8 +1105,6 @@ const onYoutubeVideoPage = (
       controlInjectionRetryId = window.setTimeout(retry, 250);
     }
     ensureEqPanel();
-    createStartPin(enablePin);
-    createStopPin(enablePin);
   } else {
     //bookmark.addEventListener("click", onCSOpenDialogClickHandler);
     // Rebind the confirm handler with new url and video id
@@ -1145,8 +1117,6 @@ const onYoutubeVideoPage = (
     };
 
     getConfirmButton().addEventListener("click", onCSConfirm);
-    moveStartPin(getStartTime());
-    setPinVisibility(enablePin);
     ensureBookmarkButtonFeedbackController(bookmark);
     ensureControlButtonsInjected(bookmark, eqButton);
     ensureEqPanel();
@@ -1272,14 +1242,14 @@ const onCSOpenDialogClickHandler = () => {
   getVolumeInput().value = volumeRate;
   getVolumeText().textContent = volumeRate;
 
-  const timestamp = getStartTime();
+  const timestamp = dialogStartTime;
   const [hours, minutes, seconds] = getHourMinuteSecond(timestamp, false);
 
   getStartHourInput().value = hours.toString();
   getStartMinuteInput().value = minutes.toString();
   getStartSecondInput().value = seconds.toString();
 
-  const end_time = Math.floor(getEndTime());
+  const end_time = Math.floor(dialogEndTime);
   const [end_hours, end_minutes, end_seconds] = getHourMinuteSecond(
     end_time,
     false,
@@ -1293,7 +1263,7 @@ const onCSOpenDialogClickHandler = () => {
   applyContentScriptTheme();
   dialog.dataset.theme = currentResolvedTheme;
   getConfirmButton().disabled = false;
-  const isUntilEnd = getEndTime() === _duration;
+  const isUntilEnd = dialogEndTime === _duration;
   getUntilEndInput().checked = isUntilEnd;
   disableEndTimeGroup(isUntilEnd);
   closeEqPanel();
@@ -1309,7 +1279,7 @@ const onResetClick = () => {
   getStartHourInput().value = "0";
   getStartMinuteInput().value = "0";
   getStartSecondInput().value = "0";
-  moveStartPin(0);
+  dialogStartTime = 0;
 };
 
 const onBookmarkSave = (url: string, videoId: string) => {
@@ -1420,8 +1390,7 @@ const disableEndTimeGroup = (disable: boolean) => {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type, url, videoId, isPlayTab, endTimestamp, enablePin, volume, audioEq } =
-    request;
+  const { type, url, videoId, isPlayTab, endTimestamp, volume, audioEq } = request;
   switch (type) {
     case csMsgType.OnYoutubeVideoPage:
       if (new URL(window.location.href).searchParams.get("v") === videoId) {
@@ -1431,7 +1400,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           videoId,
           isPlayTab,
           endTimestamp,
-          enablePin,
           volume,
           audioEq,
         );
@@ -1461,9 +1429,6 @@ chrome.storage.onChanged.addListener(
     changes: { [key: string]: chrome.storage.StorageChange },
     namespace: "sync" | "local" | "managed" | "session",
   ) => {
-    if ("enablePin" in changes) {
-      setPinVisibility(!!changes["enablePin"].newValue);
-    }
     if (namespace === "sync" && THEME_PREFERENCE_KEY in changes) {
       syncContentScriptThemePreference(changes[THEME_PREFERENCE_KEY].newValue);
     }
@@ -1523,16 +1488,5 @@ The self invocation function ensure those case will still have someone to handle
   const videoId = params.get("v");
   if (!videoId) return;
   const url = href.split("?")[0];
-  chrome.storage.local.get(["enablePin"], (result) => {
-    const enablePin = !!result["enablePin"];
-    onYoutubeVideoPage(
-      url,
-      videoId || "",
-      false,
-      undefined,
-      enablePin,
-      undefined,
-      undefined,
-    );
-  });
+  onYoutubeVideoPage(url, videoId || "", false, undefined, undefined, undefined);
 })();

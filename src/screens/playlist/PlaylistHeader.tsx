@@ -7,8 +7,6 @@ import PlaybackState, {
   isQueueModeActive,
 } from "../../models/PlaybackState";
 import { getCurrentTimestamp } from "../../utils/date";
-import MPlaylistItem from "../../models/MPlaylistItem";
-import { parseImportedPlaylist } from "../../utils/playlistImport";
 import { type SongListRecord } from "../../models/SongList";
 import {
   ThemePreference,
@@ -22,7 +20,6 @@ import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
-  onImportJson: (playlist: MPlaylistItem[]) => void;
   onOpenEqSettings: () => void;
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
@@ -44,7 +41,6 @@ interface props {
 const PlaylistHeader = ({
   playlist,
   onDelete,
-  onImportJson,
   onOpenEqSettings,
   onOpenGeminiSettings,
   onOpenImportModal,
@@ -80,7 +76,6 @@ const PlaylistHeader = ({
 
   const isPIP = playbackState.isPip;
   const playing = isPlaybackActive(playbackState.status);
-  const enablePin = playbackState.enablePin;
   const enableAdjustVideoVolume = playbackState.enableAdjustVideoVolume;
 
   const onPlayPauseButton = () => {
@@ -101,9 +96,6 @@ const PlaylistHeader = ({
   };
   const onPlayInPicture = () => {
     chrome.runtime.sendMessage({ name: MsgType.OpenPictureInWindow });
-  };
-  const onTogglePin = () => {
-    chrome.runtime.sendMessage({ name: MsgType.TogglePin });
   };
   const onToggleVolumeAdjust = () => {
     chrome.runtime.sendMessage({ name: MsgType.ToggleVolumeAdjust });
@@ -133,11 +125,6 @@ const PlaylistHeader = ({
     );
     window.setTimeout(revokeUrl, 1000);
   };
-  const openImportJsonPicker = () => {
-    const file = document.getElementById("uploadfile");
-    file?.click();
-  };
-
   const resetSongListRenameState = () => {
     setEditingSongListName(null);
     setSongListRenameValue("");
@@ -282,23 +269,17 @@ const PlaylistHeader = ({
       },
       {
         id: 5,
-        description: `${enablePin ? "Hide" : "Show"} player pin`,
-        callback: onTogglePin,
-      },
-      {
-        id: 6,
         description: `${
           enableAdjustVideoVolume ? "Disable" : "Enable"
         } Volume adjust`,
         callback: onToggleVolumeAdjust,
       },
       {
-        id: 7,
-        description: "Import from YouTube Playlist",
+        id: 6,
+        description: "Import Playlist",
         callback: onOpenImportModal,
       },
-      { id: 8, description: "Import Playlist JSON", callback: openImportJsonPicker },
-      { id: 9, description: "Export Playlist", callback: onExportJson },
+      { id: 7, description: "Export Playlist", callback: onExportJson },
       { id: 200, description: "Delete All", callback: onDelete, tone: "danger" },
     ];
   };
@@ -357,41 +338,8 @@ const PlaylistHeader = ({
     selectAllCheckboxRef.current.indeterminate = someSelected && !allSelected;
   }, [allSelected, someSelected]);
 
-  const onFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.currentTarget.files;
-    if (files && files?.length > 0) {
-      const file = files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-          const content = reader.result as string;
-          if (content) {
-            const { playlist: importedPlaylist, error } =
-              parseImportedPlaylist(content);
-
-            if (importedPlaylist) {
-              onImportJson(importedPlaylist);
-            } else if (error) {
-              window.alert(error);
-            }
-            (document.getElementById("uploadfile") as HTMLInputElement).value =
-              "";
-          }
-        });
-        reader.readAsText(file, "UTF-8");
-      }
-    }
-  };
   return (
     <div className={styles["header-container"]}>
-      <input
-        style={{ display: "none" }}
-        type="file"
-        name="uploadfile"
-        id="uploadfile"
-        accept="application/json"
-        onChange={onFileUpload}
-      ></input>
       {selectedCount > 0 ? (
         <>
           <div className={styles["header-left-container"]}>

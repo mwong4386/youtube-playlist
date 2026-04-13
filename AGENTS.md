@@ -8,7 +8,6 @@ This is a Chrome extension for saving a custom YouTube playlist and replaying ea
 - an optional end timestamp
 - a per-item volume level
 - sequential or random playback
-- optional YouTube player timeline pins
 - popup-based playlist management
 
 The codebase is built with React + TypeScript and packaged as a Manifest V3 extension.
@@ -27,8 +26,6 @@ The codebase is built with React + TypeScript and packaged as a Manifest V3 exte
   Central playback coordinator. Tracks currently playing tab/item and responds to popup/content-script messages.
 - `src/contentScript/index.ts`
   Runs on YouTube pages. Injects the bookmark dialog and player controls, reads page metadata, and controls the active video element.
-- `src/contentScript/MovingPin.ts`
-  Timeline pin logic for selecting start and end timestamps visually.
 - `src/utils/syncStorage.ts`
   Thin wrapper around `chrome.storage.sync`.
 
@@ -85,7 +82,6 @@ Notes:
 Relevant code:
 
 - `src/contentScript/index.ts`
-- `src/contentScript/MovingPin.ts`
 
 ### 2. Managing the playlist in the popup
 
@@ -128,7 +124,6 @@ Current popup interaction patterns:
   - random mode
   - current playlist item
   - picture-in-picture state
-  - pin visibility
   - volume-adjust behavior
 - When a video ends or reaches the saved `endTimestamp`, the content script notifies the background script.
 - The background script then loads the next item if "play all" is enabled.
@@ -170,7 +165,6 @@ Current keys:
   - `isPlayAll`
   - `isPIP`
   - `isRandom`
-  - `enablePin`
   - `enableAdjustVideoVolume`
   - `gemini_api_key`
   - `analyzeImportBatchState`

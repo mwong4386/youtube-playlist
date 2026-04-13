@@ -217,7 +217,6 @@ const updateStateToLocalStorage = () => {
     isPlayAll: isQueueModeActive(playbackState.queueMode),
     isPIP: playbackState.isPip,
     isRandom: playbackState.queueMode === "random",
-    enablePin: playbackState.enablePin,
     enableAdjustVideoVolume: playbackState.enableAdjustVideoVolume,
   });
 };
@@ -724,10 +723,6 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
       applyPlaybackEvent({ type: "EXIT_PIP" });
       updateStateToLocalStorage();
       break;
-    case MsgType.TogglePin:
-      applyPlaybackEvent({ type: "TOGGLE_PIN" });
-      updateStateToLocalStorage();
-      break;
     case MsgType.ToggleVolumeAdjust:
       applyPlaybackEvent({ type: "TOGGLE_VOLUME_ADJUST" });
       updateStateToLocalStorage();
@@ -779,12 +774,30 @@ const getLegacyPlaybackState = (result: {
   currentItemId: result["playingItem"]?.id ?? null,
   currentTabId: result["tabId"] ?? null,
   isPip: !!result["isPIP"],
-  enablePin: !!result["enablePin"],
   enableAdjustVideoVolume:
     result["enableAdjustVideoVolume"] === undefined
       ? true
       : !!result["enableAdjustVideoVolume"],
 });
+
+const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
+  const fallback = createInitialPlaybackState();
+
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const candidate = value as Partial<PlaybackState>;
+  return {
+    status: candidate.status ?? fallback.status,
+    queueMode: candidate.queueMode ?? fallback.queueMode,
+    currentItemId: candidate.currentItemId ?? fallback.currentItemId,
+    currentTabId: candidate.currentTabId ?? fallback.currentTabId,
+    isPip: candidate.isPip ?? fallback.isPip,
+    enableAdjustVideoVolume:
+      candidate.enableAdjustVideoVolume ?? fallback.enableAdjustVideoVolume,
+  };
+};
 
 (function () {
   if (chrome.sidePanel?.setPanelBehavior) {
@@ -804,15 +817,11 @@ const getLegacyPlaybackState = (result: {
       "playingItem",
       "isPIP",
       "isRandom",
-      "enablePin",
       "enableAdjustVideoVolume",
     ],
     (result) => {
       playbackState = result["playbackState"]
-        ? {
-            ...createInitialPlaybackState(),
-            ...result["playbackState"],
-          }
+        ? normalizeStoredPlaybackState(result["playbackState"])
         : getLegacyPlaybackState(result);
       playingItem = result["playingItem"] || null;
       if (!playbackState.currentTabId) {
@@ -870,7 +879,6 @@ const getLegacyPlaybackState = (result: {
         videoId: videoId,
         isPlayTab: isPlayTab,
         endTimestamp: isPlayTab ? currentItem?.endTimestamp : undefined,
-        enablePin: playbackState.enablePin,
         volume:
           isPlayTab && playbackState.enableAdjustVideoVolume
             ? currentItem?.volume

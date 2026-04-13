@@ -8,7 +8,6 @@ interface PlaybackState {
   currentItemId: string | null;
   currentTabId: number | null;
   isPip: boolean;
-  enablePin: boolean;
   enableAdjustVideoVolume: boolean;
 }
 
@@ -18,7 +17,6 @@ export const createInitialPlaybackState = (): PlaybackState => ({
   currentItemId: null,
   currentTabId: null,
   isPip: false,
-  enablePin: false,
   enableAdjustVideoVolume: true,
 });
 

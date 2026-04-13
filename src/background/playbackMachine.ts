@@ -15,7 +15,6 @@ type PlaybackEvent =
   | { type: "TAB_REMOVED"; tabId: number }
   | { type: "ENTER_PIP" }
   | { type: "EXIT_PIP" }
-  | { type: "TOGGLE_PIN" }
   | { type: "TOGGLE_VOLUME_ADJUST" }
   | { type: "RESET" };
 
@@ -80,8 +79,6 @@ const reducePlaybackState = (
       return withPartial(state, { isPip: true });
     case "EXIT_PIP":
       return withPartial(state, { isPip: false });
-    case "TOGGLE_PIN":
-      return withPartial(state, { enablePin: !state.enablePin });
     case "TOGGLE_VOLUME_ADJUST":
       return withPartial(state, {
         enableAdjustVideoVolume: !state.enableAdjustVideoVolume,

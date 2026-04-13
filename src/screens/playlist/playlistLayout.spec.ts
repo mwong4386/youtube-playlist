@@ -20,6 +20,14 @@ const playlistHeaderSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistHeader.tsx"),
   "utf8"
 );
+const playlistImportModalSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/PlaylistImportModal.tsx"),
+  "utf8"
+);
+const playlistImportModalStyles = readFileSync(
+  join(process.cwd(), "src/screens/playlist/PlaylistImportModal.module.css"),
+  "utf8"
+);
 const newSongListModalSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/NewSongListModal.tsx"),
   "utf8"
@@ -111,6 +119,11 @@ test("playlist header source routes song list management through a selector row 
   expectEqual(playlistHeaderSource.includes("Object.keys(songLists).map"), false);
   expectEqual(playlistHeaderSource.includes("header-song-list-button"), false);
   expectEqual(playlistHeaderSource.includes("header-new-list-button"), false);
+});
+
+test("playlist header source no longer exposes player pin actions", () => {
+  expectEqual(playlistHeaderSource.includes("player pin"), false);
+  expectEqual(playlistHeaderSource.includes("TogglePin"), false);
 });
 
 test("action sheet source supports custom song list rows and inline rename icons", () => {
@@ -232,28 +245,59 @@ test("playlist source writes active-list updates through named song-list helpers
 
 test("playlist import and delete-all source route through the active song list", () => {
   expectEqual(
-    playlistHeaderSource.includes("onImportJson: (playlist: MPlaylistItem[]) => void"),
+    playlistHeaderSource.includes("description: \"Import Playlist\""),
     true
   );
   expectEqual(
-    playlistHeaderSource.includes("const openImportJsonPicker = () => {"),
+    playlistHeaderSource.includes("description: \"Import from YouTube Playlist\""),
+    false
+  );
+  expectEqual(
+    playlistHeaderSource.includes("description: \"Import Playlist JSON\""),
+    false
+  );
+  expectEqual(
+    playlistHeaderSource.includes("onOpenImportModal: () => void;"),
     true
   );
   expectEqual(
-    playlistHeaderSource.includes("if (importedPlaylist) {\n              onImportJson(importedPlaylist);"),
+    playlistImportModalSource.includes("onImportJson: (playlist: MPlaylistItem[]) => void;"),
     true
   );
-  expectEqual(playlistHeaderSource.includes("youtube_list: importedPlaylist"), false);
+  expectEqual(
+    playlistImportModalSource.includes("const fileInputRef = useRef<HTMLInputElement | null>(null);"),
+    true
+  );
+  expectEqual(
+    playlistImportModalSource.includes("parseImportedPlaylist(content)"),
+    true
+  );
+  expectEqual(
+    playlistImportModalSource.includes("onImportJson(importedPlaylist);"),
+    true
+  );
+  expectEqual(
+    playlistImportModalSource.includes("Import from YouTube playlist"),
+    true
+  );
+  expectEqual(
+    playlistImportModalSource.includes("Import playlist JSON"),
+    true
+  );
+  expectEqual(
+    playlistImportModalSource.includes("Choose JSON file"),
+    true
+  );
+  expectEqual(
+    playlistImportModalStyles.includes(".importSection"),
+    true
+  );
   expectEqual(
     playlistSource.includes("const onImportJson = (importedPlaylist: typeof playlist) => {"),
     true
   );
   expectEqual(
     playlistSource.includes("persistActiveSongListItems(importedPlaylist);"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("<PlaylistHeader"),
     true
   );
   expectEqual(
@@ -368,15 +412,11 @@ test("playlist selection header keeps the centered home button in action mode", 
     true
   );
   expectEqual(
-    playlistHeaderSource.includes(
-      'className={styles["selection-header-home-button"]}'
-    ),
+    playlistHeaderSource.includes("selection-header-home-button"),
     true
   );
   expectEqual(
-    playlistHeaderSource.includes(
-      'className={styles["selection-header-action-button"]}'
-    ),
+    playlistHeaderSource.includes("selection-header-action-button"),
     true
   );
 });
@@ -401,9 +441,15 @@ test("playlist normal header uses a two-button wrapper without an empty center c
   );
   expectEqual(
     playlistHeaderSource.includes(
-      '<div className={styles["header-center-container"]}>'
+      'className={`${styles["header-left-container"]} ${styles["normal-header-side"]}`}'
     ),
-    false
+    true
+  );
+  expectEqual(
+    playlistHeaderSource.includes(
+      'className={`${styles["header-right-container"]} ${styles["normal-header-side"]}`}'
+    ),
+    true
   );
 });
 
