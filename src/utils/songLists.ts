@@ -130,8 +130,8 @@ export const normalizeSongListsState = (
     songLists[name] = normalizeSongListRecord(value);
   }
 
-  if (!hasOwn(songLists, DEFAULT_SONG_LIST_NAME)) {
-    songLists[DEFAULT_SONG_LIST_NAME] = { items: [] };
+  if (Object.keys(songLists).length === 0) {
+    return buildDefaultSongListsState();
   }
 
   const activeSongListName =
@@ -139,6 +139,10 @@ export const normalizeSongListsState = (
     hasOwn(songLists, storedActiveSongListName)
       ? storedActiveSongListName
       : DEFAULT_SONG_LIST_NAME;
+
+  if (activeSongListName === DEFAULT_SONG_LIST_NAME && !hasOwn(songLists, DEFAULT_SONG_LIST_NAME)) {
+    songLists[DEFAULT_SONG_LIST_NAME] = { items: [] };
+  }
 
   return {
     songLists,
@@ -167,6 +171,52 @@ export const createSongList = (
   return {
     songLists: replaceSongListItems(state.songLists, name, []),
     activeSongListName: name,
+  };
+};
+
+export const renameSongList = (
+  state: SongListsState,
+  oldName: string,
+  rawNewName: string
+): SongListsState => {
+  const newName = rawNewName.trim();
+
+  if (!hasOwn(state.songLists, oldName)) {
+    throw new Error("Song list not found.");
+  }
+
+  if (!newName) {
+    throw new Error("Song list name is required.");
+  }
+
+  if (isReservedSongListName(newName)) {
+    throw new Error("That song list name is reserved.");
+  }
+
+  if (oldName === newName) {
+    return state;
+  }
+
+  if (hasOwn(state.songLists, newName)) {
+    throw new Error("A song list with that name already exists.");
+  }
+
+  const nextSongLists = createSongListsMap();
+  const record = state.songLists[oldName];
+
+  for (const [name, value] of Object.entries(state.songLists)) {
+    if (name === oldName) {
+      nextSongLists[newName] = record;
+      continue;
+    }
+
+    nextSongLists[name] = value;
+  }
+
+  return {
+    songLists: nextSongLists,
+    activeSongListName:
+      state.activeSongListName === oldName ? newName : state.activeSongListName,
   };
 };
 

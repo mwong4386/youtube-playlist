@@ -62,9 +62,13 @@
 .header-button {
   border: 0;
   background-color: transparent;
-  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: auto;
   height: 100%;
-  padding-top: 8px;
+  padding: 0;
 }
 .header-button-icon {
   height: 20px;
@@ -110,30 +114,16 @@
   justify-content: center;
 }
 
-.header-center-actions {
-  display: flex;
+.normal-header-button {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
 }
 
-.header-song-list-button,
-.header-new-list-button {
-  width: auto;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.header-song-list-button {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header-new-list-button {
-  color: var(--success-color);
+.normal-header-side {
+  justify-content: center;
 }
 
 .selection-header-button {

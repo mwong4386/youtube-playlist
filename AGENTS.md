@@ -230,6 +230,10 @@ The active checklist now lives in `CHECKLIST.md` so feature planning stays separ
 - For popup UI work, inspect `Playlist.module.css`, `PlaylistHeader.tsx`, `ActionSheet.module.css`, and `Modal.module.css` before inventing new patterns; most current visual rules live there.
 - When changing action labels or selection flows, check both the fixed header and the bottom-sheet actions because they intentionally mirror each other.
 
+## User Preferences
+
+- When offering the execution choice between `1. Subagent-Driven` and `2. Inline Execution`, default to `1. Subagent-Driven` unless the user explicitly says otherwise.
+
 ## Workspace Boundary
 
 - Only read, write, or search inside this project folder unless the user explicitly asks for work outside it.

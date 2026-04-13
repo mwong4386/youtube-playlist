@@ -8,6 +8,7 @@ import {
   normalizeSongListsState,
   readActiveSongListItems,
   readActiveSongListItemsFromStorageMap,
+  renameSongList,
   updateActiveSongListItems,
   writeActiveSongListItems,
 } from "./songLists";
@@ -41,6 +42,33 @@ const createPlaylistItem = (id: string): MPlaylistItem => ({
 
 test("normalizeSongListsState creates an empty default list when storage is missing", () => {
   expectEqual(normalizeSongListsState({}), buildDefaultSongListsState());
+});
+
+test("normalizeSongListsState recreates a fallback default list when storage has no lists", () => {
+  expectEqual(
+    normalizeSongListsState({
+      songLists: {},
+      activeSongListName: "missing",
+    }),
+    buildDefaultSongListsState()
+  );
+});
+
+test("normalizeSongListsState does not recreate default when storage already has lists", () => {
+  expectEqual(
+    normalizeSongListsState({
+      songLists: {
+        renamed: { items: [] },
+      },
+      activeSongListName: "renamed",
+    }),
+    {
+      songLists: {
+        renamed: { items: [] },
+      },
+      activeSongListName: "renamed",
+    }
+  );
 });
 
 test("normalizeSongListsState falls back to default when the active list name is invalid", () => {
@@ -257,6 +285,107 @@ test("createSongList rejects duplicate names", () => {
   }
 
   expectEqual(error, "A song list with that name already exists.");
+});
+
+test("renameSongList trims the new name, preserves the record, and updates the active list", () => {
+  const record = { items: [createPlaylistItem("aimer-song")] };
+  const state = {
+    songLists: {
+      default: { items: [] },
+      aimer: record,
+    },
+    activeSongListName: "aimer",
+  };
+
+  const nextState = renameSongList(state, "aimer", "  renaud  ");
+
+  expectEqual(nextState, {
+    songLists: {
+      default: { items: [] },
+      renaud: record,
+    },
+    activeSongListName: "renaud",
+  });
+  expect(nextState.songLists.renaud === record, "Expected rename to preserve the record.");
+  expect(
+    !Object.prototype.hasOwnProperty.call(nextState.songLists, "aimer"),
+    "Expected the old list name to be removed."
+  );
+});
+
+test("renameSongList rejects blank names", () => {
+  let error = "";
+
+  try {
+    renameSongList(buildDefaultSongListsState(), "default", "   ");
+  } catch (value) {
+    error = value instanceof Error ? value.message : String(value);
+  }
+
+  expectEqual(error, "Song list name is required.");
+});
+
+test("renameSongList rejects duplicate names", () => {
+  let error = "";
+
+  try {
+    renameSongList(
+      {
+        songLists: {
+          default: { items: [] },
+          aimer: { items: [] },
+        },
+        activeSongListName: "default",
+      },
+      "default",
+      "aimer"
+    );
+  } catch (value) {
+    error = value instanceof Error ? value.message : String(value);
+  }
+
+  expectEqual(error, "A song list with that name already exists.");
+});
+
+test("renameSongList preserves the existing order when renaming a list", () => {
+  const nextState = renameSongList(
+    {
+      songLists: {
+        first: { items: [] },
+        middle: { items: [] },
+        last: { items: [] },
+      },
+      activeSongListName: "middle",
+    },
+    "middle",
+    "renamed"
+  );
+
+  expectEqual(Object.keys(nextState.songLists), ["first", "renamed", "last"]);
+});
+
+test("renameSongList allows a trimmed no-op rename for the current name", () => {
+  const state = {
+    songLists: {
+      default: { items: [] },
+      aimer: { items: [] },
+    },
+    activeSongListName: "aimer",
+  };
+
+  expectEqual(renameSongList(state, "aimer", "  aimer  "), state);
+});
+
+test("renameSongList rejects reserved names like __proto__", () => {
+  let error = "";
+
+  try {
+    renameSongList(buildDefaultSongListsState(), "default", "__proto__");
+  } catch (value) {
+    error = value instanceof Error ? value.message : String(value);
+  }
+
+  expectEqual(error, "That song list name is reserved.");
 });
 
 test("updateActiveSongListItems only replaces the active list items", () => {

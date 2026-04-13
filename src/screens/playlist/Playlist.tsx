@@ -70,6 +70,7 @@ import {
   createSongList,
   buildDefaultSongListsState,
   normalizeSongListsState,
+  renameSongList,
   updateActiveSongListItems,
 } from "../../utils/songLists";
 import NewSongListModal from "./NewSongListModal";
@@ -591,6 +592,22 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     });
   };
 
+  const onRenameSongList = (currentName: string, nextName: string) => {
+    try {
+      const nextSongListsState = renameSongList(
+        songListsState,
+        currentName,
+        nextName
+      );
+      persistSongListsState(nextSongListsState);
+      return "";
+    } catch (error) {
+      return error instanceof Error
+        ? error.message
+        : "Unable to rename song list.";
+    }
+  };
+
   const onDeleteSelected = () => {
     if (selectedItemIds.length === 0) {
       return;
@@ -703,6 +720,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onSelectSongList={(name) => {
           onSelectSongList(name);
         }}
+        onRenameSongList={onRenameSongList}
         onClearSelection={clearSelection}
         onToggleSelectAll={() => {
           setSelectedItemIds((currentSelectedItemIds) =>

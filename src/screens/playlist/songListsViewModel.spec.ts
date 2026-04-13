@@ -2,6 +2,8 @@ import { deepStrictEqual } from "node:assert/strict";
 import test from "node:test";
 import type MPlaylistItem from "../../models/MPlaylistItem";
 import {
+  buildSongListMenuItems,
+  buildSongListSheetRows,
   getSongListCreationError,
   getSongListOptions,
   getVisiblePlaylistForActiveList,
@@ -97,5 +99,100 @@ test("getSongListCreationError ignores blank and padded existing names when chec
   expectDeepEqual(
     getSongListCreationError("aimer", ["", "   ", "  aimer  "]),
     "A song list with that name already exists."
+  );
+});
+
+test("buildSongListMenuItems returns a selector row for the active list", () => {
+  expectDeepEqual(
+    buildSongListMenuItems({
+      activeSongListName: "aimer",
+      songLists: {
+        aimer: { items: [] },
+        anisong: { items: [] },
+      },
+    }),
+    [
+      {
+        id: "song-list-selector",
+        kind: "song-list-selector",
+        description: "aimer",
+        trailingIcon: "chevron-down",
+      },
+    ]
+  );
+});
+
+test("buildSongListSheetRows includes new-list action and edit affordances", () => {
+  expectDeepEqual(
+    buildSongListSheetRows({
+      activeSongListName: "aimer",
+      editingSongListName: null,
+      songLists: {
+        aimer: { items: [] },
+        anisong: { items: [] },
+      },
+    }),
+    [
+      {
+        id: "new-song-list",
+        kind: "song-list-action",
+        description: "New Song List",
+        leadingIcon: "plus",
+      },
+      {
+        id: "song-list-aimer",
+        kind: "song-list-row",
+        songListName: "aimer",
+        description: "aimer",
+        isActive: true,
+        trailingIcon: "edit",
+      },
+      {
+        id: "song-list-anisong",
+        kind: "song-list-row",
+        songListName: "anisong",
+        description: "anisong",
+        isActive: false,
+        trailingIcon: "edit",
+      },
+    ]
+  );
+});
+
+test("buildSongListSheetRows swaps one row into inline edit mode", () => {
+  expectDeepEqual(
+    buildSongListSheetRows({
+      activeSongListName: "aimer",
+      editingSongListName: "anisong",
+      songLists: {
+        aimer: { items: [] },
+        anisong: { items: [] },
+      },
+    }),
+    [
+      {
+        id: "new-song-list",
+        kind: "song-list-action",
+        description: "New Song List",
+        leadingIcon: "plus",
+      },
+      {
+        id: "song-list-aimer",
+        kind: "song-list-row",
+        songListName: "aimer",
+        description: "aimer",
+        isActive: true,
+        trailingIcon: "edit",
+      },
+      {
+        id: "edit-song-list-anisong",
+        kind: "song-list-inline-edit",
+        songListName: "anisong",
+        description: "anisong",
+        isActive: false,
+        saveIcon: "check",
+        cancelIcon: "x",
+      },
+    ]
   );
 });

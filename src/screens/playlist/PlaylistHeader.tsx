@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type MActionSheetItem from "../../models/MActionSheetItem";
 import MsgType from "../../constants/msgType";
 import PlaybackState, {
   createInitialPlaybackState,
@@ -13,7 +14,10 @@ import {
   ThemePreference,
 } from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
-import { getSongListOptions } from "./songListsViewModel";
+import {
+  buildSongListMenuItems,
+  buildSongListSheetRows,
+} from "./songListsViewModel";
 import styles from "./Playlist.module.css";
 
 interface props {
@@ -24,6 +28,7 @@ interface props {
   onOpenImportModal: () => void;
   onOpenNewSongListModal: () => void;
   onSelectSongList: (name: string) => void;
+  onRenameSongList: (currentName: string, nextName: string) => string;
   onClearSelection: () => void;
   onToggleSelectAll: () => void;
   onOpenSelectionActions: () => void;
@@ -45,6 +50,7 @@ const PlaylistHeader = ({
   onOpenImportModal,
   onOpenNewSongListModal,
   onSelectSongList,
+  onRenameSongList,
   onClearSelection,
   onToggleSelectAll,
   onOpenSelectionActions,
@@ -60,9 +66,13 @@ const PlaylistHeader = ({
     createInitialPlaybackState()
   );
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
+  const [editingSongListName, setEditingSongListName] = useState<string | null>(
+    null
+  );
+  const [songListRenameValue, setSongListRenameValue] = useState("");
+  const [songListRenameError, setSongListRenameError] = useState("");
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null);
   const ctx = useActionSheet();
-  const songListNames = getSongListOptions(songLists);
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
     setPlaybackState(state || createInitialPlaybackState());
@@ -128,8 +138,120 @@ const PlaylistHeader = ({
     file?.click();
   };
 
+  const resetSongListRenameState = () => {
+    setEditingSongListName(null);
+    setSongListRenameValue("");
+    setSongListRenameError("");
+  };
+
+  const openSongListSheet = (
+    nextEditingSongListName: string | null = editingSongListName,
+    nextSongListRenameValue = songListRenameValue,
+    nextSongListRenameError = songListRenameError
+  ) => {
+    setEditingSongListName(nextEditingSongListName);
+    setSongListRenameValue(nextSongListRenameValue);
+    setSongListRenameError(nextSongListRenameError);
+
+    const items: MActionSheetItem[] = buildSongListSheetRows({
+      activeSongListName,
+      editingSongListName: nextEditingSongListName,
+      songLists,
+    }).map((row) => {
+      if (row.kind === "song-list-action") {
+        return {
+          id: row.id,
+          kind: row.kind,
+          description: row.description,
+          leadingIcon: row.leadingIcon,
+          callback: () => {
+            resetSongListRenameState();
+            onOpenNewSongListModal();
+          },
+        };
+      }
+
+      if (row.kind === "song-list-inline-edit") {
+        return {
+          id: row.id,
+          kind: row.kind,
+          description: row.description,
+          songListName: row.songListName,
+          editValue: nextSongListRenameValue,
+          errorMessage: nextSongListRenameError,
+          saveIcon: row.saveIcon,
+          cancelIcon: row.cancelIcon,
+          shouldCloseOnClick: false,
+          onEditValueChange: (value: string) => {
+            setSongListRenameValue(value);
+            setSongListRenameError("");
+            openSongListSheet(row.songListName, value, "");
+          },
+          onSaveEdit: () => {
+            const error = onRenameSongList(
+              row.songListName,
+              nextSongListRenameValue
+            );
+
+            if (error) {
+              setSongListRenameError(error);
+              openSongListSheet(
+                row.songListName,
+                nextSongListRenameValue,
+                error
+              );
+              return;
+            }
+
+            resetSongListRenameState();
+            ctx.close();
+          },
+          onCancelEdit: () => {
+            resetSongListRenameState();
+            openSongListSheet();
+          },
+        };
+      }
+
+      return {
+        id: row.id,
+        kind: row.kind,
+        description: row.description,
+        songListName: row.songListName,
+        isActive: row.isActive,
+        trailingIcon: row.trailingIcon,
+        callback: () => {
+          resetSongListRenameState();
+          onSelectSongList(row.songListName);
+        },
+        onEdit: () => {
+          setEditingSongListName(row.songListName);
+          setSongListRenameValue(row.songListName);
+          setSongListRenameError("");
+          openSongListSheet(row.songListName, row.songListName, "");
+        },
+      };
+    });
+
+    ctx.setActionSheet(items);
+  };
+
   const buildMenuItems = (currentThemePreference: ThemePreference) => {
     return [
+      ...buildSongListMenuItems({
+        activeSongListName,
+        songLists,
+      }).map((item) => ({
+        id: item.id,
+        kind: item.kind,
+        description: item.description,
+        trailingIcon: item.trailingIcon,
+        shouldCloseOnClick: false,
+        callback: () => {
+          resetSongListRenameState();
+          openSongListSheet();
+        },
+      })),
       ...(playing
         ? [
             {
@@ -177,7 +299,7 @@ const PlaylistHeader = ({
       },
       { id: 8, description: "Import Playlist JSON", callback: openImportJsonPicker },
       { id: 9, description: "Export Playlist", callback: onExportJson },
-      { id: 10, description: "Delete All", callback: onDelete, tone: "danger" },
+      { id: 200, description: "Delete All", callback: onDelete, tone: "danger" },
     ];
   };
 
@@ -190,20 +312,8 @@ const PlaylistHeader = ({
   };
 
   const openMenu = () => {
+    resetSongListRenameState();
     ctx.setActionSheet(buildMenuItems(themePreference));
-    ctx.open();
-  };
-
-  const openSongListMenu = () => {
-    ctx.setActionSheet(
-      songListNames.map((name, index) => ({
-        id: index + 1,
-        description: name,
-        callback: () => {
-          onSelectSongList(name);
-        },
-      }))
-    );
     ctx.open();
   };
 
@@ -330,11 +440,13 @@ const PlaylistHeader = ({
         </>
       ) : (
         <>
-          <div className={styles["header-left-container"]}>
+          <div
+            className={`${styles["header-left-container"]} ${styles["normal-header-side"]}`}
+          >
             <button
               disabled={playlist.length === 0}
               onClick={onPlayPauseButton}
-              className={styles["header-button"]}
+              className={`${styles["header-button"]} ${styles["normal-header-button"]}`}
             >
               <img
                 className={styles["header-button-icon"]}
@@ -343,26 +455,13 @@ const PlaylistHeader = ({
               />
             </button>
           </div>
-          <div className={styles["header-center-container"]}>
-            <div className={styles["header-center-actions"]}>
-              <button
-                type="button"
-                onClick={openSongListMenu}
-                className={`${styles["header-button"]} ${styles["header-song-list-button"]}`}
-              >
-                {activeSongListName}
-              </button>
-              <button
-                type="button"
-                onClick={onOpenNewSongListModal}
-                className={`${styles["header-button"]} ${styles["header-new-list-button"]}`}
-              >
-                New List
-              </button>
-            </div>
-          </div>
-          <div className={styles["header-right-container"]}>
-            <button onClick={openMenu} className={styles["header-button"]}>
+          <div
+            className={`${styles["header-right-container"]} ${styles["normal-header-side"]}`}
+          >
+            <button
+              onClick={openMenu}
+              className={`${styles["header-button"]} ${styles["normal-header-button"]}`}
+            >
               <img
                 className={styles["header-button-icon"]}
                 src={"./assets/menu30.svg"}
