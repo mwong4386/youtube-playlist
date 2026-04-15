@@ -289,18 +289,7 @@ const InfoModal = ({
             {item?.title}
           </p>
           <p className={styles["channel-name"]}>{item?.channelName}</p>
-          <div className={styles["analyze-row"]}>
-            <button
-              type="button"
-              className={styles["analyze-button"]}
-              disabled={isAnalyzing}
-              onClick={onAnalyze}
-            >
-              {isAnalyzing ? "Analyzing..." : "Analyze"}
-            </button>
-            <p className={styles["helper-text"]}>{analyzeMessage}</p>
-          </div>
-          <div className={styles["time-container"]}>
+          <div className={styles["time-grid"]}>
             <label className={styles["time-label"]}>Start Time</label>
             <span className={styles["time"]}>
               <input
@@ -359,13 +348,15 @@ const InfoModal = ({
                 })}
               />
             </span>
-          </div>
-          <div className={styles["error"]}>
-            {(errors.hours || errors.minutes || errors.seconds) && (
-              <span role="alert">Incorrect start time</span>
-            )}
-          </div>
-          <div className={styles["time-container"]}>
+            <button
+              type="button"
+              className={styles["analyze-button"]}
+              disabled={isAnalyzing}
+              onClick={onAnalyze}
+            >
+              {isAnalyzing ? "Analyzing..." : "Analyze"}
+            </button>
+
             <label className={styles["time-label"]}>End Time</label>
             <span className={styles["time"]}>
               <input
@@ -416,18 +407,24 @@ const InfoModal = ({
                   : { disabled: true })}
               />
             </span>
-          </div>
-          <div className={styles["time-container"]}>
-            <input
-              type="checkbox"
-              id="untilEnd"
-              value="Y"
-              {...register("untilEnd")}
-              className={styles["checkbox"]}
-            />
-            <label className={styles["time-label"]} htmlFor="cs-untilEnd">
-              until End
+            <label className={styles["checkbox-label"]} htmlFor="untilEnd">
+              <input
+                type="checkbox"
+                id="untilEnd"
+                value="Y"
+                {...register("untilEnd")}
+                className={styles["checkbox"]}
+              />
+              <span>until End</span>
             </label>
+          </div>
+          <div className={styles["analyze-row"]}>
+            <p className={styles["helper-text"]}>{analyzeMessage}</p>
+          </div>
+          <div className={styles["error"]}>
+            {(errors.hours || errors.minutes || errors.seconds) && (
+              <span role="alert">Incorrect start time</span>
+            )}
           </div>
           <div className={styles["error"]}>
             {(errors.endHours || errors.endMinutes || errors.endSeconds) && (
@@ -442,6 +439,7 @@ const InfoModal = ({
               max="100"
               step="1"
               id="cs-volume"
+              className={styles["volume-slider"]}
               {...register("volume", {
                 required: true,
                 valueAsNumber: true,
