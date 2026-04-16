@@ -7,7 +7,7 @@ interface props {
   IPlaying: boolean;
   onToggleSelected: (itemId: string) => void;
   selected: boolean;
-  selectItemId: React.Dispatch<string | undefined>;
+  onOpenInfo: (itemId: string) => void;
 }
 const PlaylistItem = ({
   item,
@@ -15,7 +15,7 @@ const PlaylistItem = ({
   IPlaying,
   onToggleSelected,
   selected,
-  selectItemId,
+  onOpenInfo,
 }: props) => {
   const isActivePlayback = isPlaying && IPlaying;
 
@@ -28,7 +28,7 @@ const PlaylistItem = ({
   };
 
   const onClick = () => {
-    selectItemId(item.id);
+    onOpenInfo(item.id);
   };
   return (
     <div

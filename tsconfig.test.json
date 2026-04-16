@@ -14,10 +14,12 @@
   "include": [
     "src/**/*.spec.ts",
     "src/background/actionBadge.ts",
+    "src/background/playbackNavigation.ts",
     "src/contentScript/bookmarkButtonFeedback.ts",
     "src/models/AudioEqProfile.ts",
     "src/utils/audioEqProfiles.ts",
     "src/utils/audioEqProfiles.spec.ts",
+    "src/utils/math.ts",
     "src/utils/theme.ts",
     "src/utils/playlistImport.ts",
     "src/models/MPlaylistItem.ts"

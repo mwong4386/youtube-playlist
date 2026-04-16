@@ -17,7 +17,6 @@ import {
   ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
   SONG_LISTS_STORAGE_KEY,
 } from "../models/SongList";
-import { getRandomInt } from "../utils/math";
 import { readStoredGeminiApiKey } from "../utils/geminiSettings";
 import { getStorageMap } from "../utils/syncStorage";
 import {
@@ -26,6 +25,7 @@ import {
   readActiveSongListItemsFromStorageMap,
 } from "../utils/songLists";
 import reducePlaybackState from "./playbackMachine";
+import { getPlaybackNavigationTarget } from "./playbackNavigation";
 import {
   SAVED_BADGE_TEXT,
   shouldShowSavedBadge,
@@ -289,22 +289,33 @@ const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") =>
 
 const playNext = async (queueMode: QueueMode = playbackState.queueMode) => {
   const playlist = await getPlaylist();
-  if (playlist.length === 0) {
+  const item = getPlaybackNavigationTarget({
+    playlist,
+    currentItemId: playbackState.currentItemId,
+    queueMode,
+    direction: "next",
+  });
+
+  if (!item) {
     resetPlaybackState();
     return;
   }
 
-  let item: MPlaylistItem;
-  if (queueMode === "random") {
-    item = playlist[getRandomInt(playlist.length)];
-  } else if (playingItem) {
-    const currentIndex = playlist.findIndex(
-      (playlistItem) => playlistItem.id === playingItem?.id,
-    );
-    const nextIndex = (currentIndex + 1) % playlist.length;
-    item = playlist[nextIndex];
-  } else {
-    item = playlist[0];
+  await onPlayVideo(item, queueMode);
+};
+
+const playPrevious = async (queueMode: QueueMode = playbackState.queueMode) => {
+  const playlist = await getPlaylist();
+  const item = getPlaybackNavigationTarget({
+    playlist,
+    currentItemId: playbackState.currentItemId,
+    queueMode,
+    direction: "previous",
+  });
+
+  if (!item) {
+    resetPlaybackState();
+    return;
   }
 
   await onPlayVideo(item, queueMode);
@@ -683,6 +694,12 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
       break;
     case MsgType.PauseVideo:
       await onPauseVideo();
+      break;
+    case MsgType.PreviousVideo:
+      await playPrevious();
+      break;
+    case MsgType.NextVideo:
+      await playNext();
       break;
     case MsgType.PlayAll:
       await onPlayAll("sequential");

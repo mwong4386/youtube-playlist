@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { createElement } from "react";
+import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
 import {
   buildImportedPlaylistItems,
@@ -665,7 +666,9 @@ const ensureBookmarkDialog = () => {
   host.id = "yt-playlist-bookmark-dialog-host";
   document.body.append(host);
   currentBookmarkDialogRoot = createRoot(host);
-  currentBookmarkDialogRoot.render(createElement(BookmarkDialog));
+  flushSync(() => {
+    currentBookmarkDialogRoot?.render(createElement(BookmarkDialog));
+  });
   applyContentScriptTheme();
 };
 

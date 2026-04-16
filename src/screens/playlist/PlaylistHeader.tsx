@@ -221,6 +221,7 @@ const PlaylistHeader = ({
     });
 
     ctx.setActionSheet(items);
+    ctx.open();
   };
 
   const buildMenuItems = (currentThemePreference: ThemePreference) => {
@@ -388,9 +389,7 @@ const PlaylistHeader = ({
         </>
       ) : (
         <>
-          <div
-            className={`${styles["header-left-container"]} ${styles["normal-header-side"]}`}
-          >
+          <div className={styles["header-left-container"]}>
             <button
               disabled={playlist.length === 0}
               onClick={onPlayPauseButton}
@@ -403,9 +402,33 @@ const PlaylistHeader = ({
               />
             </button>
           </div>
-          <div
-            className={`${styles["header-right-container"]} ${styles["normal-header-side"]}`}
-          >
+          <div className={styles["header-center-container"]}>
+            <button
+              type="button"
+              onClick={() => {
+                resetSongListRenameState();
+                openSongListSheet();
+              }}
+              className={`${styles["header-button"]} ${styles["song-list-button"]}`}
+              aria-label={`Open song list selector. Current list: ${activeSongListName}`}
+            >
+              <span className={styles["song-list-button-copy"]}>
+                {activeSongListName}
+              </span>
+              <svg
+                className={styles["song-list-button-icon"]}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M7.41 8.59a1 1 0 0 1 1.41 0L12 11.76l3.18-3.17a1 1 0 1 1 1.41 1.41l-3.88 3.88a1 1 0 0 1-1.41 0L7.41 10a1 1 0 0 1 0-1.41Z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div className={styles["header-right-container"]}>
             <button
               onClick={openMenu}
               className={`${styles["header-button"]} ${styles["normal-header-button"]}`}

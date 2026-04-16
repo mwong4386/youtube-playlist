@@ -31,6 +31,7 @@ import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
 import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
+import NowPlayingBanner from "./NowPlayingBanner";
 import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import MsgType from "../../constants/msgType";
 import { ThemePreference } from "../../utils/theme";
@@ -82,6 +83,7 @@ import {
 const DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY =
   "dismissedAnalyzeImportBannerKey";
 const DEFAULT_SONG_LISTS_STATE = buildDefaultSongListsState();
+type InfoModalView = "details" | "eq";
 
 interface Props {
   themePreference: ThemePreference;
@@ -106,6 +108,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   ); //for opening the info modal
+  const [infoModalInitialView, setInfoModalInitialView] =
+    useState<InfoModalView>("details");
   const [eqSettingsActive, setEqSettingsActive] = useState(false);
   const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
   const [playlistImportModalActive, setPlaylistImportModalActive] =
@@ -695,6 +699,21 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     playlist,
     selectedItemIds
   ).length;
+  const currentPlayingItem =
+    playbackState.currentItemId
+      ? playlist.find(
+          (playlistItem) => playlistItem.id === playbackState.currentItemId
+        )
+      : undefined;
+  const showNowPlayingBanner = !!currentPlayingItem;
+
+  const openInfoModal = (
+    itemId: string,
+    initialView: InfoModalView = "details"
+  ) => {
+    setInfoModalInitialView(initialView);
+    setSelectItemId(itemId);
+  };
 
   return (
     <>
@@ -734,115 +753,137 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         setThemePreference={setThemePreference}
       />
       <div className={styles["content-container"]}>
-        {playlist.length === 0 ? (
-          <div className={styles["empty-container"]}>
-            <p className={styles["empty-message"]}>The playlist is empty</p>
-          </div>
-        ) : (
-          <div className={styles["playlist-container"]}>
-            {showAnalyzeImportBatchState ? (
-              <div className={styles["analyze-import-banner-container"]}>
-                <div className={styles["analyze-import-banner"]}>
-                  <div className={styles["analyze-import-banner-header"]}>
-                    <p className={styles["analyze-import-banner-title"]}>
-                      {analyzeImportBanner?.title}
+        <div className={styles["content-shell"]}>
+          {playlist.length === 0 ? (
+            <div className={styles["empty-container"]}>
+              <p className={styles["empty-message"]}>The playlist is empty</p>
+            </div>
+          ) : (
+            <div className={styles["playlist-container"]}>
+              {showAnalyzeImportBatchState ? (
+                <div className={styles["analyze-import-banner-container"]}>
+                  <div className={styles["analyze-import-banner"]}>
+                    <div className={styles["analyze-import-banner-header"]}>
+                      <p className={styles["analyze-import-banner-title"]}>
+                        {analyzeImportBanner?.title}
+                      </p>
+                      {analyzeImportBanner?.actionLabel === "Stop" ? (
+                        <button
+                          type="button"
+                          aria-label="Stop import analysis"
+                          className={styles["analyze-import-banner-stop-button"]}
+                          onClick={onStopAnalyzeImportBatch}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={styles["analyze-import-banner-stop-icon"]}
+                          />
+                        </button>
+                      ) : null}
+                      {analyzeImportBanner?.dismissible ? (
+                        <button
+                          type="button"
+                          aria-label="Dismiss import analysis status"
+                          className={styles["analyze-import-banner-close-button"]}
+                          onClick={() => {
+                            if (analyzeImportBannerVisibilityKey) {
+                              window.localStorage.setItem(
+                                DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY,
+                                analyzeImportBannerVisibilityKey
+                              );
+                              setDismissedAnalyzeImportBannerKey(
+                                analyzeImportBannerVisibilityKey
+                              );
+                            }
+
+                            if (
+                              shouldClearAnalyzeImportBatchStateOnDismiss(
+                                analyzeImportBatchState
+                              )
+                            ) {
+                              chrome.storage.local.remove(
+                                ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
+                              );
+                            }
+                          }}
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </div>
+                    <p className={styles["analyze-import-banner-detail"]}>
+                      {analyzeImportBanner?.detail}
                     </p>
-                    {analyzeImportBanner?.actionLabel === "Stop" ? (
-                      <button
-                        type="button"
-                        aria-label="Stop import analysis"
-                        className={styles["analyze-import-banner-stop-button"]}
-                        onClick={onStopAnalyzeImportBatch}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={styles["analyze-import-banner-stop-icon"]}
-                        />
-                      </button>
-                    ) : null}
-                    {analyzeImportBanner?.dismissible ? (
-                      <button
-                        type="button"
-                        aria-label="Dismiss import analysis status"
-                        className={styles["analyze-import-banner-close-button"]}
-                        onClick={() => {
-                          if (analyzeImportBannerVisibilityKey) {
-                            window.localStorage.setItem(
-                              DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY,
-                              analyzeImportBannerVisibilityKey
-                            );
-                            setDismissedAnalyzeImportBannerKey(
-                              analyzeImportBannerVisibilityKey
-                            );
-                          }
-
-                          if (
-                            shouldClearAnalyzeImportBatchStateOnDismiss(
-                              analyzeImportBatchState
-                            )
-                          ) {
-                            chrome.storage.local.remove(
-                              ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
-                            );
-                          }
-                        }}
-                      >
-                        ×
-                      </button>
-                    ) : null}
                   </div>
-                  <p className={styles["analyze-import-banner-detail"]}>
-                    {analyzeImportBanner?.detail}
-                  </p>
                 </div>
-              </div>
-            ) : null}
-            {playlist.map((item) => {
-              const playlistItem = (
-                <PlaylistItem
-                  key={item.id}
-                  item={item}
-                  isPlaying={playing}
-                  IPlaying={playingId === item.id}
-                  onToggleSelected={(itemId) => {
-                    setSelectedItemIds((currentSelectedItemIds) =>
-                      toggleSelectedItemId(currentSelectedItemIds, itemId)
-                    );
-                  }}
-                  selected={selectedItemIds.includes(item.id)}
-                  selectItemId={setSelectItemId}
-                />
-              );
+              ) : null}
+              {playlist.map((item) => {
+                const playlistItem = (
+                  <PlaylistItem
+                    key={item.id}
+                    item={item}
+                    isPlaying={playing}
+                    IPlaying={playingId === item.id}
+                    onToggleSelected={(itemId) => {
+                      setSelectedItemIds((currentSelectedItemIds) =>
+                        toggleSelectedItemId(currentSelectedItemIds, itemId)
+                      );
+                    }}
+                    selected={selectedItemIds.includes(item.id)}
+                    onOpenInfo={openInfoModal}
+                  />
+                );
 
-              return headerMode === "selection" ? (
-                playlistItem
-              ) : (
-                <Draggable
-                  key={item.id}
-                  id={item.id}
-                  isDragging={draggingElementId === item.id}
-                  setDraggingElement={setDraggingElement}
-                  onMoveTo={onMoveTo}
-                >
-                  {playlistItem}
-                </Draggable>
-              );
-            })}
-            <InfoModal
-              active={!!selectItemId}
-              close={() => {
-                setSelectItemId(undefined);
-              }}
-              onvolumechange={onvolumechange}
-              onAudioEqChange={onAudioEqChange}
-              profiles={audioEqProfiles}
-              save={onSave}
-              onAnalyzeSongBoundaries={analyzeSongBoundaries}
-              item={playlist.find((x) => x.id === selectItemId)}
-            />
-          </div>
-        )}
+                return headerMode === "selection" ? (
+                  playlistItem
+                ) : (
+                  <Draggable
+                    key={item.id}
+                    id={item.id}
+                    isDragging={draggingElementId === item.id}
+                    setDraggingElement={setDraggingElement}
+                    onMoveTo={onMoveTo}
+                  >
+                    {playlistItem}
+                  </Draggable>
+                );
+              })}
+              {showNowPlayingBanner ? (
+                <div
+                  aria-hidden="true"
+                  className={styles["playlist-bottom-spacer"]}
+                />
+              ) : null}
+            </div>
+          )}
+          <InfoModal
+            active={!!selectItemId}
+            close={() => {
+              setSelectItemId(undefined);
+              setInfoModalInitialView("details");
+            }}
+            onvolumechange={onvolumechange}
+            onAudioEqChange={onAudioEqChange}
+            profiles={audioEqProfiles}
+            save={onSave}
+            initialView={infoModalInitialView}
+            onAnalyzeSongBoundaries={analyzeSongBoundaries}
+            item={playlist.find((x) => x.id === selectItemId)}
+          />
+        </div>
       </div>
+      {currentPlayingItem ? (
+        <NowPlayingBanner
+          item={currentPlayingItem}
+          isPlaying={playing}
+          onOpenInfo={() => {
+            openInfoModal(currentPlayingItem.id, "details");
+          }}
+          onOpenEq={() => {
+            openInfoModal(currentPlayingItem.id, "eq");
+          }}
+        />
+      ) : null}
       <SettingsModal
         active={eqSettingsActive}
         close={() => {

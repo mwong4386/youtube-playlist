@@ -77,6 +77,31 @@
   margin-top: 0px;
   margin-bottom: 12px;
 }
+.modal-tab-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background-color: var(--surface-primary);
+}
+.modal-tab-button {
+  border: 0;
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+}
+.modal-tab-button-active {
+  background-color: var(--modal-accent);
+  color: var(--modal-accent-contrast);
+}
 .analyze-row {
   display: flex;
   align-items: center;

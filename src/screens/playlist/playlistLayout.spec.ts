@@ -59,10 +59,24 @@ test("playlist container only shows vertical scrollbar when content overflows", 
 
 test("playlist layout uses a flex content column so the banner does not steal list height", () => {
   expectEqual(playlistStyles.includes(".content-container"), true);
+  expectEqual(playlistStyles.includes(".content-shell"), true);
   expectEqual(playlistStyles.includes("display: flex;"), true);
   expectEqual(playlistStyles.includes("flex-direction: column;"), true);
   expectEqual(playlistStyles.includes("flex: 1;"), true);
   expectEqual(playlistSource.includes('className={styles["content-container"]}'), true);
+  expectEqual(playlistSource.includes('className={styles["content-shell"]}'), true);
+});
+
+test("playlist chrome shares one inset surface language across the header and rows", () => {
+  expectEqual(playlistStyles.includes(".header-container"), true);
+  expectEqual(playlistStyles.includes("left: 12px;"), true);
+  expectEqual(playlistStyles.includes("right: 12px;"), true);
+  expectEqual(playlistStyles.includes("border-radius: 24px 24px 10px 10px;"), true);
+  expectEqual(playlistStyles.includes("border-radius: 12px 12px 28px 28px;"), true);
+  expectEqual(playlistStyles.includes(".playlist-item-container"), true);
+  expectEqual(playlistStyles.includes("border-radius: 20px;"), true);
+  expectEqual(playlistStyles.includes(".playlist-item-highlight"), true);
+  expectEqual(playlistStyles.includes("box-shadow: 0 18px 32px -28px"), true);
 });
 
 test("playlist source renders the analysis banner inside the scrollable playlist flow", () => {
@@ -119,6 +133,21 @@ test("playlist header source routes song list management through a selector row 
   expectEqual(playlistHeaderSource.includes("Object.keys(songLists).map"), false);
   expectEqual(playlistHeaderSource.includes("header-song-list-button"), false);
   expectEqual(playlistHeaderSource.includes("header-new-list-button"), false);
+});
+
+test("playlist header opens the action sheet when the song list selector is used", () => {
+  const helperStart = playlistHeaderSource.indexOf("const openSongListSheet");
+  const helperEnd = playlistHeaderSource.indexOf("const buildMenuItems");
+  const helperSource = playlistHeaderSource.slice(helperStart, helperEnd);
+
+  expectEqual(
+    helperSource.includes("ctx.setActionSheet(items);"),
+    true
+  );
+  expectEqual(
+    helperSource.includes("ctx.open();"),
+    true
+  );
 });
 
 test("playlist header source no longer exposes player pin actions", () => {
@@ -421,12 +450,38 @@ test("playlist selection header keeps the centered home button in action mode", 
   );
 });
 
-test("playlist normal header uses a two-button wrapper without an empty center column", () => {
+test("playlist normal header uses the center area for the active song list selector", () => {
   expectEqual(
     playlistHeaderSource.includes('className={styles["header-left-container"]}'),
     true
   );
+  expectEqual(
+    playlistHeaderSource.includes('className={styles["header-center-container"]}'),
+    true
+  );
   expectEqual(playlistStyles.includes(".normal-header-button"), true);
+  expectEqual(playlistStyles.includes(".header-button"), true);
+  expectEqual(
+    /\.header-button\s*\{[^}]*background:\s*transparent;/s.test(
+      playlistStyles
+    ),
+    true
+  );
+  expectEqual(
+    /\.header-button\s*\{[^}]*box-shadow:\s*none;/s.test(
+      playlistStyles
+    ),
+    true
+  );
+  expectEqual(playlistStyles.includes(".song-list-button"), true);
+  expectEqual(playlistStyles.includes(".song-list-button-copy"), true);
+  expectEqual(playlistStyles.includes(".song-list-button-icon"), true);
+  expectEqual(
+    /\.song-list-button\s*\{[^}]*background:\s*transparent;/s.test(
+      playlistStyles
+    ),
+    true
+  );
   expectEqual(
     /\.normal-header-button\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px;/s.test(
       playlistStyles
@@ -441,13 +496,19 @@ test("playlist normal header uses a two-button wrapper without an empty center c
   );
   expectEqual(
     playlistHeaderSource.includes(
-      'className={`${styles["header-left-container"]} ${styles["normal-header-side"]}`}'
+      "activeSongListName"
     ),
     true
   );
   expectEqual(
     playlistHeaderSource.includes(
-      'className={`${styles["header-right-container"]} ${styles["normal-header-side"]}`}'
+      "openSongListSheet()"
+    ),
+    true
+  );
+  expectEqual(
+    playlistHeaderSource.includes(
+      'className={`${styles["header-button"]} ${styles["song-list-button"]}`}'
     ),
     true
   );

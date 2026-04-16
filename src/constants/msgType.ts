@@ -1,6 +1,8 @@
 const enum MsgType {
   PlayVideo,
   PauseVideo,
+  PreviousVideo,
+  NextVideo,
   PlayAll,
   PlayAllRandom,
   PauseAll,
