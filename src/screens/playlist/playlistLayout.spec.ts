@@ -65,18 +65,35 @@ test("playlist layout uses a flex content column so the banner does not steal li
   expectEqual(playlistStyles.includes("flex: 1;"), true);
   expectEqual(playlistSource.includes('className={styles["content-container"]}'), true);
   expectEqual(playlistSource.includes('className={styles["content-shell"]}'), true);
+  expectEqual(playlistSource.includes("<PlaylistHeader"), true);
 });
 
-test("playlist chrome shares one inset surface language across the header and rows", () => {
+test("playlist chrome uses an embedded top control rail inside the main shell", () => {
   expectEqual(playlistStyles.includes(".header-container"), true);
-  expectEqual(playlistStyles.includes("left: 12px;"), true);
-  expectEqual(playlistStyles.includes("right: 12px;"), true);
-  expectEqual(playlistStyles.includes("border-radius: 24px 24px 10px 10px;"), true);
-  expectEqual(playlistStyles.includes("border-radius: 12px 12px 28px 28px;"), true);
+  expectEqual(playlistStyles.includes(".header-control-rail"), true);
+  expectEqual(playlistStyles.includes(".header-center-well"), true);
+  expectEqual(playlistStyles.includes(".header-side-button"), true);
+  expectEqual(playlistStyles.includes("position: fixed;"), false);
+  expectEqual(playlistStyles.includes("border-radius: 999px;"), true);
+  expectEqual(playlistStyles.includes("border-radius: 28px;"), true);
   expectEqual(playlistStyles.includes(".playlist-item-container"), true);
   expectEqual(playlistStyles.includes("border-radius: 20px;"), true);
   expectEqual(playlistStyles.includes(".playlist-item-highlight"), true);
   expectEqual(playlistStyles.includes("box-shadow: 0 18px 32px -28px"), true);
+});
+
+test("playlist source renders the header inside the content shell before the scrollable list", () => {
+  const contentShellIndex = playlistSource.indexOf(
+    'className={styles["content-shell"]}'
+  );
+  const playlistHeaderIndex = playlistSource.indexOf("<PlaylistHeader");
+  const playlistContainerIndex = playlistSource.indexOf(
+    'className={styles["playlist-container"]}'
+  );
+
+  expectEqual(contentShellIndex >= 0, true);
+  expectEqual(playlistHeaderIndex > contentShellIndex, true);
+  expectEqual(playlistContainerIndex > playlistHeaderIndex, true);
 });
 
 test("playlist source renders the analysis banner inside the scrollable playlist flow", () => {
@@ -126,7 +143,6 @@ test("playlist header source routes song list management through a selector row 
   expectEqual(playlistHeaderSource.includes("activeSongListName"), true);
   expectEqual(playlistHeaderSource.includes("onSelectSongList"), true);
   expectEqual(playlistHeaderSource.includes("onOpenNewSongListModal"), true);
-  expectEqual(playlistHeaderSource.includes("buildSongListMenuItems"), true);
   expectEqual(playlistHeaderSource.includes("buildSongListSheetRows"), true);
   expectEqual(playlistHeaderSource.includes("editingSongListName"), true);
   expectEqual(playlistHeaderSource.includes("(Current List)"), false);
@@ -182,12 +198,22 @@ test("plain action sheet rows keep centered labels for regular menu items", () =
   expectEqual(actionSheetStyles.includes("justify-content: center;"), true);
 });
 
+test("song list action rows use a dedicated left-aligned affordance instead of the centered generic action layout", () => {
+  expectEqual(actionSheetItemSource.includes("song-list-action"), true);
+  expectEqual(actionSheetItemSource.includes("song-list-action-row"), true);
+  expectEqual(actionSheetStyles.includes(".song-list-action-row"), true);
+  expectEqual(actionSheetStyles.includes(".song-list-action-row .row-copy"), true);
+  expectEqual(actionSheetStyles.includes("justify-content: flex-start;"), true);
+  expectEqual(actionSheetStyles.includes("background: transparent;"), true);
+});
+
 test("song list item rows use an explicit flex row container for title and edit button", () => {
   expectEqual(actionSheetItemSource.includes("song-list-row-container"), true);
   expectEqual(actionSheetStyles.includes(".song-list-row-container"), true);
   expectEqual(actionSheetStyles.includes("display: flex;"), true);
   expectEqual(actionSheetStyles.includes("justify-content: space-between;"), true);
   expectEqual(actionSheetStyles.includes("align-items: center;"), true);
+  expectEqual(actionSheetStyles.includes("padding: 0 14px 0 14px;"), true);
 });
 
 test("playlist source includes selected-song action modal wiring", () => {
@@ -461,6 +487,9 @@ test("playlist normal header uses the center area for the active song list selec
   );
   expectEqual(playlistStyles.includes(".normal-header-button"), true);
   expectEqual(playlistStyles.includes(".header-button"), true);
+  expectEqual(playlistStyles.includes(".header-control-rail"), true);
+  expectEqual(playlistStyles.includes(".header-center-well"), true);
+  expectEqual(playlistStyles.includes(".header-side-button"), true);
   expectEqual(
     /\.header-button\s*\{[^}]*background:\s*transparent;/s.test(
       playlistStyles
@@ -473,8 +502,15 @@ test("playlist normal header uses the center area for the active song list selec
     ),
     true
   );
+  expectEqual(
+    /\.song-list-button\s*\{[^}]*width:\s*100%;/s.test(
+      playlistStyles
+    ),
+    true
+  );
   expectEqual(playlistStyles.includes(".song-list-button"), true);
-  expectEqual(playlistStyles.includes(".song-list-button-copy"), true);
+  expectEqual(playlistStyles.includes(".song-list-button-label"), true);
+  expectEqual(playlistStyles.includes(".song-list-button-chevron"), true);
   expectEqual(playlistStyles.includes(".song-list-button-icon"), true);
   expectEqual(
     /\.song-list-button\s*\{[^}]*background:\s*transparent;/s.test(
@@ -483,14 +519,44 @@ test("playlist normal header uses the center area for the active song list selec
     true
   );
   expectEqual(
-    /\.normal-header-button\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px;/s.test(
+    /\.normal-header-button\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s.test(
       playlistStyles
     ),
     true
   );
   expectEqual(
+    /\.header-control-rail\s*\{[^}]*padding:\s*0 14px;/s.test(
+      playlistStyles
+    ),
+    true
+  );
+  expectEqual(
+    /\.header-side-pocket\s*\{[^}]*width:\s*58px;[^}]*min-width:\s*58px;[^}]*height:\s*58px;/s.test(
+      playlistStyles
+    ),
+    true
+  );
+  expectEqual(
+    /\.header-side-pocket\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s.test(
+      playlistStyles
+    ),
+    false
+  );
+  expectEqual(
+    /\.header-center-well\s*\{[^}]*min-height:\s*48px;/s.test(
+      playlistStyles
+    ),
+    true
+  );
+  expectEqual(
+    /\.header-center-well\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s.test(
+      playlistStyles
+    ),
+    false
+  );
+  expectEqual(
     playlistHeaderSource.includes(
-      'className={`${styles["header-button"]} ${styles["normal-header-button"]}`}'
+      'className={`${styles["header-button"]} ${styles["normal-header-button"]} ${styles["header-side-button"]}`}'
     ),
     true
   );
@@ -503,6 +569,12 @@ test("playlist normal header uses the center area for the active song list selec
   expectEqual(
     playlistHeaderSource.includes(
       "openSongListSheet()"
+    ),
+    true
+  );
+  expectEqual(
+    playlistHeaderSource.includes(
+      '<span className={styles["song-list-button-label"]}>'
     ),
     true
   );

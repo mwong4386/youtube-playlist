@@ -1,22 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import type MActionSheetItem from "../../models/MActionSheetItem";
 import MsgType from "../../constants/msgType";
+import type MActionSheetItem from "../../models/MActionSheetItem";
 import PlaybackState, {
   createInitialPlaybackState,
   isPlaybackActive,
   isQueueModeActive,
 } from "../../models/PlaybackState";
-import { getCurrentTimestamp } from "../../utils/date";
 import { type SongListRecord } from "../../models/SongList";
-import {
-  ThemePreference,
-} from "../../utils/theme";
+import { getCurrentTimestamp } from "../../utils/date";
+import { ThemePreference } from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
+import styles from "./Playlist.module.css";
 import {
-  buildSongListMenuItems,
   buildSongListSheetRows,
 } from "./songListsViewModel";
-import styles from "./Playlist.module.css";
 
 interface props {
   onDelete: () => void;
@@ -59,11 +56,11 @@ const PlaylistHeader = ({
   setThemePreference,
 }: props) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
-    createInitialPlaybackState()
+    createInitialPlaybackState(),
   );
   const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
   const [editingSongListName, setEditingSongListName] = useState<string | null>(
-    null
+    null,
   );
   const [songListRenameValue, setSongListRenameValue] = useState("");
   const [songListRenameError, setSongListRenameError] = useState("");
@@ -121,7 +118,7 @@ const PlaylistHeader = ({
       },
       () => {
         revokeUrl();
-      }
+      },
     );
     window.setTimeout(revokeUrl, 1000);
   };
@@ -134,7 +131,7 @@ const PlaylistHeader = ({
   const openSongListSheet = (
     nextEditingSongListName: string | null = editingSongListName,
     nextSongListRenameValue = songListRenameValue,
-    nextSongListRenameError = songListRenameError
+    nextSongListRenameError = songListRenameError,
   ) => {
     setEditingSongListName(nextEditingSongListName);
     setSongListRenameValue(nextSongListRenameValue);
@@ -177,7 +174,7 @@ const PlaylistHeader = ({
           onSaveEdit: () => {
             const error = onRenameSongList(
               row.songListName,
-              nextSongListRenameValue
+              nextSongListRenameValue,
             );
 
             if (error) {
@@ -185,7 +182,7 @@ const PlaylistHeader = ({
               openSongListSheet(
                 row.songListName,
                 nextSongListRenameValue,
-                error
+                error,
               );
               return;
             }
@@ -226,31 +223,8 @@ const PlaylistHeader = ({
 
   const buildMenuItems = (currentThemePreference: ThemePreference) => {
     return [
-      ...buildSongListMenuItems({
-        activeSongListName,
-        songLists,
-      }).map((item) => ({
-        id: item.id,
-        kind: item.kind,
-        description: item.description,
-        trailingIcon: item.trailingIcon,
-        shouldCloseOnClick: false,
-        callback: () => {
-          resetSongListRenameState();
-          openSongListSheet();
-        },
-      })),
-      ...(playing
-        ? [
-            {
-              id: 1,
-              description: `${isPIP ? "Hide" : "Show"} Picture in Picture`,
-              callback: onPlayInPicture,
-            },
-          ]
-        : []),
       {
-        id: 2,
+        id: 1,
         kind: "theme-selector" as const,
         themePreference: currentThemePreference,
         onThemeChange: (nextPreference: ThemePreference) => {
@@ -258,6 +232,15 @@ const PlaylistHeader = ({
           ctx.setActionSheet(buildMenuItems(nextPreference));
         },
       },
+      ...(playing
+        ? [
+            {
+              id: 2,
+              description: `${isPIP ? "Hide" : "Show"} Picture in Picture`,
+              callback: onPlayInPicture,
+            },
+          ]
+        : []),
       {
         id: 3,
         description: "EQ Profiles",
@@ -281,7 +264,12 @@ const PlaylistHeader = ({
         callback: onOpenImportModal,
       },
       { id: 7, description: "Export Playlist", callback: onExportJson },
-      { id: 200, description: "Delete All", callback: onDelete, tone: "danger" },
+      {
+        id: 200,
+        description: "Delete All",
+        callback: onDelete,
+        tone: "danger",
+      },
     ];
   };
 
@@ -306,9 +294,9 @@ const PlaylistHeader = ({
         result["isPlayAll"] === undefined
           ? isQueueModeActive(
               (result["playbackState"] || createInitialPlaybackState())
-                .queueMode || "off"
+                .queueMode || "off",
             )
-          : !!result["isPlayAll"]
+          : !!result["isPlayAll"],
       );
     });
   }, []);
@@ -316,7 +304,7 @@ const PlaylistHeader = ({
   useEffect(() => {
     const listener = (
       changes: { [key: string]: chrome.storage.StorageChange },
-      namespace: "sync" | "local" | "managed" | "session"
+      namespace: "sync" | "local" | "managed" | "session",
     ) => {
       if ("playbackState" in changes) {
         syncPlaybackState(changes["playbackState"].newValue);
@@ -342,7 +330,9 @@ const PlaylistHeader = ({
   return (
     <div className={styles["header-container"]}>
       {selectedCount > 0 ? (
-        <>
+        <div
+          className={`${styles["header-control-rail"]} ${styles["selection-control-rail"]}`}
+        >
           <div className={styles["header-left-container"]}>
             <label className={styles["selection-header-checkbox"]}>
               <input
@@ -355,7 +345,9 @@ const PlaylistHeader = ({
                 }
               />
             </label>
-            <p className={styles["selection-count"]}>{selectedCount} selected</p>
+            <p className={styles["selection-count"]}>
+              {selectedCount} selected
+            </p>
           </div>
           <div className={styles["header-center-container"]}>
             <button
@@ -386,14 +378,16 @@ const PlaylistHeader = ({
               Actions
             </button>
           </div>
-        </>
+        </div>
       ) : (
-        <>
-          <div className={styles["header-left-container"]}>
+        <div className={styles["header-control-rail"]}>
+          <div
+            className={`${styles["header-left-container"]} ${styles["header-side-pocket"]}`}
+          >
             <button
               disabled={playlist.length === 0}
               onClick={onPlayPauseButton}
-              className={`${styles["header-button"]} ${styles["normal-header-button"]}`}
+              className={`${styles["header-button"]} ${styles["normal-header-button"]} ${styles["header-side-button"]}`}
             >
               <img
                 className={styles["header-button-icon"]}
@@ -402,7 +396,9 @@ const PlaylistHeader = ({
               />
             </button>
           </div>
-          <div className={styles["header-center-container"]}>
+          <div
+            className={`${styles["header-center-container"]} ${styles["header-center-well"]}`}
+          >
             <button
               type="button"
               onClick={() => {
@@ -412,27 +408,30 @@ const PlaylistHeader = ({
               className={`${styles["header-button"]} ${styles["song-list-button"]}`}
               aria-label={`Open song list selector. Current list: ${activeSongListName}`}
             >
-              <span className={styles["song-list-button-copy"]}>
+              <span className={styles["song-list-button-label"]}>
                 {activeSongListName}
               </span>
               <svg
-                className={styles["song-list-button-icon"]}
+                className={styles["song-list-button-chevron"]}
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
                 <path
                   fill="currentColor"
-                  d="M7.41 8.59a1 1 0 0 1 1.41 0L12 11.76l3.18-3.17a1 1 0 1 1 1.41 1.41l-3.88 3.88a1 1 0 0 1-1.41 0L7.41 10a1 1 0 0 1 0-1.41Z"
+                  d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z"
                 />
               </svg>
             </button>
           </div>
-          <div className={styles["header-right-container"]}>
+          <div
+            className={`${styles["header-right-container"]} ${styles["header-side-pocket"]}`}
+          >
             <button
               onClick={openMenu}
-              className={`${styles["header-button"]} ${styles["normal-header-button"]}`}
+              className={`${styles["header-button"]} ${styles["normal-header-button"]} ${styles["header-side-button"]}`}
             >
+              <span className={styles["song-list-button-copy"]}>Menu</span>
               <img
                 className={styles["header-button-icon"]}
                 src={"./assets/menu30.svg"}
@@ -440,7 +439,7 @@ const PlaylistHeader = ({
               />
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

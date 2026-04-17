@@ -116,6 +116,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    padding: 0 14px 0 14px;
 }
 
 .selector-row{
@@ -148,6 +149,35 @@
 
 .action-row .row-copy{
     justify-content: center;
+}
+
+.song-list-action-row{
+    justify-content: flex-start;
+    min-height: 52px;
+    padding: 0 14px 0 14px;
+    background: transparent;
+    box-shadow: none;
+    transition: background .18s ease, transform .18s ease;
+}
+
+.song-list-action-row .row-copy{
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.song-list-action-row .row-leading-icon{
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    color: var(--accent-color);
+}
+
+.song-list-action-row:hover{
+    background: color-mix(in srgb, var(--accent-color) 7%, transparent);
+}
+
+.song-list-action-row:active{
+    transform: translateY(1px);
 }
 
 .row-danger{

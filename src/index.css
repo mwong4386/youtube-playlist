@@ -10,6 +10,14 @@
   --success-color: #0f8b4c;
   --shadow-color: rgba(15, 23, 42, 0.08);
   --icon-filter: none;
+
+  --glass-radius: 28px;
+  --glass-blur: 20px;
+  --glass-margin: 12px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg-opacity: 0.8;
+  --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  --glass-glow-opacity: 0.15;
 }
 
 :root[data-theme="dark"] {
@@ -24,6 +32,10 @@
   --success-color: #78d89b;
   --shadow-color: rgba(2, 6, 23, 0.35);
   --icon-filter: invert(1) brightness(1.2);
+
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg-opacity: 0.75;
+  --glass-glow-opacity: 0.18;
 }
 
 html,

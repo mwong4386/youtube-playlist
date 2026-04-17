@@ -717,43 +717,43 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   return (
     <>
-      <PlaylistHeader
-        playlist={playlist}
-        songLists={songListsState.songLists}
-        activeSongListName={activeSongListName}
-        onDelete={onDeleteAll}
-        onOpenEqSettings={() => {
-          setEqSettingsActive(true);
-        }}
-        onOpenGeminiSettings={() => {
-          setGeminiSettingsActive(true);
-        }}
-        onOpenImportModal={() => {
-          setPlaylistImportModalActive(true);
-        }}
-        onOpenNewSongListModal={() => {
-          setNewSongListError("");
-          setNewSongListModalActive(true);
-        }}
-        onSelectSongList={(name) => {
-          onSelectSongList(name);
-        }}
-        onRenameSongList={onRenameSongList}
-        onClearSelection={clearSelection}
-        onToggleSelectAll={() => {
-          setSelectedItemIds((currentSelectedItemIds) =>
-            toggleAllSelectedItemIds(playlist, currentSelectedItemIds)
-          );
-        }}
-        onOpenSelectionActions={onOpenSelectionActions}
-        allSelected={allSelected}
-        someSelected={someSelected}
-        selectedCount={selectedItemIds.length}
-        themePreference={themePreference}
-        setThemePreference={setThemePreference}
-      />
       <div className={styles["content-container"]}>
         <div className={styles["content-shell"]}>
+          <PlaylistHeader
+            playlist={playlist}
+            songLists={songListsState.songLists}
+            activeSongListName={activeSongListName}
+            onDelete={onDeleteAll}
+            onOpenEqSettings={() => {
+              setEqSettingsActive(true);
+            }}
+            onOpenGeminiSettings={() => {
+              setGeminiSettingsActive(true);
+            }}
+            onOpenImportModal={() => {
+              setPlaylistImportModalActive(true);
+            }}
+            onOpenNewSongListModal={() => {
+              setNewSongListError("");
+              setNewSongListModalActive(true);
+            }}
+            onSelectSongList={(name) => {
+              onSelectSongList(name);
+            }}
+            onRenameSongList={onRenameSongList}
+            onClearSelection={clearSelection}
+            onToggleSelectAll={() => {
+              setSelectedItemIds((currentSelectedItemIds) =>
+                toggleAllSelectedItemIds(playlist, currentSelectedItemIds)
+              );
+            }}
+            onOpenSelectionActions={onOpenSelectionActions}
+            allSelected={allSelected}
+            someSelected={someSelected}
+            selectedCount={selectedItemIds.length}
+            themePreference={themePreference}
+            setThemePreference={setThemePreference}
+          />
           {playlist.length === 0 ? (
             <div className={styles["empty-container"]}>
               <p className={styles["empty-message"]}>The playlist is empty</p>

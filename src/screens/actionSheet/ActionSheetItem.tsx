@@ -159,6 +159,24 @@ const ActionSheetItem = ({ item, close }: props) => {
       close();
     }
   };
+
+  if (item.kind === "song-list-action") {
+    return (
+      <button
+        type="button"
+        className={`${styles["row"]} ${styles["row-button"]} ${styles["song-list-action-row"]}`}
+        onClick={onClick}
+      >
+        <span className={styles["row-copy"]}>
+          {item.leadingIcon ? (
+            <span className={styles["row-leading-icon"]}>{renderIcon(item.leadingIcon)}</span>
+          ) : null}
+          <span className={styles["row-label"]}>{item.description}</span>
+        </span>
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"

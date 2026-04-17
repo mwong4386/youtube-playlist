@@ -7,23 +7,21 @@
   color: var(--text-primary);
   border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
   border-radius: 20px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-secondary) 86%, transparent) 0%,
-      color-mix(in srgb, var(--surface-primary) 92%, transparent) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-secondary) 86%, transparent) 0%,
+    color-mix(in srgb, var(--surface-primary) 92%, transparent) 100%
+  );
   box-shadow: 0 18px 32px -28px var(--shadow-color);
 }
 
 .playlist-item-highlight {
   border-color: color-mix(in srgb, var(--accent-color) 32%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--accent-color) 16%, var(--surface-secondary)) 0%,
-      color-mix(in srgb, var(--surface-primary) 94%, transparent) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-color) 16%, var(--surface-secondary)) 0%,
+    color-mix(in srgb, var(--surface-primary) 94%, transparent) 100%
+  );
   box-shadow: 0 18px 32px -28px var(--shadow-color);
 }
 
@@ -99,36 +97,37 @@
 }
 
 .header-container {
+  width: 100%;
+  padding: 0 0 14px;
+}
+
+.header-control-rail {
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: 54px;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  position: fixed;
-  width: auto;
-  padding: 8px 10px 10px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-secondary) 96%, transparent) 0%,
-      color-mix(in srgb, var(--surface-primary) 94%, transparent) 100%
-    );
+  gap: 12px;
+  padding: 0 14px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-secondary) 72%, transparent) 0%,
+    color-mix(in srgb, var(--surface-primary) 84%, transparent) 100%
+  );
   border: 1px solid color-mix(in srgb, var(--border-color) 92%, transparent);
-  border-bottom: 0;
-  border-radius: 24px 24px 10px 10px;
-  box-shadow: 0 18px 34px -28px var(--shadow-color);
-  z-index: 3;
+  border-radius: 28px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
 }
+
+.selection-control-rail {
+  min-height: 76px;
+  padding: 12px 16px;
+}
+
 .header-left-container {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .header-right-container {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -136,49 +135,91 @@
 }
 
 .header-center-container {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.header-side-pocket {
+  width: 58px;
+  min-width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface-primary) 34%, transparent);
+}
+
+.header-center-well {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-primary) 54%, transparent);
 }
 
 .normal-header-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
 }
 
 .normal-header-side {
   justify-content: space-between;
 }
 
+.header-side-button {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+}
+
 .song-list-button {
   width: 100%;
-  max-width: 240px;
-  min-height: 38px;
-  height: auto;
-  padding: 0 12px;
-  gap: 8px;
+  height: 100%;
+  padding: 0 18px;
   justify-content: center;
+  align-items: center;
+  gap: 8px;
   background: transparent;
 }
 
-.song-list-button-copy {
-  min-width: 0;
+.song-list-button-label {
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 700;
+  line-height: 1;
   letter-spacing: 0.01em;
+  color: var(--text-primary);
 }
 
 .song-list-button-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  filter: var(--icon-filter);
+}
+
+.song-list-button-copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.song-list-button-chevron {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+  color: var(--text-primary);
 }
 
 .selection-header-button {
@@ -246,33 +287,32 @@
 .content-container {
   display: flex;
   flex-direction: column;
-  margin-top: 64px;
-  height: calc(100% - 64px);
+  height: 100%;
   min-height: 0;
 }
 
 .content-shell {
   display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
-  border-top: 0;
-  border-radius: 12px 12px 28px 28px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-secondary) 82%, transparent) 0%,
-      color-mix(in srgb, var(--surface-primary) 96%, transparent) 100%
-    );
+  border-radius: 28px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-secondary) 82%, transparent) 0%,
+    color-mix(in srgb, var(--surface-primary) 96%, transparent) 100%
+  );
   box-shadow: 0 22px 40px -34px var(--shadow-color);
+  padding: 24px 24px 0;
 }
 
 .playlist-container {
-  padding: 14px 12px 18px;
+  padding: 0 0 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -285,36 +325,59 @@
 }
 
 .analyze-import-banner-container {
-  padding: 2px 0 4px;
+  padding: 0 0 4px;
 }
 
 .analyze-import-banner {
   border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--success-color) 28%, var(--border-color));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--success-color) 13%, var(--surface-secondary)) 0%,
-      color-mix(in srgb, var(--surface-primary) 96%, transparent) 100%
-    );
+  border: 1px solid
+    color-mix(in srgb, var(--success-color) 28%, var(--border-color));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--success-color) 13%, var(--surface-secondary)) 0%,
+    color-mix(in srgb, var(--surface-primary) 96%, transparent) 100%
+  );
   padding: 14px 16px;
   box-shadow: 0 18px 32px -28px var(--shadow-color);
 }
 
 @media (max-width: 420px) {
-  .header-container {
-    left: 10px;
-    right: 10px;
+  .header-control-rail {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .header-side-pocket {
+    width: 54px;
+    min-width: 54px;
+    height: 54px;
+  }
+
+  .header-center-well {
+    min-height: 46px;
+  }
+
+  .normal-header-button {
+    width: 44px;
+    height: 44px;
   }
 
   .song-list-button {
-    max-width: 180px;
-    padding: 0 10px;
+    padding: 0 14px;
+    gap: 6px;
   }
 
-  .content-container {
-    margin-top: 62px;
-    height: calc(100% - 62px);
+  .song-list-button-label {
+    font-size: 17px;
+  }
+
+  .song-list-button-chevron {
+    width: 16px;
+    height: 16px;
+  }
+
+  .content-shell {
+    padding: 16px 16px 0;
   }
 }
 
@@ -363,7 +426,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success-color) 32%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--success-color) 32%, transparent);
 }
 
 .analyze-import-banner-stop-icon {
@@ -531,8 +595,13 @@
 }
 
 .delete-all-confirm-button {
-  border: 1px solid color-mix(in srgb, var(--danger-color, #d04a4a) 28%, var(--border-color));
-  background: color-mix(in srgb, var(--danger-color, #d04a4a) 8%, var(--surface-primary));
+  border: 1px solid
+    color-mix(in srgb, var(--danger-color, #d04a4a) 28%, var(--border-color));
+  background: color-mix(
+    in srgb,
+    var(--danger-color, #d04a4a) 8%,
+    var(--surface-primary)
+  );
   color: var(--danger-color, #d04a4a);
 }
 
