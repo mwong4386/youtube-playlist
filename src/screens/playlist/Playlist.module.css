@@ -323,11 +323,6 @@
   background-color: transparent;
 }
 
-.playlist-bottom-spacer {
-  height: 184px;
-  flex-shrink: 0;
-}
-
 .analyze-import-banner-container {
   padding: 0 0 4px;
 }

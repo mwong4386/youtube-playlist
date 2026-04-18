@@ -20,6 +20,7 @@ import {
   selectAudioEqProfileAudioEqById,
 } from "../../utils/audioEqProfiles";
 import Modal from "./Modal";
+import InfoModalTransport from "./InfoModalTransport";
 import styles from "./Modal.module.css";
 import {
   applyGeminiSuggestionToFormValues,
@@ -32,6 +33,11 @@ import {
   syncAnalyzeScope,
   type GeminiAnalyzeScope,
 } from "./geminiAnalyzeRequest";
+import {
+  getInfoModalPresentation,
+  shouldShowInfoModalTransport,
+  type InfoModalPresentation,
+} from "./infoModalPlaybackState";
 
 interface Props {
   active: boolean;
@@ -48,7 +54,8 @@ interface Props {
   onAudioEqChange: (audioEq: Partial<AudioEqSettings>) => void;
   item: MPlaylistItem | undefined;
   profiles: AudioEqProfile[];
-  initialView?: "details" | "eq";
+  currentPlaybackItemId?: string | null;
+  isPlaybackActive: boolean;
   onAnalyzeSongBoundaries: (
     itemId: string
   ) => Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>;
@@ -57,7 +64,7 @@ type InfoModels = AudioEqSettings &
   GeminiSuggestionFormShape & {
   volume: number;
 };
-type InfoModalView = "details" | "eq";
+type InfoModalView = "info" | "eq";
 
 const toNumber = (value: number) => Number(value) || 0;
 
@@ -69,11 +76,14 @@ const InfoModal = ({
   save,
   close,
   profiles,
-  initialView = "details",
+  currentPlaybackItemId,
+  isPlaybackActive,
   onAnalyzeSongBoundaries,
 }: Props) => {
   const [selectedProfileId, setSelectedProfileId] = useState("");
-  const [activeView, setActiveView] = useState<InfoModalView>(initialView);
+  const [presentation, setPresentation] =
+    useState<InfoModalPresentation>("expanded");
+  const [activeView, setActiveView] = useState<InfoModalView>("info");
   const [isAnalyzing, setAnalyzing] = useState(false);
   const [analyzeMessage, setAnalyzeMessage] = useState("");
   const [latestGeminiSuggestion, setLatestGeminiSuggestion] =
@@ -104,13 +114,22 @@ const InfoModal = ({
       ...DEFAULT_AUDIO_EQ_SETTINGS,
     },
   });
+  const itemId = item?.id;
+  const showTransport = shouldShowInfoModalTransport({
+    itemId,
+    currentPlaybackItemId,
+  });
 
   useEffect(() => {
     analyzeScopeRef.current = syncAnalyzeScope(
       analyzeScopeRef.current,
       active && !!item,
-      item?.id
+      itemId
     );
+
+    if (!active) {
+      return;
+    }
 
     if (item) {
       const timestamp = Math.floor(item?.timestamp || 0);
@@ -142,11 +161,23 @@ const InfoModal = ({
       reset();
     }
     setSelectedProfileId("");
-    setActiveView(initialView);
+    setPresentation(
+      getInfoModalPresentation({
+        itemId,
+        currentPlaybackItemId,
+      })
+    );
+    setActiveView("info");
     setAnalyzing(false);
     setAnalyzeMessage("");
     setLatestGeminiSuggestion(undefined);
-  }, [active, initialView, item, reset]);
+  }, [active, item?.id, reset]);
+
+  useEffect(() => {
+    if (!showTransport && presentation === "collapsed") {
+      setPresentation("expanded");
+    }
+  }, [presentation, showTransport]);
 
   useEffect(() => {
     const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
@@ -274,6 +305,12 @@ const InfoModal = ({
     );
     close();
   };
+  const expandToInfo = () => {
+    setPresentation("expanded");
+    setActiveView("info");
+  };
+  const showEditorSection = presentation !== "collapsed";
+
   return (
     <Modal active={active} close={close}>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -289,251 +326,314 @@ const InfoModal = ({
             Save
           </button>
         </div>
-        <div className={styles["content"]}>
-          <p className={`${styles["video-title"]} line-clamp-4`}>
-            {item?.title}
-          </p>
-          <p className={styles["channel-name"]}>{item?.channelName}</p>
-          <div className={styles["modal-tab-row"]} role="tablist" aria-label="Song editor sections">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeView === "details"}
-              className={`${styles["modal-tab-button"]} ${
-                activeView === "details" ? styles["modal-tab-button-active"] : ""
-              }`}
-              onClick={() => {
-                setActiveView("details");
-              }}
-            >
-              Info
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeView === "eq"}
-              className={`${styles["modal-tab-button"]} ${
-                activeView === "eq" ? styles["modal-tab-button-active"] : ""
-              }`}
-              onClick={() => {
-                setActiveView("eq");
-              }}
-            >
-              EQ
-            </button>
-          </div>
-          {activeView === "details" ? (
+        <div
+          className={`${styles["content"]} ${
+            presentation === "collapsed" ? styles["content-collapsed"] : ""
+          }`}
+        >
+          {showEditorSection ? (
             <>
-              <div className={styles["time-grid"]}>
-                <label className={styles["time-label"]}>Start Time</label>
-                <span className={styles["time"]}>
-                  <input
-                    className={styles["time-inputgroup"]}
-                    type="text"
-                    placeholder="HH"
-                    maxLength={2}
-                    size={2}
-                    pattern="[0-9]{0,2}"
-                    {...register("hours", {
-                      required: true,
-                      valueAsNumber: true,
-                      validate: (value) => {
-                        const maxDuration = item?.maxDuration;
-                        if (
-                          typeof maxDuration !== "number" ||
-                          !Number.isFinite(maxDuration) ||
-                          maxDuration <= 0
-                        ) {
-                          return true;
-                        }
-
-                        const timestamp =
-                          toNumber(value) * 3600 +
-                          toNumber(getValues("minutes")) * 60 +
-                          toNumber(getValues("seconds"));
-
-                        return timestamp <= maxDuration;
-                      },
-                    })}
-                  />
-                  <span className={styles["semicolon"]}>:</span>
-                  <input
-                    className={styles["time-inputgroup"]}
-                    type="text"
-                    placeholder="mm"
-                    maxLength={2}
-                    size={2}
-                    pattern="[0-5]?[0-9]"
-                    {...register("minutes", {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <span className={styles["semicolon"]}>:</span>
-                  <input
-                    className={styles["time-inputgroup"]}
-                    type="text"
-                    placeholder="ss"
-                    maxLength={2}
-                    size={2}
-                    pattern="[0-5]?[0-9]"
-                    {...register("seconds", {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                  />
-                </span>
-                <button
-                  type="button"
-                  className={styles["analyze-button"]}
-                  disabled={isAnalyzing}
-                  onClick={onAnalyze}
+              <p className={`${styles["video-title"]} line-clamp-4`}>
+                {item?.title}
+              </p>
+              <p className={styles["channel-name"]}>{item?.channelName}</p>
+              <div className={styles["editor-section"]}>
+                <div
+                  className={styles["modal-tab-row"]}
+                  role="tablist"
+                  aria-label="Song editor sections"
                 >
-                  {isAnalyzing ? "Analyzing..." : "Analyze"}
-                </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeView === "info"}
+                    className={`${styles["modal-tab-button"]} ${
+                      activeView === "info"
+                        ? styles["modal-tab-button-active"]
+                        : ""
+                    }`}
+                    onClick={() => {
+                      setActiveView("info");
+                    }}
+                  >
+                    Info
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeView === "eq"}
+                    className={`${styles["modal-tab-button"]} ${
+                      activeView === "eq"
+                        ? styles["modal-tab-button-active"]
+                        : ""
+                    }`}
+                    onClick={() => {
+                      setActiveView("eq");
+                    }}
+                  >
+                    EQ
+                  </button>
+                </div>
+                {activeView === "info" ? (
+                  <>
+                    <div className={styles["time-grid"]}>
+                      <label className={styles["time-label"]}>Start Time</label>
+                      <span className={styles["time"]}>
+                        <input
+                          className={styles["time-inputgroup"]}
+                          type="text"
+                          placeholder="HH"
+                          maxLength={2}
+                          size={2}
+                          pattern="[0-9]{0,2}"
+                          {...register("hours", {
+                            required: true,
+                            valueAsNumber: true,
+                            validate: (value) => {
+                              const maxDuration = item?.maxDuration;
+                              if (
+                                typeof maxDuration !== "number" ||
+                                !Number.isFinite(maxDuration) ||
+                                maxDuration <= 0
+                              ) {
+                                return true;
+                              }
 
-                <label className={styles["time-label"]}>End Time</label>
-                <span className={styles["time"]}>
-                  <input
-                    id="end-hour"
-                    className={styles["time-inputgroup"]}
-                    type="text"
-                    placeholder="HH"
-                    maxLength={2}
-                    size={2}
-                    {...register("endHours", {
-                      required: !watch("untilEnd"),
-                      valueAsNumber: true,
-                    })}
-                    {...(!watch("untilEnd")
-                      ? { pattern: "[0-9]{0,2}" }
-                      : { disabled: true })}
-                  />
-                  <span className={styles["semicolon"]}>:</span>
-                  <input
-                    id="end-minute"
-                    className={styles["time-inputgroup"]}
-                    type="text"
-                    placeholder="mm"
-                    maxLength={2}
-                    size={2}
-                    {...register("endMinutes", {
-                      required: !watch("untilEnd"),
-                      valueAsNumber: true,
-                    })}
-                    {...(!watch("untilEnd")
-                      ? { pattern: "[0-5]?[0-9]" }
-                      : { disabled: true })}
-                  />
-                  <span className={styles["semicolon"]}>:</span>
-                  <input
-                    id="end-second"
-                    className={styles["time-inputgroup"]}
-                    type="text"
-                    placeholder="ss"
-                    maxLength={2}
-                    size={2}
-                    {...register("endSeconds", {
-                      required: !watch("untilEnd"),
-                      valueAsNumber: true,
-                    })}
-                    {...(!watch("untilEnd")
-                      ? { pattern: "[0-5]?[0-9]" }
-                      : { disabled: true })}
-                  />
-                </span>
-                <label className={styles["checkbox-label"]} htmlFor="untilEnd">
-                  <input
-                    type="checkbox"
-                    id="untilEnd"
-                    value="Y"
-                    {...register("untilEnd")}
-                    className={styles["checkbox"]}
-                  />
-                  <span>until End</span>
-                </label>
-              </div>
-              <div className={styles["analyze-row"]}>
-                <p className={styles["helper-text"]}>{analyzeMessage}</p>
-              </div>
-              <div className={styles["error"]}>
-                {(errors.hours || errors.minutes || errors.seconds) && (
-                  <span role="alert">Incorrect start time</span>
+                              const timestamp =
+                                toNumber(value) * 3600 +
+                                toNumber(getValues("minutes")) * 60 +
+                                toNumber(getValues("seconds"));
+
+                              return timestamp <= maxDuration;
+                            },
+                          })}
+                        />
+                        <span className={styles["semicolon"]}>:</span>
+                        <input
+                          className={styles["time-inputgroup"]}
+                          type="text"
+                          placeholder="mm"
+                          maxLength={2}
+                          size={2}
+                          pattern="[0-5]?[0-9]"
+                          {...register("minutes", {
+                            required: true,
+                            valueAsNumber: true,
+                          })}
+                        />
+                        <span className={styles["semicolon"]}>:</span>
+                        <input
+                          className={styles["time-inputgroup"]}
+                          type="text"
+                          placeholder="ss"
+                          maxLength={2}
+                          size={2}
+                          pattern="[0-5]?[0-9]"
+                          {...register("seconds", {
+                            required: true,
+                            valueAsNumber: true,
+                          })}
+                        />
+                      </span>
+                      <button
+                        type="button"
+                        className={styles["analyze-button"]}
+                        disabled={isAnalyzing}
+                        onClick={onAnalyze}
+                      >
+                        {isAnalyzing ? "Analyzing..." : "Analyze"}
+                      </button>
+
+                      <label className={styles["time-label"]}>End Time</label>
+                      <span className={styles["time"]}>
+                        <input
+                          id="end-hour"
+                          className={styles["time-inputgroup"]}
+                          type="text"
+                          placeholder="HH"
+                          maxLength={2}
+                          size={2}
+                          {...register("endHours", {
+                            required: !watch("untilEnd"),
+                            valueAsNumber: true,
+                          })}
+                          {...(!watch("untilEnd")
+                            ? { pattern: "[0-9]{0,2}" }
+                            : { disabled: true })}
+                        />
+                        <span className={styles["semicolon"]}>:</span>
+                        <input
+                          id="end-minute"
+                          className={styles["time-inputgroup"]}
+                          type="text"
+                          placeholder="mm"
+                          maxLength={2}
+                          size={2}
+                          {...register("endMinutes", {
+                            required: !watch("untilEnd"),
+                            valueAsNumber: true,
+                          })}
+                          {...(!watch("untilEnd")
+                            ? { pattern: "[0-5]?[0-9]" }
+                            : { disabled: true })}
+                        />
+                        <span className={styles["semicolon"]}>:</span>
+                        <input
+                          id="end-second"
+                          className={styles["time-inputgroup"]}
+                          type="text"
+                          placeholder="ss"
+                          maxLength={2}
+                          size={2}
+                          {...register("endSeconds", {
+                            required: !watch("untilEnd"),
+                            valueAsNumber: true,
+                          })}
+                          {...(!watch("untilEnd")
+                            ? { pattern: "[0-5]?[0-9]" }
+                            : { disabled: true })}
+                        />
+                      </span>
+                      <label
+                        className={styles["checkbox-label"]}
+                        htmlFor="untilEnd"
+                      >
+                        <input
+                          type="checkbox"
+                          id="untilEnd"
+                          value="Y"
+                          {...register("untilEnd")}
+                          className={styles["checkbox"]}
+                        />
+                        <span>until End</span>
+                      </label>
+                    </div>
+                    <div className={styles["analyze-row"]}>
+                      <p className={styles["helper-text"]}>{analyzeMessage}</p>
+                    </div>
+                    <div className={styles["error"]}>
+                      {(errors.hours || errors.minutes || errors.seconds) && (
+                        <span role="alert">Incorrect start time</span>
+                      )}
+                    </div>
+                    <div className={styles["error"]}>
+                      {(errors.endHours ||
+                        errors.endMinutes ||
+                        errors.endSeconds) && (
+                        <span role="alert">Incorrect end time</span>
+                      )}
+                    </div>
+                    <div className="cs-time-container">
+                      <label className={styles["volume-label"]}>Volume</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        id="cs-volume"
+                        className={styles["volume-slider"]}
+                        {...register("volume", {
+                          required: true,
+                          valueAsNumber: true,
+                          onChange: onvolumechange,
+                        })}
+                      />
+                      <span
+                        id="cs-volume-text"
+                        className={styles["volume-text"]}
+                      >
+                        {watch("volume")}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {profiles.length > 0 && (
+                      <div className={styles["eq-profile-container"]}>
+                        <label
+                          className={styles["eq-profile-label"]}
+                          htmlFor="song-eq-profile"
+                        >
+                          EQ Profile
+                        </label>
+                        <select
+                          id="song-eq-profile"
+                          className={styles["eq-profile-select"]}
+                          value={selectedProfileId}
+                          onChange={onProfileChange}
+                        >
+                          <option value="">Custom</option>
+                          {profiles.map((profile) => (
+                            <option key={profile.id} value={profile.id}>
+                              {profile.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div className={styles["eq-section"]}>
+                      <p className={styles["eq-title"]}>Song EQ</p>
+                      {AUDIO_EQ_BANDS.map((band) => (
+                        <div key={band.key} className={styles["eq-row"]}>
+                          <label
+                            className={styles["eq-band-label"]}
+                            htmlFor={band.key}
+                          >
+                            {band.label}
+                          </label>
+                          <input
+                            id={band.key}
+                            className={styles["eq-slider"]}
+                            type="range"
+                            min="-10"
+                            max="10"
+                            step="1"
+                            {...register(band.key, {
+                              valueAsNumber: true,
+                              onChange: onSongAudioEqChange,
+                            })}
+                          />
+                          <span className={styles["eq-value"]}>
+                            {watch(band.key)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
-              <div className={styles["error"]}>
-                {(errors.endHours || errors.endMinutes || errors.endSeconds) && (
-                  <span role="alert">Incorrect end time</span>
-                )}
-              </div>
-              <div className="cs-time-container">
-                <label className={styles["volume-label"]}>Volume</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  id="cs-volume"
-                  className={styles["volume-slider"]}
-                  {...register("volume", {
-                    required: true,
-                    valueAsNumber: true,
-                    onChange: onvolumechange,
-                  })}
+              {showTransport ? (
+                <div className={styles["transport-section"]}>
+                  <InfoModalTransport
+                    item={item}
+                    isPlaying={isPlaybackActive}
+                    isExpanded={showEditorSection}
+                    onExpand={expandToInfo}
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : showTransport ? (
+            <>
+              <p className={`${styles["video-title"]} line-clamp-4`}>
+                {item?.title}
+              </p>
+              <p className={styles["channel-name"]}>{item?.channelName}</p>
+              <div className={styles["transport-section"]}>
+                <InfoModalTransport
+                  item={item}
+                  isPlaying={isPlaybackActive}
+                  isExpanded={showEditorSection}
+                  onExpand={expandToInfo}
                 />
-                <span id="cs-volume-text" className={styles["volume-text"]}>
-                  {watch("volume")}
-                </span>
               </div>
             </>
           ) : (
             <>
-              {profiles.length > 0 && (
-                <div className={styles["eq-profile-container"]}>
-                  <label
-                    className={styles["eq-profile-label"]}
-                    htmlFor="song-eq-profile"
-                  >
-                    EQ Profile
-                  </label>
-                  <select
-                    id="song-eq-profile"
-                    className={styles["eq-profile-select"]}
-                    value={selectedProfileId}
-                    onChange={onProfileChange}
-                  >
-                    <option value="">Custom</option>
-                    {profiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div className={styles["eq-section"]}>
-                <p className={styles["eq-title"]}>Song EQ</p>
-                {AUDIO_EQ_BANDS.map((band) => (
-                  <div key={band.key} className={styles["eq-row"]}>
-                    <label className={styles["eq-band-label"]} htmlFor={band.key}>
-                      {band.label}
-                    </label>
-                    <input
-                      id={band.key}
-                      className={styles["eq-slider"]}
-                      type="range"
-                      min="-10"
-                      max="10"
-                      step="1"
-                      {...register(band.key, {
-                        valueAsNumber: true,
-                        onChange: onSongAudioEqChange,
-                      })}
-                    />
-                    <span className={styles["eq-value"]}>{watch(band.key)}</span>
-                  </div>
-                ))}
-              </div>
+              <p className={`${styles["video-title"]} line-clamp-4`}>
+                {item?.title}
+              </p>
+              <p className={styles["channel-name"]}>{item?.channelName}</p>
             </>
           )}
         </div>

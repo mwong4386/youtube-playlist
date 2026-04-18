@@ -56,10 +56,20 @@
   flex-direction: row;
   justify-content: space-between;
   padding: 12px 14px 8px;
+  align-items: center;
 }
 .content {
   padding: 0 16px;
   margin-bottom: 4px;
+}
+.content-collapsed {
+  padding-bottom: 0;
+}
+.transport-section {
+  margin-bottom: 12px;
+}
+.editor-section {
+  margin-top: 4px;
 }
 .cross-button {
   padding: 0;

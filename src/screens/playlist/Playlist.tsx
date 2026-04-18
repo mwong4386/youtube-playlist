@@ -31,7 +31,6 @@ import PlaylistItem from "./PlaylistItem";
 import styles from "./Playlist.module.css";
 import Draggable from "../draggable/Draggable";
 import InfoModal from "../modal/InfoModal";
-import NowPlayingBanner from "./NowPlayingBanner";
 import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import MsgType from "../../constants/msgType";
 import { ThemePreference } from "../../utils/theme";
@@ -83,7 +82,6 @@ import {
 const DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY =
   "dismissedAnalyzeImportBannerKey";
 const DEFAULT_SONG_LISTS_STATE = buildDefaultSongListsState();
-type InfoModalView = "details" | "eq";
 
 interface Props {
   themePreference: ThemePreference;
@@ -108,8 +106,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   ); //for opening the info modal
-  const [infoModalInitialView, setInfoModalInitialView] =
-    useState<InfoModalView>("details");
   const [eqSettingsActive, setEqSettingsActive] = useState(false);
   const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
   const [playlistImportModalActive, setPlaylistImportModalActive] =
@@ -699,19 +695,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     playlist,
     selectedItemIds
   ).length;
-  const currentPlayingItem =
-    playbackState.currentItemId
-      ? playlist.find(
-          (playlistItem) => playlistItem.id === playbackState.currentItemId
-        )
-      : undefined;
-  const showNowPlayingBanner = !!currentPlayingItem;
+  const currentPlaybackItemId = playbackState.currentItemId || playingId;
 
-  const openInfoModal = (
-    itemId: string,
-    initialView: InfoModalView = "details"
-  ) => {
-    setInfoModalInitialView(initialView);
+  const openInfoModal = (itemId: string) => {
     setSelectItemId(itemId);
   };
 
@@ -848,42 +834,24 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
                   </Draggable>
                 );
               })}
-              {showNowPlayingBanner ? (
-                <div
-                  aria-hidden="true"
-                  className={styles["playlist-bottom-spacer"]}
-                />
-              ) : null}
             </div>
           )}
           <InfoModal
             active={!!selectItemId}
             close={() => {
               setSelectItemId(undefined);
-              setInfoModalInitialView("details");
             }}
             onvolumechange={onvolumechange}
             onAudioEqChange={onAudioEqChange}
             profiles={audioEqProfiles}
             save={onSave}
-            initialView={infoModalInitialView}
             onAnalyzeSongBoundaries={analyzeSongBoundaries}
+            currentPlaybackItemId={currentPlaybackItemId}
+            isPlaybackActive={playing}
             item={playlist.find((x) => x.id === selectItemId)}
           />
         </div>
       </div>
-      {currentPlayingItem ? (
-        <NowPlayingBanner
-          item={currentPlayingItem}
-          isPlaying={playing}
-          onOpenInfo={() => {
-            openInfoModal(currentPlayingItem.id, "details");
-          }}
-          onOpenEq={() => {
-            openInfoModal(currentPlayingItem.id, "eq");
-          }}
-        />
-      ) : null}
       <SettingsModal
         active={eqSettingsActive}
         close={() => {
