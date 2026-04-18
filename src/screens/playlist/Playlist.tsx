@@ -1,42 +1,19 @@
 import { useEffect, useState } from "react";
+import MsgType from "../../constants/msgType";
 import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile, {
   AUDIO_EQ_PROFILE_STORAGE_KEY,
 } from "../../models/AudioEqProfile";
 import {
   GEMINI_API_KEY_STORAGE_KEY,
-  type GeminiBoundarySuggestion,
   type GeminiAnalyzeFailure,
   type GeminiAnalyzeSuccess,
+  type GeminiBoundarySuggestion,
 } from "../../models/GeminiSettings";
 import PlaybackState, {
   createInitialPlaybackState,
   isPlaybackActive,
 } from "../../models/PlaybackState";
-import {
-  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
-  SONG_LISTS_STORAGE_KEY,
-  type SongListsState,
-} from "../../models/SongList";
-import { getStorageMap } from "../../utils/syncStorage";
-import {
-  createAudioEqProfile,
-  deleteAudioEqProfile,
-  readStoredAudioEqProfiles,
-  updateAudioEqProfileList,
-} from "../../utils/audioEqProfiles";
-import { readStoredGeminiApiKey } from "../../utils/geminiSettings";
-import PlaylistHeader from "./PlaylistHeader";
-import PlaylistItem from "./PlaylistItem";
-import styles from "./Playlist.module.css";
-import Draggable from "../draggable/Draggable";
-import InfoModal from "../modal/InfoModal";
-import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
-import MsgType from "../../constants/msgType";
-import { ThemePreference } from "../../utils/theme";
-import SettingsModal from "../settings/SettingsModal";
-import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
-import Modal from "../modal/Modal";
 import {
   ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
   type AnalyzeImportBatchState,
@@ -44,20 +21,51 @@ import {
   type PlaylistImportResponse,
 } from "../../models/PlaylistImport";
 import {
+  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  SONG_LISTS_STORAGE_KEY,
+  type SongListsState,
+} from "../../models/SongList";
+import {
+  createAudioEqProfile,
+  deleteAudioEqProfile,
+  readStoredAudioEqProfiles,
+  updateAudioEqProfileList,
+} from "../../utils/audioEqProfiles";
+import { readStoredGeminiApiKey } from "../../utils/geminiSettings";
+import {
   cancelDeleteAllConfirmation,
   confirmDeleteAllConfirmation,
   deleteSelectedPlaylistItems,
 } from "../../utils/playlistActions";
-import PlaylistImportModal from "./PlaylistImportModal";
 import {
-  resolvePlaylistImportSubmission,
-  type PlaylistImportSubmissionResult,
-} from "./playlistImportResult";
+  buildDefaultSongListsState,
+  createSongList,
+  normalizeSongListsState,
+  renameSongList,
+  updateActiveSongListItems,
+} from "../../utils/songLists";
+import { getStorageMap } from "../../utils/syncStorage";
+import { ThemePreference } from "../../utils/theme";
+import Draggable from "../draggable/Draggable";
+import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
+import InfoModal from "../modal/InfoModal";
+import Modal from "../modal/Modal";
+import SettingsModal from "../settings/SettingsModal";
 import {
   getAnalyzeImportBannerViewModel,
   getAnalyzeImportBannerVisibilityKey,
   shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner";
+import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
+import NewSongListModal from "./NewSongListModal";
+import styles from "./Playlist.module.css";
+import PlaylistHeader from "./PlaylistHeader";
+import PlaylistImportModal from "./PlaylistImportModal";
+import {
+  resolvePlaylistImportSubmission,
+  type PlaylistImportSubmissionResult,
+} from "./playlistImportResult";
+import PlaylistItem from "./PlaylistItem";
 import {
   areAllPlaylistItemsSelected,
   clearSelectedItemIds,
@@ -66,14 +74,6 @@ import {
   toggleAllSelectedItemIds,
   toggleSelectedItemId,
 } from "./playlistSelection";
-import {
-  createSongList,
-  buildDefaultSongListsState,
-  normalizeSongListsState,
-  renameSongList,
-  updateActiveSongListItems,
-} from "../../utils/songLists";
-import NewSongListModal from "./NewSongListModal";
 import {
   getSongListCreationError,
   getVisiblePlaylistForActiveList,
@@ -90,21 +90,21 @@ interface Props {
 
 const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [songListsState, setSongListsState] = useState<SongListsState>(
-    DEFAULT_SONG_LISTS_STATE
+    DEFAULT_SONG_LISTS_STATE,
   );
   const [activeSongListName, setActiveSongListName] = useState(
-    DEFAULT_SONG_LISTS_STATE.activeSongListName
+    DEFAULT_SONG_LISTS_STATE.activeSongListName,
   );
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
-    createInitialPlaybackState()
+    createInitialPlaybackState(),
   );
   const [playing, setPlaying] = useState<boolean>(false);
   const [playingId, setPlayingId] = useState<string | undefined>(undefined);
   const [draggingElementId, setDraggingElement] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
-    undefined
+    undefined,
   ); //for opening the info modal
   const [pendingPlaybackItemId, setPendingPlaybackItemId] = useState<
     string | undefined
@@ -127,7 +127,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     useState<string | null>(null);
   const playlist = getVisiblePlaylistForActiveList(
     songListsState.songLists,
-    activeSongListName
+    activeSongListName,
   );
 
   const syncPlaybackState = (state?: PlaybackState | null) => {
@@ -157,28 +157,30 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     ) {
       chrome.storage.sync.set({
         [SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists,
-        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName,
+        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:
+          nextSongListsState.activeSongListName,
       });
     }
   };
 
   const persistSongListsState = (
     nextSongListsState: SongListsState,
-    callback?: () => void
+    callback?: () => void,
   ) => {
     applySongListsState(nextSongListsState);
     chrome.storage.sync.set(
       {
         [SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists,
-        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName,
+        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:
+          nextSongListsState.activeSongListName,
       },
-      callback
+      callback,
     );
   };
 
   const persistActiveSongListItems = (
     items: typeof playlist,
-    callback?: () => void
+    callback?: () => void,
   ) => {
     const nextSongListsState = updateActiveSongListItems(songListsState, items);
     persistSongListsState(nextSongListsState, callback);
@@ -247,7 +249,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   useEffect(() => {
     setDismissedAnalyzeImportBannerKey(
-      window.localStorage.getItem(DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY)
+      window.localStorage.getItem(DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY),
     );
   }, []);
 
@@ -258,9 +260,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         setAnalyzeImportBatchState(
           (result[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY] as
             | AnalyzeImportBatchState
-            | undefined) || null
+            | undefined) || null,
         );
-      }
+      },
     );
   }, []);
 
@@ -268,27 +270,28 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     chrome.storage.local.get(
       ["playbackState", "isPlaying", "playingItem"],
       (result) => {
-      syncPlaybackState(result["playbackState"]);
+        syncPlaybackState(result["playbackState"]);
         setPlaying(
           result["isPlaying"] === undefined
             ? isPlaybackActive(
-                (result["playbackState"] || createInitialPlaybackState()).status
+                (result["playbackState"] || createInitialPlaybackState())
+                  .status,
               )
-            : !!result["isPlaying"]
+            : !!result["isPlaying"],
         );
         setPlayingId(
           result["playingItem"]?.id ||
             result["playbackState"]?.currentItemId ||
-            undefined
+            undefined,
         );
-      }
+      },
     );
   }, []);
 
   useEffect(() => {
     const listener = (
       changes: { [key: string]: chrome.storage.StorageChange },
-      namespace: "sync" | "local" | "managed" | "session"
+      namespace: "sync" | "local" | "managed" | "session",
     ) => {
       if ("playbackState" in changes) {
         syncPlaybackState(changes["playbackState"].newValue);
@@ -306,28 +309,22 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       ) {
         void syncSongListsState();
       }
-      if (
-        namespace === "sync" &&
-        AUDIO_EQ_PROFILE_STORAGE_KEY in changes
-      ) {
+      if (namespace === "sync" && AUDIO_EQ_PROFILE_STORAGE_KEY in changes) {
         setAudioEqProfiles(
           typeof changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue === "undefined"
             ? readStoredAudioEqProfiles({})
             : readStoredAudioEqProfiles({
                 [AUDIO_EQ_PROFILE_STORAGE_KEY]:
                   changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue,
-              })
+              }),
         );
       }
-      if (
-        namespace === "local" &&
-        GEMINI_API_KEY_STORAGE_KEY in changes
-      ) {
+      if (namespace === "local" && GEMINI_API_KEY_STORAGE_KEY in changes) {
         setGeminiApiKey(
           readStoredGeminiApiKey({
             [GEMINI_API_KEY_STORAGE_KEY]:
               changes[GEMINI_API_KEY_STORAGE_KEY].newValue,
-          })
+          }),
         );
       }
       if (
@@ -337,7 +334,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         setAnalyzeImportBatchState(
           (changes[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY].newValue as
             | AnalyzeImportBatchState
-            | undefined) || null
+            | undefined) || null,
         );
       }
     };
@@ -351,7 +348,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setSelectedItemIds((currentSelectedItemIds) => {
       const playlistItemIds = new Set(playlist.map((item) => item.id));
       const nextSelectedItemIds = currentSelectedItemIds.filter((itemId) =>
-        playlistItemIds.has(itemId)
+        playlistItemIds.has(itemId),
       );
 
       return nextSelectedItemIds.length === currentSelectedItemIds.length
@@ -395,7 +392,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   const clearSelection = () => {
     setSelectedItemIds((currentSelectedItemIds) =>
-      clearSelectedItemIds(currentSelectedItemIds)
+      clearSelectedItemIds(currentSelectedItemIds),
     );
   };
 
@@ -406,7 +403,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       },
       () => {
         setDeleteAllModalActive(false);
-      }
+      },
     );
   };
 
@@ -421,8 +418,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     saveProfiles(
       updateAudioEqProfileList(
         audioEqProfiles,
-        createAudioEqProfile(name, audioEq)
-      )
+        createAudioEqProfile(name, audioEq),
+      ),
     );
   };
 
@@ -460,17 +457,17 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
               normalizeAnalyzeSongBoundariesResponse(
                 response,
                 chrome.runtime.lastError,
-                console
-              )
+                console,
+              ),
             );
-          }
+          },
         );
-      }
+      },
     );
   };
 
   const importYoutubePlaylist = (
-    request: PlaylistImportRequest
+    request: PlaylistImportRequest,
   ): Promise<PlaylistImportSubmissionResult> => {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
@@ -482,7 +479,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         (response: PlaylistImportResponse | undefined) => {
           const result = resolvePlaylistImportSubmission(
             response,
-            chrome.runtime.lastError ?? null
+            chrome.runtime.lastError ?? null,
           );
 
           if (result.ok) {
@@ -490,7 +487,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           }
 
           resolve(result);
-        }
+        },
       );
     });
   };
@@ -501,7 +498,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     endTimestamp: number | undefined,
     volume: number,
     audioEq: AudioEqSettings,
-    geminiSuggestion?: GeminiBoundarySuggestion
+    geminiSuggestion?: GeminiBoundarySuggestion,
   ) => {
     const item = playlist.find((x) => x.id === id);
     if (!item) return;
@@ -539,10 +536,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     }
   };
   const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (
-      playing &&
-      selectItemId === playingId
-    ) {
+    if (playing && selectItemId === playingId) {
       chrome.runtime.sendMessage({
         name: MsgType.VolumeChange,
         volume: event.currentTarget.value,
@@ -580,7 +574,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const onCreateSongList = (rawName: string) => {
     const error = getSongListCreationError(
       rawName,
-      Object.keys(songListsState.songLists)
+      Object.keys(songListsState.songLists),
     );
 
     if (error) {
@@ -600,7 +594,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       const nextSongListsState = renameSongList(
         songListsState,
         currentName,
-        nextName
+        nextName,
       );
       persistSongListsState(nextSongListsState);
       return "";
@@ -625,7 +619,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
         clearSelection();
         closeSelectionActionsModal();
-      }
+      },
     );
   };
 
@@ -646,14 +640,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
         clearSelection();
         closeSelectionActionsModal();
-      }
+      },
     );
   };
 
   const onAnalyzeUncalibratedSelected = () => {
     const uncalibratedItemIds = filterUncalibratedPlaylistItemIds(
       playlist,
-      selectedItemIds
+      selectedItemIds,
     );
 
     if (uncalibratedItemIds.length === 0) {
@@ -673,7 +667,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
         clearSelection();
         closeSelectionActionsModal();
-      }
+      },
     );
   };
 
@@ -684,10 +678,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   };
 
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
-    analyzeImportBatchState
+    analyzeImportBatchState,
   );
-  const analyzeImportBannerVisibilityKey =
-    getAnalyzeImportBannerVisibilityKey(analyzeImportBatchState);
+  const analyzeImportBannerVisibilityKey = getAnalyzeImportBannerVisibilityKey(
+    analyzeImportBatchState,
+  );
   const showAnalyzeImportBatchState =
     !!analyzeImportBanner &&
     analyzeImportBannerVisibilityKey !== dismissedAnalyzeImportBannerKey;
@@ -696,7 +691,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const someSelected = selectedItemIds.length > 0;
   const selectedUncalibratedCount = filterUncalibratedPlaylistItemIds(
     playlist,
-    selectedItemIds
+    selectedItemIds,
   ).length;
   const currentPlaybackItemId = playbackState.currentItemId || playingId;
   const effectivePlaybackItemId =
@@ -721,155 +716,153 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   return (
     <>
       <div className={styles["content-container"]}>
-        <div className={styles["content-shell"]}>
-          <PlaylistHeader
-            playlist={playlist}
-            songLists={songListsState.songLists}
-            activeSongListName={activeSongListName}
-            onDelete={onDeleteAll}
-            onOpenEqSettings={() => {
-              setEqSettingsActive(true);
-            }}
-            onOpenGeminiSettings={() => {
-              setGeminiSettingsActive(true);
-            }}
-            onOpenImportModal={() => {
-              setPlaylistImportModalActive(true);
-            }}
-            onOpenNewSongListModal={() => {
-              setNewSongListError("");
-              setNewSongListModalActive(true);
-            }}
-            onSelectSongList={(name) => {
-              onSelectSongList(name);
-            }}
-            onRenameSongList={onRenameSongList}
-            onClearSelection={clearSelection}
-            onToggleSelectAll={() => {
-              setSelectedItemIds((currentSelectedItemIds) =>
-                toggleAllSelectedItemIds(playlist, currentSelectedItemIds)
-              );
-            }}
-            onOpenSelectionActions={onOpenSelectionActions}
-            allSelected={allSelected}
-            someSelected={someSelected}
-            selectedCount={selectedItemIds.length}
-            themePreference={themePreference}
-            setThemePreference={setThemePreference}
-          />
-          {playlist.length === 0 ? (
-            <div className={styles["empty-container"]}>
-              <p className={styles["empty-message"]}>The playlist is empty</p>
-            </div>
-          ) : (
-            <div className={styles["playlist-container"]}>
-              {showAnalyzeImportBatchState ? (
-                <div className={styles["analyze-import-banner-container"]}>
-                  <div className={styles["analyze-import-banner"]}>
-                    <div className={styles["analyze-import-banner-header"]}>
-                      <p className={styles["analyze-import-banner-title"]}>
-                        {analyzeImportBanner?.title}
-                      </p>
-                      {analyzeImportBanner?.actionLabel === "Stop" ? (
-                        <button
-                          type="button"
-                          aria-label="Stop import analysis"
-                          className={styles["analyze-import-banner-stop-button"]}
-                          onClick={onStopAnalyzeImportBatch}
-                        >
-                          <span
-                            aria-hidden="true"
-                            className={styles["analyze-import-banner-stop-icon"]}
-                          />
-                        </button>
-                      ) : null}
-                      {analyzeImportBanner?.dismissible ? (
-                        <button
-                          type="button"
-                          aria-label="Dismiss import analysis status"
-                          className={styles["analyze-import-banner-close-button"]}
-                          onClick={() => {
-                            if (analyzeImportBannerVisibilityKey) {
-                              window.localStorage.setItem(
-                                DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY,
-                                analyzeImportBannerVisibilityKey
-                              );
-                              setDismissedAnalyzeImportBannerKey(
-                                analyzeImportBannerVisibilityKey
-                              );
-                            }
-
-                            if (
-                              shouldClearAnalyzeImportBatchStateOnDismiss(
-                                analyzeImportBatchState
-                              )
-                            ) {
-                              chrome.storage.local.remove(
-                                ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY
-                              );
-                            }
-                          }}
-                        >
-                          ×
-                        </button>
-                      ) : null}
-                    </div>
-                    <p className={styles["analyze-import-banner-detail"]}>
-                      {analyzeImportBanner?.detail}
+        <PlaylistHeader
+          playlist={playlist}
+          songLists={songListsState.songLists}
+          activeSongListName={activeSongListName}
+          onDelete={onDeleteAll}
+          onOpenEqSettings={() => {
+            setEqSettingsActive(true);
+          }}
+          onOpenGeminiSettings={() => {
+            setGeminiSettingsActive(true);
+          }}
+          onOpenImportModal={() => {
+            setPlaylistImportModalActive(true);
+          }}
+          onOpenNewSongListModal={() => {
+            setNewSongListError("");
+            setNewSongListModalActive(true);
+          }}
+          onSelectSongList={(name) => {
+            onSelectSongList(name);
+          }}
+          onRenameSongList={onRenameSongList}
+          onClearSelection={clearSelection}
+          onToggleSelectAll={() => {
+            setSelectedItemIds((currentSelectedItemIds) =>
+              toggleAllSelectedItemIds(playlist, currentSelectedItemIds),
+            );
+          }}
+          onOpenSelectionActions={onOpenSelectionActions}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          selectedCount={selectedItemIds.length}
+          themePreference={themePreference}
+          setThemePreference={setThemePreference}
+        />
+        {playlist.length === 0 ? (
+          <div className={styles["empty-container"]}>
+            <p className={styles["empty-message"]}>The playlist is empty</p>
+          </div>
+        ) : (
+          <div className={styles["playlist-container"]}>
+            {showAnalyzeImportBatchState ? (
+              <div className={styles["analyze-import-banner-container"]}>
+                <div className={styles["analyze-import-banner"]}>
+                  <div className={styles["analyze-import-banner-header"]}>
+                    <p className={styles["analyze-import-banner-title"]}>
+                      {analyzeImportBanner?.title}
                     </p>
-                  </div>
-                </div>
-              ) : null}
-              {playlist.map((item) => {
-                const playlistItem = (
-                  <PlaylistItem
-                    key={item.id}
-                    item={item}
-                    isPlaying={playing}
-                    IPlaying={playingId === item.id}
-                    onToggleSelected={(itemId) => {
-                      setSelectedItemIds((currentSelectedItemIds) =>
-                        toggleSelectedItemId(currentSelectedItemIds, itemId)
-                      );
-                    }}
-                    selected={selectedItemIds.includes(item.id)}
-                    onOpenInfo={openInfoModal}
-                    onPlayItem={openPlaybackModal}
-                  />
-                );
+                    {analyzeImportBanner?.actionLabel === "Stop" ? (
+                      <button
+                        type="button"
+                        aria-label="Stop import analysis"
+                        className={styles["analyze-import-banner-stop-button"]}
+                        onClick={onStopAnalyzeImportBatch}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={styles["analyze-import-banner-stop-icon"]}
+                        />
+                      </button>
+                    ) : null}
+                    {analyzeImportBanner?.dismissible ? (
+                      <button
+                        type="button"
+                        aria-label="Dismiss import analysis status"
+                        className={styles["analyze-import-banner-close-button"]}
+                        onClick={() => {
+                          if (analyzeImportBannerVisibilityKey) {
+                            window.localStorage.setItem(
+                              DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY,
+                              analyzeImportBannerVisibilityKey,
+                            );
+                            setDismissedAnalyzeImportBannerKey(
+                              analyzeImportBannerVisibilityKey,
+                            );
+                          }
 
-                return headerMode === "selection" ? (
-                  playlistItem
-                ) : (
-                  <Draggable
-                    key={item.id}
-                    id={item.id}
-                    isDragging={draggingElementId === item.id}
-                    setDraggingElement={setDraggingElement}
-                    onMoveTo={onMoveTo}
-                  >
-                    {playlistItem}
-                  </Draggable>
-                );
-              })}
-            </div>
-          )}
-          <InfoModal
-            active={!!selectItemId}
-            close={() => {
-              setPendingPlaybackItemId(undefined);
-              setSelectItemId(undefined);
-            }}
-            onvolumechange={onvolumechange}
-            onAudioEqChange={onAudioEqChange}
-            profiles={audioEqProfiles}
-            save={onSave}
-            onAnalyzeSongBoundaries={analyzeSongBoundaries}
-            currentPlaybackItemId={effectivePlaybackItemId}
-            isPlaybackActive={playing}
-            item={playlist.find((x) => x.id === selectItemId)}
-          />
-        </div>
+                          if (
+                            shouldClearAnalyzeImportBatchStateOnDismiss(
+                              analyzeImportBatchState,
+                            )
+                          ) {
+                            chrome.storage.local.remove(
+                              ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
+                            );
+                          }
+                        }}
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
+                  <p className={styles["analyze-import-banner-detail"]}>
+                    {analyzeImportBanner?.detail}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            {playlist.map((item) => {
+              const playlistItem = (
+                <PlaylistItem
+                  key={item.id}
+                  item={item}
+                  isPlaying={playing}
+                  IPlaying={playingId === item.id}
+                  onToggleSelected={(itemId) => {
+                    setSelectedItemIds((currentSelectedItemIds) =>
+                      toggleSelectedItemId(currentSelectedItemIds, itemId),
+                    );
+                  }}
+                  selected={selectedItemIds.includes(item.id)}
+                  onOpenInfo={openInfoModal}
+                  onPlayItem={openPlaybackModal}
+                />
+              );
+
+              return headerMode === "selection" ? (
+                playlistItem
+              ) : (
+                <Draggable
+                  key={item.id}
+                  id={item.id}
+                  isDragging={draggingElementId === item.id}
+                  setDraggingElement={setDraggingElement}
+                  onMoveTo={onMoveTo}
+                >
+                  {playlistItem}
+                </Draggable>
+              );
+            })}
+          </div>
+        )}
+        <InfoModal
+          active={!!selectItemId}
+          close={() => {
+            setPendingPlaybackItemId(undefined);
+            setSelectItemId(undefined);
+          }}
+          onvolumechange={onvolumechange}
+          onAudioEqChange={onAudioEqChange}
+          profiles={audioEqProfiles}
+          save={onSave}
+          onAnalyzeSongBoundaries={analyzeSongBoundaries}
+          currentPlaybackItemId={effectivePlaybackItemId}
+          isPlaybackActive={playing}
+          item={playlist.find((x) => x.id === selectItemId)}
+        />
       </div>
       <SettingsModal
         active={eqSettingsActive}
@@ -958,7 +951,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         <div className={styles["delete-all-modal"]}>
           <div className={styles["delete-all-modal-header"]}>
             <div>
-              <h2 className={styles["delete-all-modal-title"]}>Delete all songs</h2>
+              <h2 className={styles["delete-all-modal-title"]}>
+                Delete all songs
+              </h2>
               <p className={styles["delete-all-modal-text"]}>
                 This will remove every song from your playlist.
               </p>

@@ -70,18 +70,15 @@
   align-items: center;
 }
 .content {
-  padding: 12px 24px 4px;
+  padding: 4px 16px;
   margin-bottom: 4px;
 }
 .content-collapsed {
   padding: 0 !important;
   margin-bottom: 0;
 }
-.content-collapsed .transport-section {
-  margin-bottom: 0;
-}
 .transport-section {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .editor-section {
   margin-top: 4px;
@@ -126,6 +123,7 @@
 .video-title {
   font-size: 16px;
   font-weight: 700;
+  margin-top: 8px;
   margin-bottom: 8px;
 }
 .channel-name {
@@ -253,7 +251,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 16px;
+  margin-bottom: 16px;
 }
 .volume-label {
   display: inline-block;

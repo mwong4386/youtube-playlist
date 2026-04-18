@@ -10,48 +10,48 @@ const expectEqual = (actual: unknown, expected: unknown) => {
 
 const playlistStyles = readFileSync(
   join(process.cwd(), "src/screens/playlist/Playlist.module.css"),
-  "utf8"
+  "utf8",
 );
 const playlistSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/Playlist.tsx"),
-  "utf8"
+  "utf8",
 );
 const playlistHeaderSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistHeader.tsx"),
-  "utf8"
+  "utf8",
 );
 const playlistImportModalSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistImportModal.tsx"),
-  "utf8"
+  "utf8",
 );
 const playlistImportModalStyles = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistImportModal.module.css"),
-  "utf8"
+  "utf8",
 );
 const newSongListModalSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/NewSongListModal.tsx"),
-  "utf8"
+  "utf8",
 );
 const playlistItemSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistItem.tsx"),
-  "utf8"
+  "utf8",
 );
 const actionSheetItemSource = readFileSync(
   join(process.cwd(), "src/screens/actionSheet/ActionSheetItem.tsx"),
-  "utf8"
+  "utf8",
 );
 const actionSheetStyles = readFileSync(
   join(process.cwd(), "src/screens/actionSheet/ActionSheet.module.css"),
-  "utf8"
+  "utf8",
 );
 const actionSheetModelSource = readFileSync(
   join(process.cwd(), "src/models/MActionSheetItem.ts"),
-  "utf8"
+  "utf8",
 );
 
 test("playlist container only shows vertical scrollbar when content overflows", () => {
   const match = playlistStyles.match(
-    /\.playlist-container\s*\{[^}]*overflow-y:\s*([^;]+);/
+    /\.playlist-container\s*\{[^}]*overflow-y:\s*([^;]+);/,
   );
 
   expectEqual(match?.[1].trim(), "auto");
@@ -59,12 +59,13 @@ test("playlist container only shows vertical scrollbar when content overflows", 
 
 test("playlist layout uses a flex content column so the banner does not steal list height", () => {
   expectEqual(playlistStyles.includes(".content-container"), true);
-  expectEqual(playlistStyles.includes(".content-shell"), true);
   expectEqual(playlistStyles.includes("display: flex;"), true);
   expectEqual(playlistStyles.includes("flex-direction: column;"), true);
   expectEqual(playlistStyles.includes("flex: 1;"), true);
-  expectEqual(playlistSource.includes('className={styles["content-container"]}'), true);
-  expectEqual(playlistSource.includes('className={styles["content-shell"]}'), true);
+  expectEqual(
+    playlistSource.includes('className={styles["content-container"]}'),
+    true,
+  );
   expectEqual(playlistSource.includes("<PlaylistHeader"), true);
 });
 
@@ -82,26 +83,12 @@ test("playlist chrome uses an embedded top control rail inside the main shell", 
   expectEqual(playlistStyles.includes("box-shadow: 0 18px 32px -28px"), true);
 });
 
-test("playlist source renders the header inside the content shell before the scrollable list", () => {
-  const contentShellIndex = playlistSource.indexOf(
-    'className={styles["content-shell"]}'
-  );
-  const playlistHeaderIndex = playlistSource.indexOf("<PlaylistHeader");
-  const playlistContainerIndex = playlistSource.indexOf(
-    'className={styles["playlist-container"]}'
-  );
-
-  expectEqual(contentShellIndex >= 0, true);
-  expectEqual(playlistHeaderIndex > contentShellIndex, true);
-  expectEqual(playlistContainerIndex > playlistHeaderIndex, true);
-});
-
 test("playlist source renders the analysis banner inside the scrollable playlist flow", () => {
   const playlistContainerIndex = playlistSource.indexOf(
-    'className={styles["playlist-container"]}'
+    'className={styles["playlist-container"]}',
   );
   const analyzeBannerIndex = playlistSource.indexOf(
-    'className={styles["analyze-import-banner-container"]}'
+    'className={styles["analyze-import-banner-container"]}',
   );
 
   expectEqual(playlistContainerIndex >= 0, true);
@@ -109,22 +96,16 @@ test("playlist source renders the analysis banner inside the scrollable playlist
 });
 
 test("playlist selection mode uses shared helpers and disables dragging", () => {
-  expectEqual(
-    playlistSource.includes('from "./playlistSelection"'),
-    true
-  );
+  expectEqual(playlistSource.includes('from "./playlistSelection"'), true);
   expectEqual(
     playlistSource.includes("const [selectedItemIds, setSelectedItemIds]"),
-    true
+    true,
   );
   expectEqual(
     playlistSource.includes("getPlaylistHeaderMode(selectedItemIds)"),
-    true
+    true,
   );
-  expectEqual(
-    playlistSource.includes("headerMode === \"selection\""),
-    true
-  );
+  expectEqual(playlistSource.includes('headerMode === "selection"'), true);
 });
 
 test("playlist header source includes selection mode action plumbing", () => {
@@ -133,10 +114,16 @@ test("playlist header source includes selection mode action plumbing", () => {
   expectEqual(playlistHeaderSource.includes("onToggleSelectAll"), true);
   expectEqual(playlistHeaderSource.includes("onOpenSelectionActions"), true);
   expectEqual(playlistHeaderSource.includes('type="checkbox"'), true);
-  expectEqual(playlistHeaderSource.includes("selection-header-home-button"), true);
-  expectEqual(playlistHeaderSource.includes("selection-header-home-icon"), true);
+  expectEqual(
+    playlistHeaderSource.includes("selection-header-home-button"),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes("selection-header-home-icon"),
+    true,
+  );
   expectEqual(playlistHeaderSource.includes("Actions"), true);
-  expectEqual(playlistHeaderSource.includes("tone: \"danger\""), true);
+  expectEqual(playlistHeaderSource.includes('tone: "danger"'), true);
 });
 
 test("playlist header source routes song list management through a selector row and dedicated sheet", () => {
@@ -146,7 +133,10 @@ test("playlist header source routes song list management through a selector row 
   expectEqual(playlistHeaderSource.includes("buildSongListSheetRows"), true);
   expectEqual(playlistHeaderSource.includes("editingSongListName"), true);
   expectEqual(playlistHeaderSource.includes("(Current List)"), false);
-  expectEqual(playlistHeaderSource.includes("Object.keys(songLists).map"), false);
+  expectEqual(
+    playlistHeaderSource.includes("Object.keys(songLists).map"),
+    false,
+  );
   expectEqual(playlistHeaderSource.includes("header-song-list-button"), false);
   expectEqual(playlistHeaderSource.includes("header-new-list-button"), false);
 });
@@ -156,14 +146,8 @@ test("playlist header opens the action sheet when the song list selector is used
   const helperEnd = playlistHeaderSource.indexOf("const buildMenuItems");
   const helperSource = playlistHeaderSource.slice(helperStart, helperEnd);
 
-  expectEqual(
-    helperSource.includes("ctx.setActionSheet(items);"),
-    true
-  );
-  expectEqual(
-    helperSource.includes("ctx.open();"),
-    true
-  );
+  expectEqual(helperSource.includes("ctx.setActionSheet(items);"), true);
+  expectEqual(helperSource.includes("ctx.open();"), true);
 });
 
 test("playlist header source no longer exposes player pin actions", () => {
@@ -202,7 +186,10 @@ test("song list action rows use a dedicated left-aligned affordance instead of t
   expectEqual(actionSheetItemSource.includes("song-list-action"), true);
   expectEqual(actionSheetItemSource.includes("song-list-action-row"), true);
   expectEqual(actionSheetStyles.includes(".song-list-action-row"), true);
-  expectEqual(actionSheetStyles.includes(".song-list-action-row .row-copy"), true);
+  expectEqual(
+    actionSheetStyles.includes(".song-list-action-row .row-copy"),
+    true,
+  );
   expectEqual(actionSheetStyles.includes("justify-content: flex-start;"), true);
   expectEqual(actionSheetStyles.includes("background: transparent;"), true);
 });
@@ -211,7 +198,10 @@ test("song list item rows use an explicit flex row container for title and edit 
   expectEqual(actionSheetItemSource.includes("song-list-row-container"), true);
   expectEqual(actionSheetStyles.includes(".song-list-row-container"), true);
   expectEqual(actionSheetStyles.includes("display: flex;"), true);
-  expectEqual(actionSheetStyles.includes("justify-content: space-between;"), true);
+  expectEqual(
+    actionSheetStyles.includes("justify-content: space-between;"),
+    true,
+  );
   expectEqual(actionSheetStyles.includes("align-items: center;"), true);
   expectEqual(actionSheetStyles.includes("padding: 0 14px 0 14px;"), true);
 });
@@ -221,13 +211,12 @@ test("playlist source includes selected-song action modal wiring", () => {
   expectEqual(playlistSource.includes("Analyze Timing"), true);
   expectEqual(playlistSource.includes("Delete Songs"), true);
   expectEqual(playlistSource.includes("Selected songs"), false);
+  expectEqual(playlistSource.includes("itemIds: selectedItemIds"), true);
   expectEqual(
-    playlistSource.includes("itemIds: selectedItemIds"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("deleteSelectedPlaylistItems(playlist, selectedItemIds)"),
-    true
+    playlistSource.includes(
+      "deleteSelectedPlaylistItems(playlist, selectedItemIds)",
+    ),
+    true,
   );
 });
 
@@ -239,195 +228,175 @@ test("playlist source initializes and syncs visible playlist from named song-lis
   expectEqual(playlistSource.includes("SONG_LISTS_STORAGE_KEY"), true);
   expectEqual(
     playlistSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY"),
-    true
+    true,
   );
   expectEqual(playlistSource.includes("getStorageMap("), true);
   expectEqual(playlistSource.includes("normalizeSongListsState("), true);
   expectEqual(
     playlistSource.includes("const [songListsState, setSongListsState]"),
-    true
+    true,
   );
   expectEqual(
-    playlistSource.includes("const [activeSongListName, setActiveSongListName]"),
-    true
+    playlistSource.includes(
+      "const [activeSongListName, setActiveSongListName]",
+    ),
+    true,
   );
   expectEqual(
     playlistSource.includes("getVisiblePlaylistForActiveList("),
-    true
+    true,
   );
   expectEqual(
     playlistSource.includes("chrome.storage.onChanged.addListener(listener)"),
-    true
+    true,
   );
   expectEqual(
     playlistSource.includes("SONG_LISTS_STORAGE_KEY in changes"),
-    true
+    true,
   );
   expectEqual(
     playlistSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes"),
-    true
+    true,
   );
 });
 
 test("playlist source writes active-list updates through named song-list helpers", () => {
   expectEqual(
     playlistSource.includes("updateActiveSongListItems(songListsState"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("[SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists"),
-    true
+    true,
   );
   expectEqual(
     playlistSource.includes(
-      "[ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName"
+      "[SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists",
     ),
-    true
+    true,
   );
   expectEqual(
-    playlistSource.includes("youtube_list: playlist"),
-    false
+    playlistSource.includes(
+      "[ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName",
+    ),
+    true,
   );
+  expectEqual(playlistSource.includes("youtube_list: playlist"), false);
+  expectEqual(playlistSource.includes("youtube_list: temp"), false);
   expectEqual(
-    playlistSource.includes("youtube_list: temp"),
-    false
-  );
-  expectEqual(
-    playlistSource.includes("youtube_list: deleteSelectedPlaylistItems(playlist, selectedItemIds)"),
-    false
+    playlistSource.includes(
+      "youtube_list: deleteSelectedPlaylistItems(playlist, selectedItemIds)",
+    ),
+    false,
   );
 });
 
 test("playlist import and delete-all source route through the active song list", () => {
   expectEqual(
-    playlistHeaderSource.includes("description: \"Import Playlist\""),
-    true
+    playlistHeaderSource.includes('description: "Import Playlist"'),
+    true,
   );
   expectEqual(
-    playlistHeaderSource.includes("description: \"Import from YouTube Playlist\""),
-    false
+    playlistHeaderSource.includes(
+      'description: "Import from YouTube Playlist"',
+    ),
+    false,
   );
   expectEqual(
-    playlistHeaderSource.includes("description: \"Import Playlist JSON\""),
-    false
+    playlistHeaderSource.includes('description: "Import Playlist JSON"'),
+    false,
   );
   expectEqual(
     playlistHeaderSource.includes("onOpenImportModal: () => void;"),
-    true
+    true,
   );
   expectEqual(
-    playlistImportModalSource.includes("onImportJson: (playlist: MPlaylistItem[]) => void;"),
-    true
+    playlistImportModalSource.includes(
+      "onImportJson: (playlist: MPlaylistItem[]) => void;",
+    ),
+    true,
   );
   expectEqual(
-    playlistImportModalSource.includes("const fileInputRef = useRef<HTMLInputElement | null>(null);"),
-    true
+    playlistImportModalSource.includes(
+      "const fileInputRef = useRef<HTMLInputElement | null>(null);",
+    ),
+    true,
   );
   expectEqual(
     playlistImportModalSource.includes("parseImportedPlaylist(content)"),
-    true
+    true,
   );
   expectEqual(
     playlistImportModalSource.includes("onImportJson(importedPlaylist);"),
-    true
+    true,
   );
   expectEqual(
     playlistImportModalSource.includes("Import from YouTube playlist"),
-    true
+    true,
   );
+  expectEqual(playlistImportModalSource.includes("Import playlist JSON"), true);
+  expectEqual(playlistImportModalSource.includes("Choose JSON file"), true);
+  expectEqual(playlistImportModalStyles.includes(".importSection"), true);
   expectEqual(
-    playlistImportModalSource.includes("Import playlist JSON"),
-    true
-  );
-  expectEqual(
-    playlistImportModalSource.includes("Choose JSON file"),
-    true
-  );
-  expectEqual(
-    playlistImportModalStyles.includes(".importSection"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("const onImportJson = (importedPlaylist: typeof playlist) => {"),
-    true
+    playlistSource.includes(
+      "const onImportJson = (importedPlaylist: typeof playlist) => {",
+    ),
+    true,
   );
   expectEqual(
     playlistSource.includes("persistActiveSongListItems(importedPlaylist);"),
-    true
+    true,
   );
-  expectEqual(
-    playlistSource.includes("onImportJson={onImportJson}"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("persistActiveSongListItems([]);"),
-    true
-  );
+  expectEqual(playlistSource.includes("onImportJson={onImportJson}"), true);
+  expectEqual(playlistSource.includes("persistActiveSongListItems([]);"), true);
 });
 
 test("playlist header export source revokes object URLs after download", () => {
-  expectEqual(
-    playlistHeaderSource.includes("URL.revokeObjectURL(url);"),
-    true
-  );
+  expectEqual(playlistHeaderSource.includes("URL.revokeObjectURL(url);"), true);
   expectEqual(
     playlistHeaderSource.includes("window.setTimeout(revokeUrl, 1000);"),
-    true
+    true,
   );
 });
 
 test("playlist source manages new song list modal state and create flow", () => {
   expectEqual(
-    playlistSource.includes("const [newSongListModalActive, setNewSongListModalActive]"),
-    true
+    playlistSource.includes(
+      "const [newSongListModalActive, setNewSongListModalActive]",
+    ),
+    true,
   );
   expectEqual(
     playlistSource.includes("const [newSongListError, setNewSongListError]"),
-    true
+    true,
   );
   expectEqual(playlistSource.includes("getSongListCreationError("), true);
   expectEqual(playlistSource.includes("createSongList(songListsState"), true);
-  expectEqual(playlistSource.includes("persistSongListsState(nextSongListsState"), true);
-  expectEqual(playlistSource.includes("setNewSongListError(\"\")"), true);
+  expectEqual(
+    playlistSource.includes("persistSongListsState(nextSongListsState"),
+    true,
+  );
+  expectEqual(playlistSource.includes('setNewSongListError("")'), true);
   expectEqual(playlistSource.includes("setNewSongListModalActive(true)"), true);
-  expectEqual(playlistSource.includes("setNewSongListModalActive(false)"), true);
+  expectEqual(
+    playlistSource.includes("setNewSongListModalActive(false)"),
+    true,
+  );
   expectEqual(playlistSource.includes("const onRenameSongList ="), true);
   expectEqual(playlistSource.includes("renameSongList("), true);
   expectEqual(playlistSource.includes("<NewSongListModal"), true);
   expectEqual(
     playlistSource.includes("activeSongListName={activeSongListName}"),
-    true
+    true,
   );
-  expectEqual(
-    playlistSource.includes("onSelectSongList={(name) =>"),
-    true
-  );
+  expectEqual(playlistSource.includes("onSelectSongList={(name) =>"), true);
 });
 
 test("playlist source guards reorder targets and preserves selection on analyze send failures", () => {
-  expectEqual(
-    playlistSource.includes("if (newIndex < 0) return;"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("(_response?: unknown) =>"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("if (chrome.runtime.lastError) {"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("clearSelection();"),
-    true
-  );
-  expectEqual(
-    playlistSource.includes("closeSelectionActionsModal();"),
-    true
-  );
+  expectEqual(playlistSource.includes("if (newIndex < 0) return;"), true);
+  expectEqual(playlistSource.includes("(_response?: unknown) =>"), true);
+  expectEqual(playlistSource.includes("if (chrome.runtime.lastError) {"), true);
+  expectEqual(playlistSource.includes("clearSelection();"), true);
+  expectEqual(playlistSource.includes("closeSelectionActionsModal();"), true);
   expectEqual(
     playlistSource.includes("name: MsgType.AnalyzeImportedPlaylist"),
-    true
+    true,
   );
 });
 
@@ -447,13 +416,25 @@ test("playlist styles include selection header and checkbox classes", () => {
   expectEqual(playlistStyles.includes(".playlist-item-checkbox"), true);
   expectEqual(playlistStyles.includes(".selection-actions-modal"), true);
   expectEqual(playlistStyles.includes(".header-center-container"), true);
-  expectEqual(playlistHeaderSource.includes("selection-header-home-button"), true);
-  expectEqual(playlistHeaderSource.includes("selection-header-action-button"), true);
+  expectEqual(
+    playlistHeaderSource.includes("selection-header-home-button"),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes("selection-header-action-button"),
+    true,
+  );
   expectEqual(playlistStyles.includes("margin-left: 10px;"), true);
   expectEqual(playlistStyles.includes("width: 28px;"), true);
   expectEqual(playlistStyles.includes("padding: 0 0 16px;"), true);
-  expectEqual(playlistStyles.includes("border-top: 1px solid var(--border-color);"), true);
-  expectEqual(playlistStyles.includes("background-color: var(--surface-secondary);"), true);
+  expectEqual(
+    playlistStyles.includes("border-top: 1px solid var(--border-color);"),
+    true,
+  );
+  expectEqual(
+    playlistStyles.includes("background-color: var(--surface-secondary);"),
+    true,
+  );
   expectEqual(playlistStyles.includes(".header-song-list-button"), false);
   expectEqual(playlistStyles.includes(".header-new-list-button"), false);
   expectEqual(playlistStyles.includes(".header-center-actions"), false);
@@ -462,28 +443,32 @@ test("playlist styles include selection header and checkbox classes", () => {
 test("playlist selection header keeps the centered home button in action mode", () => {
   expectEqual(
     playlistHeaderSource.includes(
-      'className={styles["header-center-container"]}'
+      'className={styles["header-center-container"]}',
     ),
-    true
+    true,
   );
   expectEqual(
     playlistHeaderSource.includes("selection-header-home-button"),
-    true
+    true,
   );
   expectEqual(
     playlistHeaderSource.includes("selection-header-action-button"),
-    true
+    true,
   );
 });
 
 test("playlist normal header uses the center area for the active song list selector", () => {
   expectEqual(
-    playlistHeaderSource.includes('className={styles["header-left-container"]}'),
-    true
+    playlistHeaderSource.includes(
+      'className={styles["header-left-container"]}',
+    ),
+    true,
   );
   expectEqual(
-    playlistHeaderSource.includes('className={styles["header-center-container"]}'),
-    true
+    playlistHeaderSource.includes(
+      'className={styles["header-center-container"]}',
+    ),
+    true,
   );
   expectEqual(playlistStyles.includes(".normal-header-button"), true);
   expectEqual(playlistStyles.includes(".header-button"), true);
@@ -491,22 +476,16 @@ test("playlist normal header uses the center area for the active song list selec
   expectEqual(playlistStyles.includes(".header-center-well"), true);
   expectEqual(playlistStyles.includes(".header-side-button"), true);
   expectEqual(
-    /\.header-button\s*\{[^}]*background:\s*transparent;/s.test(
-      playlistStyles
-    ),
-    true
+    /\.header-button\s*\{[^}]*background:\s*transparent;/s.test(playlistStyles),
+    true,
   );
   expectEqual(
-    /\.header-button\s*\{[^}]*box-shadow:\s*none;/s.test(
-      playlistStyles
-    ),
-    true
+    /\.header-button\s*\{[^}]*box-shadow:\s*none;/s.test(playlistStyles),
+    true,
   );
   expectEqual(
-    /\.song-list-button\s*\{[^}]*width:\s*100%;/s.test(
-      playlistStyles
-    ),
-    true
+    /\.song-list-button\s*\{[^}]*width:\s*100%;/s.test(playlistStyles),
+    true,
   );
   expectEqual(playlistStyles.includes(".song-list-button"), true);
   expectEqual(playlistStyles.includes(".song-list-button-label"), true);
@@ -514,92 +493,87 @@ test("playlist normal header uses the center area for the active song list selec
   expectEqual(playlistStyles.includes(".song-list-button-icon"), true);
   expectEqual(
     /\.song-list-button\s*\{[^}]*background:\s*transparent;/s.test(
-      playlistStyles
+      playlistStyles,
     ),
-    true
+    true,
   );
   expectEqual(
     /\.normal-header-button\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s.test(
-      playlistStyles
+      playlistStyles,
     ),
-    true
+    true,
   );
   expectEqual(
-    /\.header-control-rail\s*\{[^}]*padding:\s*0 14px;/s.test(
-      playlistStyles
-    ),
-    true
+    /\.header-control-rail\s*\{[^}]*padding:\s*0 14px;/s.test(playlistStyles),
+    true,
   );
   expectEqual(
     /\.header-side-pocket\s*\{[^}]*width:\s*58px;[^}]*min-width:\s*58px;[^}]*height:\s*58px;/s.test(
-      playlistStyles
+      playlistStyles,
     ),
-    true
+    true,
   );
   expectEqual(
     /\.header-side-pocket\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s.test(
-      playlistStyles
+      playlistStyles,
     ),
-    false
+    false,
   );
   expectEqual(
-    /\.header-center-well\s*\{[^}]*min-height:\s*48px;/s.test(
-      playlistStyles
-    ),
-    true
+    /\.header-center-well\s*\{[^}]*min-height:\s*48px;/s.test(playlistStyles),
+    true,
   );
   expectEqual(
     /\.header-center-well\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s.test(
-      playlistStyles
+      playlistStyles,
     ),
-    false
+    false,
   );
   expectEqual(
     playlistHeaderSource.includes(
-      'className={`${styles["header-button"]} ${styles["normal-header-button"]} ${styles["header-side-button"]}`}'
+      'className={`${styles["header-button"]} ${styles["normal-header-button"]} ${styles["header-side-button"]}`}',
     ),
-    true
+    true,
+  );
+  expectEqual(playlistHeaderSource.includes("activeSongListName"), true);
+  expectEqual(playlistHeaderSource.includes("openSongListSheet()"), true);
+  expectEqual(
+    playlistHeaderSource.includes(
+      '<span className={styles["song-list-button-label"]}>',
+    ),
+    true,
   );
   expectEqual(
     playlistHeaderSource.includes(
-      "activeSongListName"
+      'className={`${styles["header-button"]} ${styles["song-list-button"]}`}',
     ),
-    true
-  );
-  expectEqual(
-    playlistHeaderSource.includes(
-      "openSongListSheet()"
-    ),
-    true
-  );
-  expectEqual(
-    playlistHeaderSource.includes(
-      '<span className={styles["song-list-button-label"]}>'
-    ),
-    true
-  );
-  expectEqual(
-    playlistHeaderSource.includes(
-      'className={`${styles["header-button"]} ${styles["song-list-button"]}`}'
-    ),
-    true
+    true,
   );
 });
 
 test("new song list modal source uses shared modal pattern and inline error messaging", () => {
-  expectEqual(newSongListModalSource.includes('import Modal from "../modal/Modal"'), true);
+  expectEqual(
+    newSongListModalSource.includes('import Modal from "../modal/Modal"'),
+    true,
+  );
   expectEqual(newSongListModalSource.includes("songListName"), true);
   expectEqual(newSongListModalSource.includes("errorMessage"), true);
   expectEqual(newSongListModalSource.includes('role="alert"'), true);
   expectEqual(newSongListModalSource.includes("Create list"), true);
-  expectEqual(newSongListModalSource.includes("setSongListName(\"\")"), true);
+  expectEqual(newSongListModalSource.includes('setSongListName("")'), true);
 });
 
 test("playlist item play button routes through modal-opening playback wiring", () => {
   expectEqual(playlistItemSource.includes("onPlayItem"), true);
   expectEqual(playlistItemSource.includes("onPlayItem(item.id);"), true);
   expectEqual(playlistSource.includes("const [pendingPlaybackItemId"), true);
-  expectEqual(playlistSource.includes("const openPlaybackModal = (itemId: string) =>"), true);
-  expectEqual(playlistSource.includes("currentPlaybackItemId || pendingPlaybackItemId"), true);
+  expectEqual(
+    playlistSource.includes("const openPlaybackModal = (itemId: string) =>"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("currentPlaybackItemId || pendingPlaybackItemId"),
+    true,
+  );
   expectEqual(playlistSource.includes("onPlayItem={openPlaybackModal}"), true);
 });
