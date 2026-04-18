@@ -52,10 +52,11 @@ test("modal transport source exposes a dedicated expand surface and transport bu
   expectEqual(infoModalTransportSource.includes("Expand song editor"), true);
   expectEqual(infoModalTransportSource.includes("Open previous song"), true);
   expectEqual(infoModalTransportSource.includes("Open next song"), true);
+  expectEqual(infoModalTransportSource.includes("isExpanded"), true);
   expectEqual(infoModalTransportSource.includes("MsgType.PreviousVideo"), true);
   expectEqual(infoModalTransportSource.includes("MsgType.NextVideo"), true);
-  expectEqual(infoModalTransportSource.includes(".expandSurface"), true);
-  expectEqual(infoModalTransportSource.includes(".transportActions"), true);
+  expectEqual(infoModalTransportSource.includes("MsgType.PlayVideo"), true);
+  expectEqual(infoModalTransportSource.includes("MsgType.PauseVideo"), true);
   expectEqual(infoModalTransportStyles.includes(".expandSurface"), true);
   expectEqual(infoModalTransportStyles.includes(".transportActions"), true);
 });
