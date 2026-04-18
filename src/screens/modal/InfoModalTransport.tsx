@@ -162,21 +162,28 @@ const InfoModalTransport = ({
 
   return (
     <div className={styles["transportSurface"]}>
-      <button
+      <div
         className={`${styles["expandSurface"]} ${
           isExpanded ? styles["expandSurfaceExpanded"] : ""
         }`}
-        type="button"
+        role="button"
+        tabIndex={0}
         aria-expanded={isExpanded}
         aria-label="Expand song editor"
         title="Expand song editor"
         onClick={onExpand}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onExpand();
+          }
+        }}
       >
         <div className={styles["transportDetails"]}>
           <MarqueeText text={item.title} className={styles["trackTitle"]} />
           <p className={styles["trackMeta"]}>{item.channelName}</p>
         </div>
-      </button>
+      </div>
 
       <div className={styles["transportActions"]}>
         <button

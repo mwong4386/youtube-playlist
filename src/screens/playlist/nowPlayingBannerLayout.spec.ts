@@ -55,6 +55,8 @@ test("modal transport source exposes a dedicated expand surface and transport bu
   expectEqual(infoModalTransportSource.includes("isExpanded"), true);
   expectEqual(infoModalTransportSource.includes("MarqueeText"), true);
   expectEqual(infoModalTransportSource.includes("ResizeObserver"), true);
+  expectEqual(infoModalTransportSource.includes('role="button"'), true);
+  expectEqual(infoModalTransportSource.includes("tabIndex={0}"), true);
   expectEqual(infoModalTransportSource.includes('title="Expand song editor"'), true);
   expectEqual(infoModalTransportSource.includes("MsgType.PreviousVideo"), true);
   expectEqual(infoModalTransportSource.includes("MsgType.NextVideo"), true);
