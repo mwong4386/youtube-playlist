@@ -22,7 +22,7 @@
 }
 
 .row{
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     padding: 0 10px;
     color: var(--text-primary);
@@ -54,6 +54,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 1em;
 }
 
 .row-leading-icon,
@@ -99,6 +100,16 @@
     flex-shrink: 0;
 }
 
+.row-icon-button-plain{
+    width: 24px;
+    height: 24px;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-secondary);
+    padding: 0;
+}
+
 .row-current-dot{
     width: 8px;
     height: 8px;
@@ -130,6 +141,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 1em;
 }
 
 .selector-chevron{

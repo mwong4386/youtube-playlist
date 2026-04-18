@@ -21,21 +21,21 @@
 }
 
 :root[data-theme="dark"] {
-  --surface-primary: #101418;
-  --surface-secondary: #182027;
-  --surface-tertiary: #22303b;
-  --text-primary: #f3f6f8;
-  --text-secondary: #a7b4bf;
-  --border-color: rgba(243, 246, 248, 0.14);
+  --surface-primary: #0b1015;
+  --surface-secondary: #18212a;
+  --surface-tertiary: #24323f;
+  --text-primary: #f7fafc;
+  --text-secondary: #c1ccd6;
+  --border-color: rgba(243, 246, 248, 0.2);
   --overlay-color: rgba(2, 6, 23, 0.62);
-  --accent-color: #ff4e45;
+  --accent-color: #ff645c;
   --success-color: #78d89b;
-  --shadow-color: rgba(2, 6, 23, 0.35);
+  --shadow-color: rgba(2, 6, 23, 0.45);
   --icon-filter: invert(1) brightness(1.2);
 
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-bg-opacity: 0.75;
-  --glass-glow-opacity: 0.18;
+  --glass-border: rgba(255, 255, 255, 0.11);
+  --glass-bg-opacity: 0.8;
+  --glass-glow-opacity: 0.22;
 }
 
 html,
