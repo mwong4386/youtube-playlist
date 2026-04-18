@@ -12,66 +12,50 @@ const playlistSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/Playlist.tsx"),
   "utf8"
 );
-const bannerSource = readFileSync(
-  join(process.cwd(), "src/screens/playlist/NowPlayingBanner.tsx"),
-  "utf8"
-);
-const bannerStyles = readFileSync(
-  join(process.cwd(), "src/screens/playlist/NowPlayingBanner.module.css"),
-  "utf8"
-);
 const infoModalSource = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModal.tsx"),
   "utf8"
 );
+const readOptionalSource = (relativePath: string) => {
+  try {
+    return readFileSync(join(process.cwd(), relativePath), "utf8");
+  } catch {
+    return "";
+  }
+};
 
-test("playlist renders an isolated now-playing banner component", () => {
-  expectEqual(playlistSource.includes('import NowPlayingBanner from "./NowPlayingBanner"'), true);
-  expectEqual(playlistSource.includes("<NowPlayingBanner"), true);
-  expectEqual(playlistSource.includes("playbackState.currentItemId"), true);
-  expectEqual(playlistSource.includes("playing && playingId"), false);
+const infoModalTransportSource = readOptionalSource(
+  "src/screens/modal/InfoModalTransport.tsx"
+);
+const infoModalTransportStyles = readOptionalSource(
+  "src/screens/modal/InfoModalTransport.module.css"
+);
+
+test("playlist no longer renders a standalone now-playing banner component", () => {
+  expectEqual(
+    playlistSource.includes('import NowPlayingBanner from "./NowPlayingBanner"'),
+    false
+  );
+  expectEqual(playlistSource.includes("<NowPlayingBanner"), false);
+  expectEqual(playlistSource.includes("playlist-bottom-spacer"), false);
 });
 
-test("now-playing banner source exposes horizontal utility buttons for info and eq", () => {
-  expectEqual(bannerSource.includes("Open song info"), true);
-  expectEqual(bannerSource.includes("Open song EQ"), true);
-  expectEqual(bannerSource.includes("Open previous song"), true);
-  expectEqual(bannerSource.includes("Open next song"), true);
-  expectEqual(bannerSource.includes("utilityTabs"), true);
-  expectEqual(bannerSource.includes('role="tablist"'), true);
-  expectEqual(bannerSource.includes('role="tab"'), true);
-  expectEqual(bannerSource.includes("playerShell"), true);
-  expectEqual(bannerSource.includes("transportSurface"), true);
-  expectEqual(bannerSource.includes("marqueeViewport"), true);
-  expectEqual(bannerSource.includes("requestAnimationFrame"), true);
-  expectEqual(bannerSource.includes("MARQUEE_PIXELS_PER_SECOND"), true);
-  expectEqual(bannerSource.includes("MsgType.PlayVideo"), true);
-  expectEqual(bannerSource.includes("MsgType.PreviousVideo"), true);
-  expectEqual(bannerSource.includes("MsgType.NextVideo"), true);
-  expectEqual(bannerSource.includes("isPlaying"), true);
-  expectEqual(bannerSource.includes("item.channelName"), true);
+test("InfoModal source owns the collapsed player-first presentation", () => {
+  expectEqual(infoModalSource.includes("InfoModalPresentation"), true);
+  expectEqual(infoModalSource.includes("currentPlaybackItemId"), true);
+  expectEqual(infoModalSource.includes('presentation === "collapsed"'), true);
+  expectEqual(infoModalSource.includes('setPresentation("expanded")'), true);
+  expectEqual(infoModalSource.includes("<InfoModalTransport"), true);
 });
 
-test("now-playing banner styles define one unified player shell with attached tabs", () => {
-  expectEqual(bannerStyles.includes(".banner"), true);
-  expectEqual(bannerStyles.includes(".playerShell"), true);
-  expectEqual(bannerStyles.includes(".utilityTabs"), true);
-  expectEqual(bannerStyles.includes(".utilityButton"), true);
-  expectEqual(bannerStyles.includes(".utilityButtonActive"), true);
-  expectEqual(bannerStyles.includes("position: fixed;"), true);
-  expectEqual(bannerStyles.includes(".transportSurface"), true);
-  expectEqual(bannerStyles.includes(".trackMeta"), true);
-  expectEqual(bannerStyles.includes(".marqueeContent"), true);
-  expectEqual(bannerStyles.includes("white-space: nowrap;"), true);
-  expectEqual(bannerStyles.includes("padding-inline: 8px;"), true);
-  expectEqual(bannerStyles.includes("black 12px,"), true);
-  expectEqual(bannerStyles.includes("@keyframes marquee-scroll"), false);
-});
-
-test("info modal renders tabbed details and eq sections", () => {
-  expectEqual(infoModalSource.includes("initialView"), true);
-  expectEqual(infoModalSource.includes("activeView"), true);
-  expectEqual(infoModalSource.includes("modal-tab-row"), true);
-  expectEqual(infoModalSource.includes('role="tablist"'), true);
-  expectEqual(infoModalSource.includes('setActiveView("eq")'), true);
+test("modal transport source exposes a dedicated expand surface and transport buttons", () => {
+  expectEqual(infoModalTransportSource.includes("Expand song editor"), true);
+  expectEqual(infoModalTransportSource.includes("Open previous song"), true);
+  expectEqual(infoModalTransportSource.includes("Open next song"), true);
+  expectEqual(infoModalTransportSource.includes("MsgType.PreviousVideo"), true);
+  expectEqual(infoModalTransportSource.includes("MsgType.NextVideo"), true);
+  expectEqual(infoModalTransportSource.includes(".expandSurface"), true);
+  expectEqual(infoModalTransportSource.includes(".transportActions"), true);
+  expectEqual(infoModalTransportStyles.includes(".expandSurface"), true);
+  expectEqual(infoModalTransportStyles.includes(".transportActions"), true);
 });
