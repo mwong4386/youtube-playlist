@@ -8,6 +8,7 @@ interface props {
   onToggleSelected: (itemId: string) => void;
   selected: boolean;
   onOpenInfo: (itemId: string) => void;
+  onPlayItem: (itemId: string) => void;
 }
 const PlaylistItem = ({
   item,
@@ -16,6 +17,7 @@ const PlaylistItem = ({
   onToggleSelected,
   selected,
   onOpenInfo,
+  onPlayItem,
 }: props) => {
   const isActivePlayback = isPlaying && IPlaying;
 
@@ -23,6 +25,7 @@ const PlaylistItem = ({
     if (isActivePlayback) {
       chrome.runtime.sendMessage({ name: MsgType.PauseVideo });
     } else {
+      onPlayItem(item.id);
       chrome.runtime.sendMessage({ name: MsgType.PlayVideo, item: item });
     }
   };

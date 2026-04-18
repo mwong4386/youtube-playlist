@@ -594,3 +594,12 @@ test("new song list modal source uses shared modal pattern and inline error mess
   expectEqual(newSongListModalSource.includes("Create list"), true);
   expectEqual(newSongListModalSource.includes("setSongListName(\"\")"), true);
 });
+
+test("playlist item play button routes through modal-opening playback wiring", () => {
+  expectEqual(playlistItemSource.includes("onPlayItem"), true);
+  expectEqual(playlistItemSource.includes("onPlayItem(item.id);"), true);
+  expectEqual(playlistSource.includes("const [pendingPlaybackItemId"), true);
+  expectEqual(playlistSource.includes("const openPlaybackModal = (itemId: string) =>"), true);
+  expectEqual(playlistSource.includes("currentPlaybackItemId || pendingPlaybackItemId"), true);
+  expectEqual(playlistSource.includes("onPlayItem={openPlaybackModal}"), true);
+});
