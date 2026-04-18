@@ -44,6 +44,10 @@ const actionSheetStyles = readFileSync(
   join(process.cwd(), "src/screens/actionSheet/ActionSheet.module.css"),
   "utf8",
 );
+const draggableStyles = readFileSync(
+  join(process.cwd(), "src/screens/draggable/Draggable.module.css"),
+  "utf8",
+);
 const actionSheetModelSource = readFileSync(
   join(process.cwd(), "src/models/MActionSheetItem.ts"),
   "utf8",
@@ -81,6 +85,22 @@ test("playlist chrome uses an embedded top control rail inside the main shell", 
   expectEqual(playlistStyles.includes("border-radius: 20px;"), true);
   expectEqual(playlistStyles.includes(".playlist-item-highlight"), true);
   expectEqual(playlistStyles.includes("box-shadow: 0 18px 32px -28px"), true);
+});
+
+test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {
+  expectEqual(draggableStyles.includes(".placeholder"), true);
+  expectEqual(
+    draggableStyles.includes("background-color: #edf2f7;"),
+    false,
+  );
+  expectEqual(
+    draggableStyles.includes("background: color-mix("),
+    true,
+  );
+  expectEqual(
+    draggableStyles.includes("border: 1px dashed var(--border-color);"),
+    true,
+  );
 });
 
 test("playlist source renders the analysis banner inside the scrollable playlist flow", () => {
