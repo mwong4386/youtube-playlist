@@ -174,10 +174,10 @@ const InfoModal = ({
   }, [active, item?.id, reset]);
 
   useEffect(() => {
-    if (!showTransport && presentation === "collapsed") {
+    if (active && !showTransport && presentation === "collapsed") {
       setPresentation("expanded");
     }
-  }, [presentation, showTransport]);
+  }, [active, presentation, showTransport]);
 
   useEffect(() => {
     const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
@@ -309,6 +309,14 @@ const InfoModal = ({
     setPresentation("expanded");
     setActiveView("info");
   };
+  const onDismiss = () => {
+    if (showTransport) {
+      setPresentation("collapsed");
+      return;
+    }
+
+    close();
+  };
   const showEditorSection = presentation !== "collapsed";
 
   return (
@@ -318,10 +326,30 @@ const InfoModal = ({
           <div className={styles["header-row"]}>
             <button
               className={styles["cross-button"]}
-              onClick={close}
+              onClick={onDismiss}
               type="button"
+              aria-label={showTransport ? "Collapse player" : "Close editor"}
+              title={showTransport ? "Collapse player" : "Close editor"}
             >
-              x
+              {showTransport ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  className={styles["cross-button-icon"]}
+                >
+                  <path
+                    d="m6 9 6 6 6-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                "x"
+              )}
             </button>
             <button className={styles["save-button"]} type="submit">
               Save

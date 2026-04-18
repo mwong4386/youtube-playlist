@@ -69,7 +69,9 @@ test("InfoModal source owns the collapsed player-first presentation", () => {
 test("InfoModal source preserves editor state across playback changes and keeps expanded transport below the editor", () => {
   expectEqual(infoModalSource.includes("}, [active, item?.id, reset]);"), true);
   expectEqual(
-    infoModalSource.includes('if (!showTransport && presentation === "collapsed")'),
+    infoModalSource.includes(
+      'if (active && !showTransport && presentation === "collapsed")'
+    ),
     true
   );
   expectEqual(
@@ -77,6 +79,15 @@ test("InfoModal source preserves editor state across playback changes and keeps 
       infoModalSource.indexOf('<div className={styles["editor-section"]}>'),
     true
   );
+});
+
+test("InfoModal source uses a collapse control to return the current song to mini player mode", () => {
+  expectEqual(infoModalSource.includes("const onDismiss = () => {"), true);
+  expectEqual(infoModalSource.includes('if (showTransport) {'), true);
+  expectEqual(infoModalSource.includes('setPresentation("collapsed");'), true);
+  expectEqual(infoModalSource.includes("close();"), true);
+  expectEqual(infoModalSource.includes('aria-label={showTransport ? "Collapse player" : "Close editor"}'), true);
+  expectEqual(infoModalSource.includes('title={showTransport ? "Collapse player" : "Close editor"}'), true);
 });
 
 test("collapsed player-first modal trims leftover bottom spacing around the transport", () => {

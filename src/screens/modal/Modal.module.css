@@ -100,6 +100,10 @@
   color: var(--text-secondary);
   opacity: 0.8;
 }
+.cross-button-icon {
+  width: 18px;
+  height: 18px;
+}
 .save-button {
   background-color: color-mix(in srgb, var(--success-color) 12%, transparent);
   color: var(--success-color);
