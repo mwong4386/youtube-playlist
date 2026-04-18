@@ -1,29 +1,29 @@
 .banner {
   position: fixed;
-  right: 12px;
-  bottom: 12px;
-  left: 12px;
+  right: var(--glass-margin);
+  bottom: var(--glass-margin);
+  left: var(--glass-margin);
   z-index: 2;
   pointer-events: none;
 }
 
 .playerShell {
   pointer-events: auto;
-  border: 1px solid color-mix(in srgb, var(--border-color) 92%, transparent);
-  border-radius: 26px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   overflow: hidden;
   background:
     radial-gradient(
       circle at top left,
-      color-mix(in srgb, var(--accent-color) 16%, transparent),
-      transparent 34%
+      color-mix(in srgb, var(--accent-color) calc(var(--glass-glow-opacity) * 100%), transparent),
+      transparent 50%
     ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-secondary) 96%, transparent) 0%,
-      color-mix(in srgb, var(--surface-primary) 98%, transparent) 100%
-    );
-  box-shadow: 0 24px 40px -30px var(--shadow-color);
+    color-mix(in srgb, var(--surface-secondary), transparent calc((1 - var(--glass-bg-opacity)) * 100%));
+  
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  
+  box-shadow: var(--glass-shadow);
 }
 
 .utilityTabs {
