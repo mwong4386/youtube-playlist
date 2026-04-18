@@ -16,19 +16,13 @@ const infoModalSource = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModal.tsx"),
   "utf8"
 );
-const readOptionalSource = (relativePath: string) => {
-  try {
-    return readFileSync(join(process.cwd(), relativePath), "utf8");
-  } catch {
-    return "";
-  }
-};
-
-const infoModalTransportSource = readOptionalSource(
-  "src/screens/modal/InfoModalTransport.tsx"
+const infoModalTransportSource = readFileSync(
+  join(process.cwd(), "src/screens/modal/InfoModalTransport.tsx"),
+  "utf8"
 );
-const infoModalTransportStyles = readOptionalSource(
-  "src/screens/modal/InfoModalTransport.module.css"
+const infoModalTransportStyles = readFileSync(
+  join(process.cwd(), "src/screens/modal/InfoModalTransport.module.css"),
+  "utf8"
 );
 
 test("playlist no longer renders a standalone now-playing banner component", () => {
