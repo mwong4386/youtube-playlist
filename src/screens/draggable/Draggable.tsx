@@ -14,14 +14,15 @@ const Draggable = ({
   onMoveTo,
   children,
 }: props) => {
-  const onDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
+  const onDragStart = (_event: React.DragEvent<HTMLDivElement>) => {
     setDraggingElement(id);
   };
-  const onDrop = (event: React.MouseEvent<HTMLDivElement>) => {
+  const onDrop = (_event: React.DragEvent<HTMLDivElement>) => {
+    _event.stopPropagation();
     onMoveTo(id);
     setDraggingElement(undefined);
   };
-  const onDragOver = (event: React.MouseEvent<HTMLDivElement>) => {
+  const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
   };
   return (
@@ -30,6 +31,9 @@ const Draggable = ({
         className={`${isDragging ? styles["placeholder"] : ""}`}
         draggable="true"
         onDragStart={onDragStart}
+        onDragEnd={() => {
+          setDraggingElement(undefined);
+        }}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >

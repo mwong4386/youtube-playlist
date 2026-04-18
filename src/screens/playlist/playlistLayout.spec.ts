@@ -103,6 +103,15 @@ test("drag placeholder uses themed glass styling instead of a hardcoded light su
   );
 });
 
+test("playlist source uses the list container as the end-of-list drop target", () => {
+  expectEqual(playlistSource.includes("const onMoveToEnd = () =>"), true);
+  expectEqual(playlistSource.includes("event.target !== event.currentTarget"), true);
+  expectEqual(playlistSource.includes('className={styles["playlist-container"]}'), true);
+  expectEqual(playlistSource.includes("onMoveToEnd();"), true);
+  expectEqual(playlistStyles.includes(".drag-end-drop-zone"), false);
+  expectEqual(playlistStyles.includes(".drag-end-drop-zone-active"), false);
+});
+
 test("playlist source renders the analysis banner inside the scrollable playlist flow", () => {
   const playlistContainerIndex = playlistSource.indexOf(
     'className={styles["playlist-container"]}',

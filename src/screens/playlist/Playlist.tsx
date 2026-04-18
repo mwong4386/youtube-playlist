@@ -535,6 +535,20 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       persistActiveSongListItems(temp);
     }
   };
+  const onMoveToEnd = () => {
+    if (!draggingElementId) {
+      return;
+    }
+
+    const item = playlist.find((x) => x.id === draggingElementId);
+    if (!item) {
+      return;
+    }
+
+    const temp = playlist.filter((x) => x.id !== draggingElementId);
+    temp.push(item);
+    persistActiveSongListItems(temp);
+  };
   const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (playing && selectItemId === playingId) {
       chrome.runtime.sendMessage({
@@ -756,7 +770,28 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             <p className={styles["empty-message"]}>The playlist is empty</p>
           </div>
         ) : (
-          <div className={styles["playlist-container"]}>
+          <div
+            className={styles["playlist-container"]}
+            onDragOver={(event) => {
+              if (!draggingElementId) {
+                return;
+              }
+
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              if (!draggingElementId) {
+                return;
+              }
+
+              if (event.target !== event.currentTarget) {
+                return;
+              }
+
+              onMoveToEnd();
+              setDraggingElement(undefined);
+            }}
+          >
             {showAnalyzeImportBatchState ? (
               <div className={styles["analyze-import-banner-container"]}>
                 <div className={styles["analyze-import-banner"]}>
