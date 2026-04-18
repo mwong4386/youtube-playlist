@@ -24,6 +24,10 @@ const infoModalTransportStyles = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModalTransport.module.css"),
   "utf8"
 );
+const infoModalStyles = readFileSync(
+  join(process.cwd(), "src/screens/modal/Modal.module.css"),
+  "utf8"
+);
 
 test("playlist no longer renders a standalone now-playing banner component", () => {
   expectEqual(
@@ -71,6 +75,21 @@ test("InfoModal source preserves editor state across playback changes and keeps 
   expectEqual(
     infoModalSource.lastIndexOf('<div className={styles["transport-section"]}>') >
       infoModalSource.indexOf('<div className={styles["editor-section"]}>'),
+    true
+  );
+});
+
+test("collapsed player-first modal trims leftover bottom spacing around the transport", () => {
+  expectEqual(
+    infoModalStyles.includes(".content-collapsed"),
+    true
+  );
+  expectEqual(
+    infoModalStyles.includes("margin-bottom: 0;"),
+    true
+  );
+  expectEqual(
+    infoModalStyles.includes(".content-collapsed .transport-section"),
     true
   );
 });

@@ -25,26 +25,37 @@
   bottom: var(--glass-margin);
   top: auto; /* Ensure it stays at bottom if height is small */
   max-height: calc(100% - (var(--glass-margin) * 2));
-  
-  background: radial-gradient(
-    circle at top left,
-    color-mix(in srgb, var(--accent-color) calc(var(--glass-glow-opacity) * 100%), transparent),
-    transparent 50%
-  ), color-mix(in srgb, var(--surface-secondary), transparent calc((1 - var(--glass-bg-opacity)) * 100%));
-  
+
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(
+        in srgb,
+        var(--accent-color) calc(var(--glass-glow-opacity) * 100%),
+        transparent
+      ),
+      transparent 50%
+    ),
+    color-mix(
+      in srgb,
+      var(--surface-secondary),
+      transparent calc((1 - var(--glass-bg-opacity)) * 100%)
+    );
+
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  
+
   border: 1px solid var(--glass-border);
   border-radius: var(--glass-radius);
   box-shadow: var(--glass-shadow);
-  
-  padding-bottom: 16px;
+
   box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
   transform: translateY(20px); /* Subtle lift instead of full slide */
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s ease;
 }
 .container.active {
   opacity: 1;
@@ -63,7 +74,11 @@
   margin-bottom: 4px;
 }
 .content-collapsed {
+  margin-bottom: 0;
   padding-bottom: 0;
+}
+.content-collapsed .transport-section {
+  margin-bottom: 0;
 }
 .transport-section {
   margin-bottom: 12px;
@@ -100,7 +115,9 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 .video-title {
   font-size: 16px;
