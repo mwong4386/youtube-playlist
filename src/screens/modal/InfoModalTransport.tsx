@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import MsgType from "../../constants/msgType";
 import MPlaylistItem from "../../models/MPlaylistItem";
 import styles from "./InfoModalTransport.module.css";
@@ -8,6 +9,135 @@ interface Props {
   isExpanded: boolean;
   onExpand: () => void;
 }
+
+const MARQUEE_PAUSE_MS = 1400;
+const MARQUEE_PIXELS_PER_SECOND = 28;
+
+interface MarqueeTextProps {
+  text: string;
+  className: string;
+}
+
+const MarqueeText = ({ text, className }: MarqueeTextProps) => {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLSpanElement | null>(null);
+  const [overflowDistance, setOverflowDistance] = useState(0);
+
+  useEffect(() => {
+    const updateOverflow = () => {
+      const viewport = viewportRef.current;
+      const content = contentRef.current;
+
+      if (!viewport || !content) {
+        return;
+      }
+
+      const nextDistance = Math.max(0, content.scrollWidth - viewport.clientWidth);
+      setOverflowDistance(nextDistance > 4 ? nextDistance : 0);
+    };
+
+    updateOverflow();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateOverflow);
+      return () => {
+        window.removeEventListener("resize", updateOverflow);
+      };
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateOverflow();
+    });
+
+    if (viewportRef.current) {
+      observer.observe(viewportRef.current);
+    }
+    if (contentRef.current) {
+      observer.observe(contentRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [text]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || overflowDistance <= 0) {
+      if (viewport) {
+        viewport.scrollLeft = 0;
+      }
+      return;
+    }
+
+    let frameId = 0;
+    let direction = 1;
+    let phaseStartedAt = 0;
+    let pausedUntil = performance.now() + MARQUEE_PAUSE_MS;
+    const travelDurationMs = Math.max(
+      3200,
+      (overflowDistance / MARQUEE_PIXELS_PER_SECOND) * 1000,
+    );
+
+    const easeInOutSine = (progress: number) =>
+      -(Math.cos(Math.PI * progress) - 1) / 2;
+
+    const tick = (now: number) => {
+      const currentViewport = viewportRef.current;
+      if (!currentViewport) {
+        return;
+      }
+
+      if (now < pausedUntil) {
+        frameId = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      if (phaseStartedAt === 0) {
+        phaseStartedAt = now;
+      }
+
+      const progress = Math.min(
+        1,
+        (now - phaseStartedAt) / travelDurationMs,
+      );
+      const easedProgress = easeInOutSine(progress);
+      const nextScrollLeft =
+        direction === 1
+          ? easedProgress * overflowDistance
+          : (1 - easedProgress) * overflowDistance;
+
+      currentViewport.scrollLeft = nextScrollLeft;
+
+      if (progress >= 1) {
+        direction *= -1;
+        phaseStartedAt = 0;
+        pausedUntil = now + MARQUEE_PAUSE_MS;
+      }
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    viewport.scrollLeft = 0;
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      viewport.scrollLeft = 0;
+    };
+  }, [overflowDistance, text]);
+
+  return (
+    <div className={styles["marqueeViewport"]} ref={viewportRef} title={text}>
+      <span
+        ref={contentRef}
+        className={`${styles["marqueeContent"]} ${className}`}
+      >
+        {text}
+      </span>
+    </div>
+  );
+};
 
 const InfoModalTransport = ({
   item,
@@ -32,26 +162,21 @@ const InfoModalTransport = ({
 
   return (
     <div className={styles["transportSurface"]}>
-      <div
+      <button
         className={`${styles["expandSurface"]} ${
           isExpanded ? styles["expandSurfaceExpanded"] : ""
         }`}
-        role="button"
-        tabIndex={0}
+        type="button"
+        aria-expanded={isExpanded}
         aria-label="Expand song editor"
+        title="Expand song editor"
         onClick={onExpand}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onExpand();
-          }
-        }}
       >
         <div className={styles["transportDetails"]}>
-          <p className={styles["trackTitle"]}>{item.title}</p>
+          <MarqueeText text={item.title} className={styles["trackTitle"]} />
           <p className={styles["trackMeta"]}>{item.channelName}</p>
         </div>
-      </div>
+      </button>
 
       <div className={styles["transportActions"]}>
         <button
