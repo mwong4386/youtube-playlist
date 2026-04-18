@@ -553,7 +553,7 @@ const InfoModal = ({
                         <span role="alert">Incorrect end time</span>
                       )}
                     </div>
-                    <div className="cs-time-container">
+                    <div className={styles["volume-row"]}>
                       <label className={styles["volume-label"]}>Volume</label>
                       <input
                         type="range"
