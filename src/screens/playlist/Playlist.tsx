@@ -106,6 +106,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const [selectItemId, setSelectItemId] = useState<string | undefined>(
     undefined
   ); //for opening the info modal
+  const [pendingPlaybackItemId, setPendingPlaybackItemId] = useState<
+    string | undefined
+  >(undefined);
   const [eqSettingsActive, setEqSettingsActive] = useState(false);
   const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
   const [playlistImportModalActive, setPlaylistImportModalActive] =
@@ -696,10 +699,24 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     selectedItemIds
   ).length;
   const currentPlaybackItemId = playbackState.currentItemId || playingId;
+  const effectivePlaybackItemId =
+    currentPlaybackItemId || pendingPlaybackItemId;
 
   const openInfoModal = (itemId: string) => {
+    setPendingPlaybackItemId(undefined);
     setSelectItemId(itemId);
   };
+
+  const openPlaybackModal = (itemId: string) => {
+    setPendingPlaybackItemId(itemId);
+    setSelectItemId(itemId);
+  };
+
+  useEffect(() => {
+    if (!selectItemId || currentPlaybackItemId) {
+      setPendingPlaybackItemId(undefined);
+    }
+  }, [currentPlaybackItemId, selectItemId]);
 
   return (
     <>
@@ -817,6 +834,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
                     }}
                     selected={selectedItemIds.includes(item.id)}
                     onOpenInfo={openInfoModal}
+                    onPlayItem={openPlaybackModal}
                   />
                 );
 
@@ -839,6 +857,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           <InfoModal
             active={!!selectItemId}
             close={() => {
+              setPendingPlaybackItemId(undefined);
               setSelectItemId(undefined);
             }}
             onvolumechange={onvolumechange}
@@ -846,7 +865,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             profiles={audioEqProfiles}
             save={onSave}
             onAnalyzeSongBoundaries={analyzeSongBoundaries}
-            currentPlaybackItemId={currentPlaybackItemId}
+            currentPlaybackItemId={effectivePlaybackItemId}
             isPlaybackActive={playing}
             item={playlist.find((x) => x.id === selectItemId)}
           />

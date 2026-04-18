@@ -314,18 +314,20 @@ const InfoModal = ({
   return (
     <Modal active={active} close={close}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className={styles["header-row"]}>
-          <button
-            className={styles["cross-button"]}
-            onClick={close}
-            type="button"
-          >
-            x
-          </button>
-          <button className={styles["save-button"]} type="submit">
-            Save
-          </button>
-        </div>
+        {showEditorSection ? (
+          <div className={styles["header-row"]}>
+            <button
+              className={styles["cross-button"]}
+              onClick={close}
+              type="button"
+            >
+              x
+            </button>
+            <button className={styles["save-button"]} type="submit">
+              Save
+            </button>
+          </div>
+        ) : null}
         <div
           className={`${styles["content"]} ${
             presentation === "collapsed" ? styles["content-collapsed"] : ""
@@ -614,20 +616,14 @@ const InfoModal = ({
               ) : null}
             </>
           ) : showTransport ? (
-            <>
-              <p className={`${styles["video-title"]} line-clamp-4`}>
-                {item?.title}
-              </p>
-              <p className={styles["channel-name"]}>{item?.channelName}</p>
-              <div className={styles["transport-section"]}>
-                <InfoModalTransport
-                  item={item}
-                  isPlaying={isPlaybackActive}
-                  isExpanded={showEditorSection}
-                  onExpand={expandToInfo}
-                />
-              </div>
-            </>
+            <div className={styles["transport-section"]}>
+              <InfoModalTransport
+                item={item}
+                isPlaying={isPlaybackActive}
+                isExpanded={showEditorSection}
+                onExpand={expandToInfo}
+              />
+            </div>
           ) : (
             <>
               <p className={`${styles["video-title"]} line-clamp-4`}>
