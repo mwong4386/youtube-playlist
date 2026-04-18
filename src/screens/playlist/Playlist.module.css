@@ -298,8 +298,12 @@
   min-height: 0;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
-  border-radius: 28px;
-  background: linear-gradient(
+  border-radius: var(--glass-radius);
+  background: radial-gradient(
+    circle at top left,
+    color-mix(in srgb, var(--accent-color) 6%, transparent),
+    transparent 30%
+  ), linear-gradient(
     180deg,
     color-mix(in srgb, var(--surface-secondary) 82%, transparent) 0%,
     color-mix(in srgb, var(--surface-primary) 96%, transparent) 100%
