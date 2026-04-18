@@ -26,10 +26,6 @@ const PlaylistItem = ({
       chrome.runtime.sendMessage({ name: MsgType.PlayVideo, item: item });
     }
   };
-
-  const onClick = () => {
-    onOpenInfo(item.id);
-  };
   return (
     <div
       className={`${styles["playlist-item-container"]} ${
@@ -48,14 +44,19 @@ const PlaylistItem = ({
           />
         </label>
       </div>
-      <div className={styles["info-container"]} onClick={onClick}>
+      <div
+        className={styles["info-container"]}
+        onClick={() => {
+          onOpenInfo(item.id);
+        }}
+      >
         <div className={styles["title-container"]}>
           <p className={`${styles["title"]} line-clamp-2`}>{item.title}</p>
         </div>
         <div className={styles["channel-name"]}>{item.channelName}</div>
       </div>
       <div className={styles["play-container"]}>
-        <button className={styles["play-button"]} onClick={onPlay}>
+        <button type="button" className={styles["play-button"]} onClick={onPlay}>
           {isActivePlayback ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"

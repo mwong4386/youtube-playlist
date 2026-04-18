@@ -46,6 +46,30 @@ test("InfoModal source owns the collapsed player-first presentation", () => {
   expectEqual(infoModalSource.includes('presentation === "collapsed"'), true);
   expectEqual(infoModalSource.includes('setPresentation("expanded")'), true);
   expectEqual(infoModalSource.includes("<InfoModalTransport"), true);
+  expectEqual(
+    infoModalSource.includes('<button className={styles["save-button"]} type="submit">'),
+    true
+  );
+  expectEqual(infoModalSource.includes('styles["header-spacer"]'), false);
+  expectEqual(
+    infoModalSource.includes(
+      ') : showTransport ? (\n            <>\n              <p className={`${styles["video-title"]} line-clamp-4`}>'
+    ),
+    true
+  );
+});
+
+test("InfoModal source preserves editor state across playback changes and keeps expanded transport below the editor", () => {
+  expectEqual(infoModalSource.includes("}, [active, item?.id, reset]);"), true);
+  expectEqual(
+    infoModalSource.includes('if (!showTransport && presentation === "collapsed")'),
+    true
+  );
+  expectEqual(
+    infoModalSource.lastIndexOf('<div className={styles["transport-section"]}>') >
+      infoModalSource.indexOf('<div className={styles["editor-section"]}>'),
+    true
+  );
 });
 
 test("modal transport source exposes a dedicated expand surface and transport buttons", () => {
