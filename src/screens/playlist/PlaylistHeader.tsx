@@ -333,7 +333,9 @@ const PlaylistHeader = ({
         <div
           className={`${styles["header-control-rail"]} ${styles["selection-control-rail"]}`}
         >
-          <div className={styles["header-left-container"]}>
+          <div
+            className={`${styles["header-left-container"]} ${styles["header-center-well"]}`}
+          >
             <label className={styles["selection-header-checkbox"]}>
               <input
                 ref={selectAllCheckboxRef}
@@ -349,7 +351,9 @@ const PlaylistHeader = ({
               {selectedCount} selected
             </p>
           </div>
-          <div className={styles["header-center-container"]}>
+          <div
+            className={`${styles["header-center-container"]} ${styles["header-side-pocket"]}`}
+          >
             <button
               type="button"
               onClick={onClearSelection}
@@ -369,7 +373,9 @@ const PlaylistHeader = ({
               </svg>
             </button>
           </div>
-          <div className={styles["header-right-container"]}>
+          <div
+            className={`${styles["header-right-container"]} ${styles["header-center-well"]}`}
+          >
             <button
               type="button"
               onClick={onOpenSelectionActions}
