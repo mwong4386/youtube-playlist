@@ -72,6 +72,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setIsDeleteAllOpen,
     isSelectionActionsOpen,
     setIsSelectionActionsOpen,
+    isShelfExpanded,
+    setIsShelfExpanded,
     selectedItemIds,
     setSelectedItemIds,
     newSongListError,
@@ -268,7 +270,13 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           <PlaybackShelf
             item={playlist.find((i) => i.id === playingId)!}
             isPlaying={playing}
-            onExpand={() => openInfoModal(playingId)}
+            isExpanded={isShelfExpanded}
+            onToggleExpand={() => setIsShelfExpanded(!isShelfExpanded)}
+            profiles={audioEqProfiles}
+            onvolumechange={onvolumechange}
+            onAudioEqChange={onAudioEqChange}
+            onAnalyzeSongBoundaries={analyzeSongBoundaries}
+            save={onSave}
           />
         )}
       </div>

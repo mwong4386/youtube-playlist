@@ -29,6 +29,7 @@ const usePlaylistScreenState = () => {
   const [isNewSongListOpen, setIsNewSongListOpen] = useState(false);
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const [isSelectionActionsOpen, setIsSelectionActionsOpen] = useState(false);
+  const [isShelfExpanded, setIsShelfExpanded] = useState(false);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [newSongListError, setNewSongListError] = useState("");
   const [
@@ -66,6 +67,8 @@ const usePlaylistScreenState = () => {
     setIsDeleteAllOpen,
     isSelectionActionsOpen,
     setIsSelectionActionsOpen,
+    isShelfExpanded,
+    setIsShelfExpanded,
     selectedItemIds,
     setSelectedItemIds,
     newSongListError,

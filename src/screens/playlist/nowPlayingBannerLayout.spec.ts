@@ -16,6 +16,10 @@ const infoModalSource = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModal.tsx"),
   "utf8"
 );
+const songEditorSource = readFileSync(
+  join(process.cwd(), "src/screens/modal/SongEditor.tsx"),
+  "utf8"
+);
 const infoModalTransportSource = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModalTransport.tsx"),
   "utf8"
@@ -38,22 +42,26 @@ test("playlist no longer renders a standalone now-playing banner component", () 
   expectEqual(playlistSource.includes("playlist-bottom-spacer"), false);
 });
 
-test("InfoModal source is a clean editor without collapsed presentation", () => {
+test("InfoModal source is a clean shell that hosts the SongEditor", () => {
   expectEqual(infoModalSource.includes("InfoModalPresentation"), false);
   expectEqual(infoModalSource.includes("currentPlaybackItemId"), true);
-  expectEqual(infoModalSource.includes('presentation === "collapsed"'), false);
-  expectEqual(infoModalSource.includes('setPresentation'), false);
+  expectEqual(infoModalSource.includes("<SongEditor"), true);
   expectEqual(infoModalSource.includes("<InfoModalTransport"), true);
-  expectEqual(infoModalSource.includes("showEditorSection"), false);
   expectEqual(infoModalSource.includes('aria-label="Close editor"'), true);
   expectEqual(infoModalSource.includes('title="Close editor"'), true);
 });
 
-test("InfoModal source preserves editor state across item changes and keeps transport below the editor", () => {
-  expectEqual(infoModalSource.includes("}, [active, item?.id, reset]);"), true);
+test("SongEditor source preserves editor state across item changes", () => {
   expectEqual(
-    infoModalSource.lastIndexOf('<div className={styles["transport-section"]}>') >
-      infoModalSource.indexOf('<div className={styles["editor-section"]}>'),
+    songEditorSource.includes("}, [active, item?.id, reset, setLatestGeminiSuggestion]);"),
+    true
+  );
+});
+
+test("InfoModal source keeps transport below the editor", () => {
+  expectEqual(
+    infoModalSource.lastIndexOf('className={styles["transport-section"]}') >
+      infoModalSource.indexOf("<SongEditor"),
     true
   );
 });
