@@ -16,12 +16,32 @@ const playlistSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/Playlist.tsx"),
   "utf8",
 );
+const playlistContentSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/PlaylistContent.tsx"),
+  "utf8",
+);
 const playlistHeaderSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistHeader.tsx"),
   "utf8",
 );
+const playlistActionsSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/usePlaylistActions.ts"),
+  "utf8",
+);
+const playlistStorageSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/usePlaylistStorageSync.ts"),
+  "utf8",
+);
+const playlistScreenStateSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/usePlaylistScreenState.ts"),
+  "utf8",
+);
 const playlistImportModalSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistImportModal.tsx"),
+  "utf8",
+);
+const selectionActionsModalSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/SelectionActionsModal.tsx"),
   "utf8",
 );
 const playlistImportModalStyles = readFileSync(
@@ -104,20 +124,26 @@ test("drag placeholder uses themed glass styling instead of a hardcoded light su
 });
 
 test("playlist source uses the list container as the end-of-list drop target", () => {
-  expectEqual(playlistSource.includes("const onMoveToEnd = () =>"), true);
-  expectEqual(playlistSource.includes("event.target !== event.currentTarget"), true);
-  expectEqual(playlistSource.includes('className={styles["playlist-container"]}'), true);
-  expectEqual(playlistSource.includes("onMoveToEnd();"), true);
+  expectEqual(playlistActionsSource.includes("const onMoveToEnd = () =>"), true);
+  expectEqual(
+    playlistActionsSource.includes("event.target !== event.currentTarget"),
+    true,
+  );
+  expectEqual(
+    playlistContentSource.includes('className={styles["playlist-container"]}'),
+    true,
+  );
+  expectEqual(playlistActionsSource.includes("onMoveToEnd();"), true);
   expectEqual(playlistStyles.includes(".drag-end-drop-zone"), false);
   expectEqual(playlistStyles.includes(".drag-end-drop-zone-active"), false);
 });
 
 test("playlist source renders the analysis banner inside the scrollable playlist flow", () => {
-  const playlistContainerIndex = playlistSource.indexOf(
+  const playlistContainerIndex = playlistContentSource.indexOf(
     'className={styles["playlist-container"]}',
   );
-  const analyzeBannerIndex = playlistSource.indexOf(
-    'className={styles["analyze-import-banner-container"]}',
+  const analyzeBannerIndex = playlistContentSource.indexOf(
+    "<AnalyzeImportBannerPanel",
   );
 
   expectEqual(playlistContainerIndex >= 0, true);
@@ -126,15 +152,13 @@ test("playlist source renders the analysis banner inside the scrollable playlist
 
 test("playlist selection mode uses shared helpers and disables dragging", () => {
   expectEqual(playlistSource.includes('from "./playlistSelection"'), true);
-  expectEqual(
-    playlistSource.includes("const [selectedItemIds, setSelectedItemIds]"),
-    true,
-  );
+  expectEqual(playlistScreenStateSource.includes("selectedItemIds"), true);
   expectEqual(
     playlistSource.includes("getPlaylistHeaderMode(selectedItemIds)"),
     true,
   );
   expectEqual(playlistSource.includes('headerMode === "selection"'), true);
+  expectEqual(playlistContentSource.includes("isSelectionMode ? ("), true);
 });
 
 test("playlist header source includes selection mode action plumbing", () => {
@@ -236,14 +260,14 @@ test("song list item rows use an explicit flex row container for title and edit 
 });
 
 test("playlist source includes selected-song action modal wiring", () => {
-  expectEqual(playlistSource.includes("selectionActionsModalActive"), true);
-  expectEqual(playlistSource.includes("Analyze Timing"), true);
-  expectEqual(playlistSource.includes("Delete Songs"), true);
+  expectEqual(playlistSource.includes("isSelectionActionsOpen"), true);
+  expectEqual(selectionActionsModalSource.includes("Analyze Timing"), true);
+  expectEqual(selectionActionsModalSource.includes("Delete Songs"), true);
   expectEqual(playlistSource.includes("Selected songs"), false);
-  expectEqual(playlistSource.includes("itemIds: selectedItemIds"), true);
+  expectEqual(playlistActionsSource.includes("itemIds: selectedItemIds"), true);
   expectEqual(
-    playlistSource.includes(
-      "deleteSelectedPlaylistItems(playlist, selectedItemIds)",
+    playlistActionsSource.includes(
+      "deleteSelectedPlaylistItems(currentPlaylist, selectedItemIds)",
     ),
     true,
   );
@@ -254,21 +278,16 @@ test("playlist import success path does not auto-start analysis", () => {
 });
 
 test("playlist source initializes and syncs visible playlist from named song-list storage", () => {
-  expectEqual(playlistSource.includes("SONG_LISTS_STORAGE_KEY"), true);
+  expectEqual(playlistStorageSource.includes("SONG_LISTS_STORAGE_KEY"), true);
   expectEqual(
-    playlistSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY"),
+    playlistStorageSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY"),
     true,
   );
-  expectEqual(playlistSource.includes("getStorageMap("), true);
-  expectEqual(playlistSource.includes("normalizeSongListsState("), true);
+  expectEqual(playlistStorageSource.includes("getStorageMap("), true);
+  expectEqual(playlistStorageSource.includes("normalizeSongListsState("), true);
+  expectEqual(playlistStorageSource.includes("const [songListsState"), true);
   expectEqual(
-    playlistSource.includes("const [songListsState, setSongListsState]"),
-    true,
-  );
-  expectEqual(
-    playlistSource.includes(
-      "const [activeSongListName, setActiveSongListName]",
-    ),
+    playlistStorageSource.includes("const [activeSongListName"),
     true,
   );
   expectEqual(
@@ -276,34 +295,32 @@ test("playlist source initializes and syncs visible playlist from named song-lis
     true,
   );
   expectEqual(
-    playlistSource.includes("chrome.storage.onChanged.addListener(listener)"),
+    playlistStorageSource.includes("chrome.storage.onChanged.addListener(listener)"),
     true,
   );
   expectEqual(
-    playlistSource.includes("SONG_LISTS_STORAGE_KEY in changes"),
+    playlistStorageSource.includes("SONG_LISTS_STORAGE_KEY in changes"),
     true,
   );
   expectEqual(
-    playlistSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes"),
+    playlistStorageSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes"),
     true,
   );
 });
 
 test("playlist source writes active-list updates through named song-list helpers", () => {
   expectEqual(
-    playlistSource.includes("updateActiveSongListItems(songListsState"),
+    playlistStorageSource.includes("updateStoredActiveSongListItems("),
     true,
   );
   expectEqual(
-    playlistSource.includes(
+    playlistStorageSource.includes(
       "[SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists",
     ),
     true,
   );
   expectEqual(
-    playlistSource.includes(
-      "[ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextSongListsState.activeSongListName",
-    ),
+    playlistStorageSource.includes("[ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:"),
     true,
   );
   expectEqual(playlistSource.includes("youtube_list: playlist"), false);
@@ -363,17 +380,14 @@ test("playlist import and delete-all source route through the active song list",
   expectEqual(playlistImportModalSource.includes("Choose JSON file"), true);
   expectEqual(playlistImportModalStyles.includes(".importSection"), true);
   expectEqual(
-    playlistSource.includes(
-      "const onImportJson = (importedPlaylist: typeof playlist) => {",
+    playlistActionsSource.includes(
+      "const onImportJson = (importedPlaylist: MPlaylistItem[]) => {",
     ),
     true,
   );
-  expectEqual(
-    playlistSource.includes("persistActiveSongListItems(importedPlaylist);"),
-    true,
-  );
+  expectEqual(playlistActionsSource.includes("updateActiveSongListItems(() => importedPlaylist);"), true);
   expectEqual(playlistSource.includes("onImportJson={onImportJson}"), true);
-  expectEqual(playlistSource.includes("persistActiveSongListItems([]);"), true);
+  expectEqual(playlistActionsSource.includes("updateActiveSongListItems(() => []);"), true);
 });
 
 test("playlist header export source revokes object URLs after download", () => {
@@ -386,45 +400,43 @@ test("playlist header export source revokes object URLs after download", () => {
 
 test("playlist source manages new song list modal state and create flow", () => {
   expectEqual(
-    playlistSource.includes(
-      "const [newSongListModalActive, setNewSongListModalActive]",
-    ),
+    playlistScreenStateSource.includes("const [isNewSongListOpen, setIsNewSongListOpen]"),
     true,
   );
   expectEqual(
-    playlistSource.includes("const [newSongListError, setNewSongListError]"),
+    playlistScreenStateSource.includes('const [newSongListError, setNewSongListError]'),
     true,
   );
-  expectEqual(playlistSource.includes("getSongListCreationError("), true);
-  expectEqual(playlistSource.includes("createSongList(songListsState"), true);
+  expectEqual(playlistActionsSource.includes("getSongListCreationError("), true);
+  expectEqual(playlistActionsSource.includes("createSongList(currentSongListsState"), true);
   expectEqual(
-    playlistSource.includes("persistSongListsState(nextSongListsState"),
+    playlistActionsSource.includes("updateSongListsState("),
     true,
   );
-  expectEqual(playlistSource.includes('setNewSongListError("")'), true);
-  expectEqual(playlistSource.includes("setNewSongListModalActive(true)"), true);
+  expectEqual(playlistActionsSource.includes('setNewSongListError("")'), true);
+  expectEqual(playlistActionsSource.includes("setIsNewSongListOpen(true)"), true);
   expectEqual(
-    playlistSource.includes("setNewSongListModalActive(false)"),
+    playlistActionsSource.includes("setIsNewSongListOpen(false)"),
     true,
   );
-  expectEqual(playlistSource.includes("const onRenameSongList ="), true);
-  expectEqual(playlistSource.includes("renameSongList("), true);
+  expectEqual(playlistActionsSource.includes("const onRenameSongList ="), true);
+  expectEqual(playlistActionsSource.includes("renameSongList("), true);
   expectEqual(playlistSource.includes("<NewSongListModal"), true);
   expectEqual(
     playlistSource.includes("activeSongListName={activeSongListName}"),
     true,
   );
-  expectEqual(playlistSource.includes("onSelectSongList={(name) =>"), true);
+  expectEqual(playlistSource.includes("onSelectSongList={onSelectSongList}"), true);
 });
 
 test("playlist source guards reorder targets and preserves selection on analyze send failures", () => {
-  expectEqual(playlistSource.includes("if (newIndex < 0) return;"), true);
-  expectEqual(playlistSource.includes("(_response?: unknown) =>"), true);
-  expectEqual(playlistSource.includes("if (chrome.runtime.lastError) {"), true);
-  expectEqual(playlistSource.includes("clearSelection();"), true);
-  expectEqual(playlistSource.includes("closeSelectionActionsModal();"), true);
+  expectEqual(playlistActionsSource.includes("if (targetIndex < 0) {"), true);
+  expectEqual(playlistActionsSource.includes("(_response?: unknown) =>"), true);
+  expectEqual(playlistActionsSource.includes("if (chrome.runtime.lastError) {"), true);
+  expectEqual(playlistActionsSource.includes("clearSelection();"), true);
+  expectEqual(playlistActionsSource.includes("closeSelectionActionsModal();"), true);
   expectEqual(
-    playlistSource.includes("name: MsgType.AnalyzeImportedPlaylist"),
+    playlistActionsSource.includes("name: MsgType.AnalyzeImportedPlaylist"),
     true,
   );
 });
@@ -595,14 +607,14 @@ test("new song list modal source uses shared modal pattern and inline error mess
 test("playlist item play button routes through modal-opening playback wiring", () => {
   expectEqual(playlistItemSource.includes("onPlayItem"), true);
   expectEqual(playlistItemSource.includes("onPlayItem(item.id);"), true);
-  expectEqual(playlistSource.includes("const [pendingPlaybackItemId"), true);
+  expectEqual(playlistScreenStateSource.includes("const [pendingPlaybackItemId"), true);
   expectEqual(
-    playlistSource.includes("const openPlaybackModal = (itemId: string) =>"),
+    playlistActionsSource.includes("const openPlaybackModal = (itemId: string) =>"),
     true,
   );
   expectEqual(
-    playlistSource.includes("currentPlaybackItemId || pendingPlaybackItemId"),
+    playlistSource.includes("getEffectivePlaybackItemId("),
     true,
   );
-  expectEqual(playlistSource.includes("onPlayItem={openPlaybackModal}"), true);
+  expectEqual(playlistContentSource.includes("onPlayItem={onOpenPlaybackModal}"), true);
 });

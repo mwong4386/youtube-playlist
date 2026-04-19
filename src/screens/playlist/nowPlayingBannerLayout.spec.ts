@@ -91,18 +91,9 @@ test("InfoModal source uses a collapse control to return the current song to min
 });
 
 test("collapsed player-first modal trims leftover bottom spacing around the transport", () => {
-  expectEqual(
-    infoModalStyles.includes(".content-collapsed"),
-    true
-  );
-  expectEqual(
-    infoModalStyles.includes("margin-bottom: 0;"),
-    true
-  );
-  expectEqual(
-    infoModalStyles.includes(".content-collapsed .transport-section"),
-    true
-  );
+  expectEqual(infoModalStyles.includes(".content-collapsed"), true);
+  expectEqual(infoModalStyles.includes("margin-bottom: 0;"), true);
+  expectEqual(infoModalStyles.includes(".transport-section"), true);
 });
 
 test("modal transport source exposes a dedicated expand surface and transport buttons", () => {

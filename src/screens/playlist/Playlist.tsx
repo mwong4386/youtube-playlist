@@ -1,87 +1,32 @@
-import { useEffect, useState } from "react";
-import MsgType from "../../constants/msgType";
-import AudioEqSettings from "../../models/AudioEq";
-import AudioEqProfile, {
-  AUDIO_EQ_PROFILE_STORAGE_KEY,
-} from "../../models/AudioEqProfile";
-import {
-  GEMINI_API_KEY_STORAGE_KEY,
-  type GeminiAnalyzeFailure,
-  type GeminiAnalyzeSuccess,
-  type GeminiBoundarySuggestion,
-} from "../../models/GeminiSettings";
-import PlaybackState, {
-  createInitialPlaybackState,
-  isPlaybackActive,
-} from "../../models/PlaybackState";
-import {
-  ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
-  type AnalyzeImportBatchState,
-  type PlaylistImportRequest,
-  type PlaylistImportResponse,
-} from "../../models/PlaylistImport";
-import {
-  ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
-  SONG_LISTS_STORAGE_KEY,
-  type SongListsState,
-} from "../../models/SongList";
-import {
-  createAudioEqProfile,
-  deleteAudioEqProfile,
-  readStoredAudioEqProfiles,
-  updateAudioEqProfileList,
-} from "../../utils/audioEqProfiles";
-import { readStoredGeminiApiKey } from "../../utils/geminiSettings";
-import {
-  cancelDeleteAllConfirmation,
-  confirmDeleteAllConfirmation,
-  deleteSelectedPlaylistItems,
-} from "../../utils/playlistActions";
-import {
-  buildDefaultSongListsState,
-  createSongList,
-  normalizeSongListsState,
-  renameSongList,
-  updateActiveSongListItems,
-} from "../../utils/songLists";
-import { getStorageMap } from "../../utils/syncStorage";
+import { useEffect } from "react";
 import { ThemePreference } from "../../utils/theme";
-import Draggable from "../draggable/Draggable";
+import DeleteAllModal from "./DeleteAllModal";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import InfoModal from "../modal/InfoModal";
-import Modal from "../modal/Modal";
 import SettingsModal from "../settings/SettingsModal";
 import {
   getAnalyzeImportBannerViewModel,
   getAnalyzeImportBannerVisibilityKey,
-  shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner";
-import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import NewSongListModal from "./NewSongListModal";
 import styles from "./Playlist.module.css";
+import PlaylistContent from "./PlaylistContent";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistImportModal from "./PlaylistImportModal";
-import {
-  resolvePlaylistImportSubmission,
-  type PlaylistImportSubmissionResult,
-} from "./playlistImportResult";
-import PlaylistItem from "./PlaylistItem";
+import SelectionActionsModal from "./SelectionActionsModal";
 import {
   areAllPlaylistItemsSelected,
-  clearSelectedItemIds,
   filterUncalibratedPlaylistItemIds,
   getPlaylistHeaderMode,
-  toggleAllSelectedItemIds,
-  toggleSelectedItemId,
 } from "./playlistSelection";
 import {
-  getSongListCreationError,
-  getVisiblePlaylistForActiveList,
-} from "./songListsViewModel";
-
-const DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY =
-  "dismissedAnalyzeImportBannerKey";
-const DEFAULT_SONG_LISTS_STATE = buildDefaultSongListsState();
+  getEffectivePlaybackItemId,
+  getVisibleSelectedItemIds,
+} from "./playlistScreenState";
+import { getVisiblePlaylistForActiveList } from "./songListsViewModel";
+import usePlaylistActions from "./usePlaylistActions";
+import usePlaylistScreenState from "./usePlaylistScreenState";
+import usePlaylistStorageSync from "./usePlaylistStorageSync";
 
 interface Props {
   themePreference: ThemePreference;
@@ -89,607 +34,142 @@ interface Props {
 }
 
 const Playlist = ({ themePreference, setThemePreference }: Props) => {
-  const [songListsState, setSongListsState] = useState<SongListsState>(
-    DEFAULT_SONG_LISTS_STATE,
-  );
-  const [activeSongListName, setActiveSongListName] = useState(
-    DEFAULT_SONG_LISTS_STATE.activeSongListName,
-  );
-  const [playbackState, setPlaybackState] = useState<PlaybackState>(
-    createInitialPlaybackState(),
-  );
-  const [playing, setPlaying] = useState<boolean>(false);
-  const [playingId, setPlayingId] = useState<string | undefined>(undefined);
-  const [draggingElementId, setDraggingElement] = useState<string | undefined>(
-    undefined,
-  );
-  const [selectItemId, setSelectItemId] = useState<string | undefined>(
-    undefined,
-  ); //for opening the info modal
-  const [pendingPlaybackItemId, setPendingPlaybackItemId] = useState<
-    string | undefined
-  >(undefined);
-  const [eqSettingsActive, setEqSettingsActive] = useState(false);
-  const [geminiSettingsActive, setGeminiSettingsActive] = useState(false);
-  const [playlistImportModalActive, setPlaylistImportModalActive] =
-    useState(false);
-  const [newSongListModalActive, setNewSongListModalActive] = useState(false);
-  const [deleteAllModalActive, setDeleteAllModalActive] = useState(false);
-  const [selectionActionsModalActive, setSelectionActionsModalActive] =
-    useState(false);
-  const [audioEqProfiles, setAudioEqProfiles] = useState<AudioEqProfile[]>([]);
-  const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  const [newSongListError, setNewSongListError] = useState("");
-  const [analyzeImportBatchState, setAnalyzeImportBatchState] =
-    useState<AnalyzeImportBatchState | null>(null);
-  const [dismissedAnalyzeImportBannerKey, setDismissedAnalyzeImportBannerKey] =
-    useState<string | null>(null);
+  const {
+    songListsState,
+    activeSongListName,
+    playbackState,
+    playing,
+    playingId,
+    audioEqProfiles,
+    geminiApiKey,
+    analyzeImportBatchState,
+    updateSongListsState,
+    updateActiveSongListItems,
+    createAudioEqProfileEntry,
+    updateAudioEqProfileEntry,
+    deleteAudioEqProfileEntry,
+    saveGeminiApiKey,
+    removeGeminiApiKey,
+    clearAnalyzeImportBatchState,
+  } = usePlaylistStorageSync();
+  const {
+    draggingItemId,
+    setDraggingItemId,
+    selectedInfoItemId,
+    setSelectedInfoItemId,
+    pendingPlaybackItemId,
+    setPendingPlaybackItemId,
+    isEqSettingsOpen,
+    setIsEqSettingsOpen,
+    isGeminiSettingsOpen,
+    setIsGeminiSettingsOpen,
+    isPlaylistImportOpen,
+    setIsPlaylistImportOpen,
+    isNewSongListOpen,
+    setIsNewSongListOpen,
+    isDeleteAllOpen,
+    setIsDeleteAllOpen,
+    isSelectionActionsOpen,
+    setIsSelectionActionsOpen,
+    selectedItemIds,
+    setSelectedItemIds,
+    newSongListError,
+    setNewSongListError,
+    dismissedAnalyzeImportBannerKey,
+    dismissAnalyzeImportBanner,
+  } = usePlaylistScreenState();
   const playlist = getVisiblePlaylistForActiveList(
     songListsState.songLists,
     activeSongListName,
   );
-
-  const syncPlaybackState = (state?: PlaybackState | null) => {
-    const nextState = state || createInitialPlaybackState();
-    setPlaybackState(nextState);
-    setPlaying(isPlaybackActive(nextState.status));
-    setPlayingId(nextState.currentItemId || undefined);
-  };
-
-  const applySongListsState = (nextSongListsState: SongListsState) => {
-    setSongListsState(nextSongListsState);
-    setActiveSongListName(nextSongListsState.activeSongListName);
-  };
-
-  const syncSongListsState = async () => {
-    const storedSongLists = await getStorageMap([
-      SONG_LISTS_STORAGE_KEY,
-      ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
-    ]);
-    const nextSongListsState = normalizeSongListsState(storedSongLists);
-
-    applySongListsState(nextSongListsState);
-
-    if (
-      !(SONG_LISTS_STORAGE_KEY in storedSongLists) ||
-      !(ACTIVE_SONG_LIST_NAME_STORAGE_KEY in storedSongLists)
-    ) {
-      chrome.storage.sync.set({
-        [SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists,
-        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:
-          nextSongListsState.activeSongListName,
-      });
-    }
-  };
-
-  const persistSongListsState = (
-    nextSongListsState: SongListsState,
-    callback?: () => void,
-  ) => {
-    applySongListsState(nextSongListsState);
-    chrome.storage.sync.set(
-      {
-        [SONG_LISTS_STORAGE_KEY]: nextSongListsState.songLists,
-        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:
-          nextSongListsState.activeSongListName,
-      },
-      callback,
-    );
-  };
-
-  const persistActiveSongListItems = (
-    items: typeof playlist,
-    callback?: () => void,
-  ) => {
-    const nextSongListsState = updateActiveSongListItems(songListsState, items);
-    persistSongListsState(nextSongListsState, callback);
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadSongLists = async () => {
-      const storedSongLists = await getStorageMap([
-        SONG_LISTS_STORAGE_KEY,
-        ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
-      ]);
-      const storedSongListsState = normalizeSongListsState(storedSongLists);
-
-      if (!mounted) {
-        return;
-      }
-
-      applySongListsState(storedSongListsState);
-
-      if (
-        !(SONG_LISTS_STORAGE_KEY in storedSongLists) ||
-        !(ACTIVE_SONG_LIST_NAME_STORAGE_KEY in storedSongLists)
-      ) {
-        chrome.storage.sync.set({
-          [SONG_LISTS_STORAGE_KEY]: storedSongListsState.songLists,
-          [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]:
-            storedSongListsState.activeSongListName,
-        });
-      }
-    };
-
-    void loadSongLists();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadAudioEqProfiles = () => {
-      chrome.storage.sync.get([AUDIO_EQ_PROFILE_STORAGE_KEY], (result) => {
-        if (!mounted) {
-          return;
-        }
-
-        setAudioEqProfiles(readStoredAudioEqProfiles(result));
-      });
-    };
-
-    loadAudioEqProfiles();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY], (result) => {
-      setGeminiApiKey(readStoredGeminiApiKey(result));
-    });
-  }, []);
-
-  useEffect(() => {
-    setDismissedAnalyzeImportBannerKey(
-      window.localStorage.getItem(DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY),
-    );
-  }, []);
-
-  useEffect(() => {
-    chrome.storage.local.get(
-      [ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY],
-      (result) => {
-        setAnalyzeImportBatchState(
-          (result[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY] as
-            | AnalyzeImportBatchState
-            | undefined) || null,
-        );
-      },
-    );
-  }, []);
-
-  useEffect(() => {
-    chrome.storage.local.get(
-      ["playbackState", "isPlaying", "playingItem"],
-      (result) => {
-        syncPlaybackState(result["playbackState"]);
-        setPlaying(
-          result["isPlaying"] === undefined
-            ? isPlaybackActive(
-                (result["playbackState"] || createInitialPlaybackState())
-                  .status,
-              )
-            : !!result["isPlaying"],
-        );
-        setPlayingId(
-          result["playingItem"]?.id ||
-            result["playbackState"]?.currentItemId ||
-            undefined,
-        );
-      },
-    );
-  }, []);
-
-  useEffect(() => {
-    const listener = (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      namespace: "sync" | "local" | "managed" | "session",
-    ) => {
-      if ("playbackState" in changes) {
-        syncPlaybackState(changes["playbackState"].newValue);
-      }
-      if ("playingItem" in changes) {
-        setPlayingId(changes["playingItem"].newValue?.id);
-      }
-      if ("isPlaying" in changes) {
-        setPlaying(!!changes["isPlaying"].newValue);
-      }
-      if (
-        namespace === "sync" &&
-        (SONG_LISTS_STORAGE_KEY in changes ||
-          ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes)
-      ) {
-        void syncSongListsState();
-      }
-      if (namespace === "sync" && AUDIO_EQ_PROFILE_STORAGE_KEY in changes) {
-        setAudioEqProfiles(
-          typeof changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue === "undefined"
-            ? readStoredAudioEqProfiles({})
-            : readStoredAudioEqProfiles({
-                [AUDIO_EQ_PROFILE_STORAGE_KEY]:
-                  changes[AUDIO_EQ_PROFILE_STORAGE_KEY].newValue,
-              }),
-        );
-      }
-      if (namespace === "local" && GEMINI_API_KEY_STORAGE_KEY in changes) {
-        setGeminiApiKey(
-          readStoredGeminiApiKey({
-            [GEMINI_API_KEY_STORAGE_KEY]:
-              changes[GEMINI_API_KEY_STORAGE_KEY].newValue,
-          }),
-        );
-      }
-      if (
-        namespace === "local" &&
-        ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY in changes
-      ) {
-        setAnalyzeImportBatchState(
-          (changes[ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY].newValue as
-            | AnalyzeImportBatchState
-            | undefined) || null,
-        );
-      }
-    };
-    chrome.storage.onChanged.addListener(listener);
-    return () => {
-      chrome.storage.onChanged.removeListener(listener);
-    };
-  }, []);
+  const {
+    analyzeSongBoundaries,
+    clearSelection,
+    closeDeleteAllModal,
+    closeEqSettings,
+    closeGeminiSettings,
+    closeInfoModal,
+    closeNewSongListModal,
+    closePlaylistImportModal,
+    closeSelectionActionsModal,
+    confirmDeleteAll,
+    importYoutubePlaylist,
+    onAnalyzeSelected,
+    onAnalyzeUncalibratedSelected,
+    onAudioEqChange,
+    onCreateProfile,
+    onCreateSongList,
+    onDeleteAll,
+    onDeleteProfile,
+    onDeleteSelected,
+    onDismissAnalyzeImportBanner,
+    onImportJson,
+    onMoveTo,
+    onPlaylistContainerDragOver,
+    onPlaylistContainerDrop,
+    onOpenSelectionActions,
+    onRemoveGeminiApiKey,
+    onRenameSongList,
+    onSave,
+    onSaveGeminiApiKey,
+    onSelectSongList,
+    onStopAnalyzeImportBatch,
+    onUpdateProfile,
+    onvolumechange,
+    openEqSettings,
+    openGeminiSettings,
+    openInfoModal,
+    openNewSongListModal,
+    openPlaybackModal,
+    openPlaylistImportModal,
+    toggleSelectAll,
+    toggleSelectedItem,
+  } = usePlaylistActions({
+    playlist,
+    songListsState,
+    activeSongListName,
+    analyzeImportBatchState,
+    draggingItemId,
+    selectedInfoItemId,
+    selectedItemIds,
+    playing,
+    playingId,
+    updateSongListsState,
+    updateActiveSongListItems,
+    createAudioEqProfileEntry,
+    updateAudioEqProfileEntry,
+    deleteAudioEqProfileEntry,
+    saveGeminiApiKey,
+    removeGeminiApiKey,
+    clearAnalyzeImportBatchState,
+    setDraggingItemId,
+    setIsEqSettingsOpen,
+    setIsGeminiSettingsOpen,
+    setIsPlaylistImportOpen,
+    setIsNewSongListOpen,
+    setIsDeleteAllOpen,
+    setIsSelectionActionsOpen,
+    setSelectedItemIds,
+    setNewSongListError,
+    setPendingPlaybackItemId,
+    setSelectedInfoItemId,
+    dismissAnalyzeImportBanner,
+  });
 
   useEffect(() => {
     setSelectedItemIds((currentSelectedItemIds) => {
-      const playlistItemIds = new Set(playlist.map((item) => item.id));
-      const nextSelectedItemIds = currentSelectedItemIds.filter((itemId) =>
-        playlistItemIds.has(itemId),
+      return getVisibleSelectedItemIds(
+        playlist.map((item) => item.id),
+        currentSelectedItemIds,
       );
-
-      return nextSelectedItemIds.length === currentSelectedItemIds.length
-        ? currentSelectedItemIds
-        : nextSelectedItemIds;
     });
   }, [playlist]);
 
   useEffect(() => {
-    if (selectedItemIds.length === 0 && selectionActionsModalActive) {
-      setSelectionActionsModalActive(false);
+    if (selectedItemIds.length === 0 && isSelectionActionsOpen) {
+      setIsSelectionActionsOpen(false);
     }
-  }, [selectedItemIds, selectionActionsModalActive]);
-
-  const onDeleteAll = () => {
-    setDeleteAllModalActive(true);
-  };
-
-  const onImportJson = (importedPlaylist: typeof playlist) => {
-    persistActiveSongListItems(importedPlaylist);
-  };
-
-  const closePlaylistImportModal = () => {
-    setPlaylistImportModalActive(false);
-  };
-
-  const closeNewSongListModal = () => {
-    setNewSongListError("");
-    setNewSongListModalActive(false);
-  };
-
-  const closeDeleteAllModal = () => {
-    cancelDeleteAllConfirmation(() => {
-      setDeleteAllModalActive(false);
-    });
-  };
-
-  const closeSelectionActionsModal = () => {
-    setSelectionActionsModalActive(false);
-  };
-
-  const clearSelection = () => {
-    setSelectedItemIds((currentSelectedItemIds) =>
-      clearSelectedItemIds(currentSelectedItemIds),
-    );
-  };
-
-  const confirmDeleteAll = () => {
-    confirmDeleteAllConfirmation(
-      () => {
-        persistActiveSongListItems([]);
-      },
-      () => {
-        setDeleteAllModalActive(false);
-      },
-    );
-  };
-
-  const saveProfiles = (profiles: AudioEqProfile[]) => {
-    setAudioEqProfiles(profiles);
-    chrome.storage.sync.set({
-      [AUDIO_EQ_PROFILE_STORAGE_KEY]: profiles,
-    });
-  };
-
-  const onCreateProfile = (name: string, audioEq: AudioEqSettings) => {
-    saveProfiles(
-      updateAudioEqProfileList(
-        audioEqProfiles,
-        createAudioEqProfile(name, audioEq),
-      ),
-    );
-  };
-
-  const onUpdateProfile = (profile: AudioEqProfile) => {
-    saveProfiles(updateAudioEqProfileList(audioEqProfiles, profile));
-  };
-
-  const onDeleteProfile = (id: string) => {
-    saveProfiles(deleteAudioEqProfile(audioEqProfiles, id));
-  };
-
-  const onSaveGeminiApiKey = async (value: string) => {
-    await chrome.storage.local.set({
-      [GEMINI_API_KEY_STORAGE_KEY]: value,
-    });
-  };
-
-  const onRemoveGeminiApiKey = async () => {
-    await chrome.storage.local.remove(GEMINI_API_KEY_STORAGE_KEY);
-  };
-
-  const analyzeSongBoundaries = (itemId: string) => {
-    console.log("[Gemini analyze]", "sending runtime message", {
-      itemId,
-      messageName: MsgType.AnalyzeSongBoundaries,
-      runtimeId: chrome.runtime.id,
-    });
-
-    return new Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>(
-      (resolve) => {
-        chrome.runtime.sendMessage(
-          { name: MsgType.AnalyzeSongBoundaries, itemId },
-          (response) => {
-            resolve(
-              normalizeAnalyzeSongBoundariesResponse(
-                response,
-                chrome.runtime.lastError,
-                console,
-              ),
-            );
-          },
-        );
-      },
-    );
-  };
-
-  const importYoutubePlaylist = (
-    request: PlaylistImportRequest,
-  ): Promise<PlaylistImportSubmissionResult> => {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        {
-          name: MsgType.ImportYoutubePlaylist,
-          playlistUrl: request.playlistUrl,
-          mode: request.mode,
-        },
-        (response: PlaylistImportResponse | undefined) => {
-          const result = resolvePlaylistImportSubmission(
-            response,
-            chrome.runtime.lastError ?? null,
-          );
-
-          if (result.ok) {
-            closePlaylistImportModal();
-          }
-
-          resolve(result);
-        },
-      );
-    });
-  };
-
-  const onSave = (
-    id: string,
-    timestamp: number,
-    endTimestamp: number | undefined,
-    volume: number,
-    audioEq: AudioEqSettings,
-    geminiSuggestion?: GeminiBoundarySuggestion,
-  ) => {
-    const item = playlist.find((x) => x.id === id);
-    if (!item) return;
-    const nextPlaylist = playlist.map((playlistItem) => {
-      if (playlistItem.id !== id) {
-        return playlistItem;
-      }
-
-      return {
-        ...playlistItem,
-        timestamp,
-        endTimestamp,
-        volume,
-        audioEq,
-        ...(geminiSuggestion
-          ? {
-              geminiSuggestedStartTimestamp: geminiSuggestion.startTimestamp,
-              geminiSuggestedEndTimestamp: geminiSuggestion.endTimestamp,
-            }
-          : {}),
-      };
-    });
-    persistActiveSongListItems(nextPlaylist);
-  };
-  const onMoveTo = (toId: string) => {
-    if (draggingElementId && draggingElementId !== toId) {
-      // const oldIndex = playlist.findIndex((x) => x.id === draggingElement);
-      const item = playlist.find((x) => x.id === draggingElementId);
-      if (!item) return;
-      const newIndex = playlist.findIndex((x) => x.id === toId);
-      if (newIndex < 0) return;
-      const temp = playlist.filter((x) => x.id !== draggingElementId);
-      temp.splice(newIndex, 0, item);
-      persistActiveSongListItems(temp);
-    }
-  };
-  const onMoveToEnd = () => {
-    if (!draggingElementId) {
-      return;
-    }
-
-    const item = playlist.find((x) => x.id === draggingElementId);
-    if (!item) {
-      return;
-    }
-
-    const temp = playlist.filter((x) => x.id !== draggingElementId);
-    temp.push(item);
-    persistActiveSongListItems(temp);
-  };
-  const onvolumechange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (playing && selectItemId === playingId) {
-      chrome.runtime.sendMessage({
-        name: MsgType.VolumeChange,
-        volume: event.currentTarget.value,
-      });
-    }
-  };
-  const onAudioEqChange = (audioEq: Partial<AudioEqSettings>) => {
-    if (playing && selectItemId === playingId) {
-      chrome.runtime.sendMessage({
-        name: MsgType.AudioEqChange,
-        audioEq,
-      });
-    }
-  };
-
-  const onOpenSelectionActions = () => {
-    if (selectedItemIds.length === 0) {
-      return;
-    }
-
-    setSelectionActionsModalActive(true);
-  };
-
-  const onSelectSongList = (name: string) => {
-    if (name === activeSongListName) {
-      return;
-    }
-
-    persistSongListsState({
-      songLists: songListsState.songLists,
-      activeSongListName: name,
-    });
-  };
-
-  const onCreateSongList = (rawName: string) => {
-    const error = getSongListCreationError(
-      rawName,
-      Object.keys(songListsState.songLists),
-    );
-
-    if (error) {
-      setNewSongListError(error);
-      return;
-    }
-
-    const nextSongListsState = createSongList(songListsState, rawName);
-    setNewSongListError("");
-    persistSongListsState(nextSongListsState, () => {
-      setNewSongListModalActive(false);
-    });
-  };
-
-  const onRenameSongList = (currentName: string, nextName: string) => {
-    try {
-      const nextSongListsState = renameSongList(
-        songListsState,
-        currentName,
-        nextName,
-      );
-      persistSongListsState(nextSongListsState);
-      return "";
-    } catch (error) {
-      return error instanceof Error
-        ? error.message
-        : "Unable to rename song list.";
-    }
-  };
-
-  const onDeleteSelected = () => {
-    if (selectedItemIds.length === 0) {
-      return;
-    }
-
-    persistActiveSongListItems(
-      deleteSelectedPlaylistItems(playlist, selectedItemIds),
-      () => {
-        if (chrome.runtime.lastError) {
-          return;
-        }
-
-        clearSelection();
-        closeSelectionActionsModal();
-      },
-    );
-  };
-
-  const onAnalyzeSelected = () => {
-    if (selectedItemIds.length === 0) {
-      return;
-    }
-
-    chrome.runtime.sendMessage(
-      {
-        name: MsgType.AnalyzeImportedPlaylist,
-        itemIds: selectedItemIds,
-      },
-      (_response?: unknown) => {
-        if (chrome.runtime.lastError) {
-          return;
-        }
-
-        clearSelection();
-        closeSelectionActionsModal();
-      },
-    );
-  };
-
-  const onAnalyzeUncalibratedSelected = () => {
-    const uncalibratedItemIds = filterUncalibratedPlaylistItemIds(
-      playlist,
-      selectedItemIds,
-    );
-
-    if (uncalibratedItemIds.length === 0) {
-      return;
-    }
-
-    chrome.runtime.sendMessage(
-      {
-        name: MsgType.AnalyzeImportedPlaylist,
-        itemIds: uncalibratedItemIds,
-        scope: "uncalibrated",
-      },
-      (_response?: unknown) => {
-        if (chrome.runtime.lastError) {
-          return;
-        }
-
-        clearSelection();
-        closeSelectionActionsModal();
-      },
-    );
-  };
-
-  const onStopAnalyzeImportBatch = () => {
-    chrome.runtime.sendMessage({
-      name: MsgType.StopAnalyzeImportedPlaylist,
-    });
-  };
+  }, [selectedItemIds, isSelectionActionsOpen, setIsSelectionActionsOpen]);
 
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
     analyzeImportBatchState,
@@ -708,24 +188,33 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     selectedItemIds,
   ).length;
   const currentPlaybackItemId = playbackState.currentItemId || playingId;
-  const effectivePlaybackItemId =
-    currentPlaybackItemId || pendingPlaybackItemId;
-
-  const openInfoModal = (itemId: string) => {
-    setPendingPlaybackItemId(undefined);
-    setSelectItemId(itemId);
-  };
-
-  const openPlaybackModal = (itemId: string) => {
-    setPendingPlaybackItemId(itemId);
-    setSelectItemId(itemId);
-  };
+  const effectivePlaybackItemId = getEffectivePlaybackItemId(
+    currentPlaybackItemId,
+    pendingPlaybackItemId,
+  );
+  const selectedInfoItem = playlist.find((item) => item.id === selectedInfoItemId);
 
   useEffect(() => {
-    if (!selectItemId || currentPlaybackItemId) {
+    if (!selectedInfoItemId || currentPlaybackItemId) {
       setPendingPlaybackItemId(undefined);
     }
-  }, [currentPlaybackItemId, selectItemId]);
+  }, [currentPlaybackItemId, selectedInfoItemId, setPendingPlaybackItemId]);
+
+  useEffect(() => {
+    if (!selectedInfoItemId) {
+      return;
+    }
+
+    const selectedItemStillVisible = playlist.some(
+      (item) => item.id === selectedInfoItemId,
+    );
+    if (selectedItemStillVisible) {
+      return;
+    }
+
+    setPendingPlaybackItemId(undefined);
+    setSelectedInfoItemId(undefined);
+  }, [playlist, selectedInfoItemId, setPendingPlaybackItemId, setSelectedInfoItemId]);
 
   return (
     <>
@@ -735,29 +224,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           songLists={songListsState.songLists}
           activeSongListName={activeSongListName}
           onDelete={onDeleteAll}
-          onOpenEqSettings={() => {
-            setEqSettingsActive(true);
-          }}
-          onOpenGeminiSettings={() => {
-            setGeminiSettingsActive(true);
-          }}
-          onOpenImportModal={() => {
-            setPlaylistImportModalActive(true);
-          }}
-          onOpenNewSongListModal={() => {
-            setNewSongListError("");
-            setNewSongListModalActive(true);
-          }}
-          onSelectSongList={(name) => {
-            onSelectSongList(name);
-          }}
+          onOpenEqSettings={openEqSettings}
+          onOpenGeminiSettings={openGeminiSettings}
+          onOpenImportModal={openPlaylistImportModal}
+          onOpenNewSongListModal={openNewSongListModal}
+          onSelectSongList={onSelectSongList}
           onRenameSongList={onRenameSongList}
           onClearSelection={clearSelection}
-          onToggleSelectAll={() => {
-            setSelectedItemIds((currentSelectedItemIds) =>
-              toggleAllSelectedItemIds(playlist, currentSelectedItemIds),
-            );
-          }}
+          onToggleSelectAll={toggleSelectAll}
           onOpenSelectionActions={onOpenSelectionActions}
           allSelected={allSelected}
           someSelected={someSelected}
@@ -765,130 +239,31 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           themePreference={themePreference}
           setThemePreference={setThemePreference}
         />
-        {playlist.length === 0 ? (
-          <div className={styles["empty-container"]}>
-            <p className={styles["empty-message"]}>The playlist is empty</p>
-          </div>
-        ) : (
-          <div
-            className={styles["playlist-container"]}
-            onDragOver={(event) => {
-              if (!draggingElementId) {
-                return;
-              }
-
-              event.preventDefault();
-            }}
-            onDrop={(event) => {
-              if (!draggingElementId) {
-                return;
-              }
-
-              if (event.target !== event.currentTarget) {
-                return;
-              }
-
-              onMoveToEnd();
-              setDraggingElement(undefined);
-            }}
-          >
-            {showAnalyzeImportBatchState ? (
-              <div className={styles["analyze-import-banner-container"]}>
-                <div className={styles["analyze-import-banner"]}>
-                  <div className={styles["analyze-import-banner-header"]}>
-                    <p className={styles["analyze-import-banner-title"]}>
-                      {analyzeImportBanner?.title}
-                    </p>
-                    {analyzeImportBanner?.actionLabel === "Stop" ? (
-                      <button
-                        type="button"
-                        aria-label="Stop import analysis"
-                        className={styles["analyze-import-banner-stop-button"]}
-                        onClick={onStopAnalyzeImportBatch}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={styles["analyze-import-banner-stop-icon"]}
-                        />
-                      </button>
-                    ) : null}
-                    {analyzeImportBanner?.dismissible ? (
-                      <button
-                        type="button"
-                        aria-label="Dismiss import analysis status"
-                        className={styles["analyze-import-banner-close-button"]}
-                        onClick={() => {
-                          if (analyzeImportBannerVisibilityKey) {
-                            window.localStorage.setItem(
-                              DISMISSED_ANALYZE_IMPORT_BANNER_STORAGE_KEY,
-                              analyzeImportBannerVisibilityKey,
-                            );
-                            setDismissedAnalyzeImportBannerKey(
-                              analyzeImportBannerVisibilityKey,
-                            );
-                          }
-
-                          if (
-                            shouldClearAnalyzeImportBatchStateOnDismiss(
-                              analyzeImportBatchState,
-                            )
-                          ) {
-                            chrome.storage.local.remove(
-                              ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
-                            );
-                          }
-                        }}
-                      >
-                        ×
-                      </button>
-                    ) : null}
-                  </div>
-                  <p className={styles["analyze-import-banner-detail"]}>
-                    {analyzeImportBanner?.detail}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-            {playlist.map((item) => {
-              const playlistItem = (
-                <PlaylistItem
-                  key={item.id}
-                  item={item}
-                  isPlaying={playing}
-                  IPlaying={playingId === item.id}
-                  onToggleSelected={(itemId) => {
-                    setSelectedItemIds((currentSelectedItemIds) =>
-                      toggleSelectedItemId(currentSelectedItemIds, itemId),
-                    );
-                  }}
-                  selected={selectedItemIds.includes(item.id)}
-                  onOpenInfo={openInfoModal}
-                  onPlayItem={openPlaybackModal}
-                />
-              );
-
-              return headerMode === "selection" ? (
-                playlistItem
-              ) : (
-                <Draggable
-                  key={item.id}
-                  id={item.id}
-                  isDragging={draggingElementId === item.id}
-                  setDraggingElement={setDraggingElement}
-                  onMoveTo={onMoveTo}
-                >
-                  {playlistItem}
-                </Draggable>
-              );
-            })}
-          </div>
-        )}
+        <PlaylistContent
+          playlist={playlist}
+          isSelectionMode={headerMode === "selection"}
+          draggingItemId={draggingItemId}
+          playing={playing}
+          playingId={playingId}
+          selectedItemIds={selectedItemIds}
+          showAnalyzeImportBanner={showAnalyzeImportBatchState}
+          analyzeImportBannerTitle={analyzeImportBanner?.title}
+          analyzeImportBannerDetail={analyzeImportBanner?.detail}
+          analyzeImportBannerActionLabel={analyzeImportBanner?.actionLabel}
+          analyzeImportBannerDismissible={analyzeImportBanner?.dismissible}
+          onStopAnalyzeImportBatch={onStopAnalyzeImportBatch}
+          onDismissAnalyzeImportBanner={onDismissAnalyzeImportBanner}
+          onToggleSelected={toggleSelectedItem}
+          onOpenInfoModal={openInfoModal}
+          onOpenPlaybackModal={openPlaybackModal}
+          onMoveTo={onMoveTo}
+          onPlaylistContainerDragOver={onPlaylistContainerDragOver}
+          onPlaylistContainerDrop={onPlaylistContainerDrop}
+          setDraggingItemId={setDraggingItemId}
+        />
         <InfoModal
-          active={!!selectItemId}
-          close={() => {
-            setPendingPlaybackItemId(undefined);
-            setSelectItemId(undefined);
-          }}
+          active={!!selectedInfoItem}
+          close={closeInfoModal}
           onvolumechange={onvolumechange}
           onAudioEqChange={onAudioEqChange}
           profiles={audioEqProfiles}
@@ -896,130 +271,50 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
           onAnalyzeSongBoundaries={analyzeSongBoundaries}
           currentPlaybackItemId={effectivePlaybackItemId}
           isPlaybackActive={playing}
-          item={playlist.find((x) => x.id === selectItemId)}
+          item={selectedInfoItem}
         />
       </div>
       <SettingsModal
-        active={eqSettingsActive}
-        close={() => {
-          setEqSettingsActive(false);
-        }}
+        active={isEqSettingsOpen}
+        close={closeEqSettings}
         audioEqProfiles={audioEqProfiles}
         onCreateProfile={onCreateProfile}
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
       />
       <GeminiSettingsModal
-        active={geminiSettingsActive}
-        close={() => {
-          setGeminiSettingsActive(false);
-        }}
+        active={isGeminiSettingsOpen}
+        close={closeGeminiSettings}
         geminiApiKey={geminiApiKey}
         onSaveGeminiApiKey={onSaveGeminiApiKey}
         onRemoveGeminiApiKey={onRemoveGeminiApiKey}
       />
       <PlaylistImportModal
-        active={playlistImportModalActive}
+        active={isPlaylistImportOpen}
         close={closePlaylistImportModal}
         onImportJson={onImportJson}
         onSubmit={importYoutubePlaylist}
       />
       <NewSongListModal
-        active={newSongListModalActive}
+        active={isNewSongListOpen}
         close={closeNewSongListModal}
         errorMessage={newSongListError}
         onSubmit={onCreateSongList}
       />
-      <Modal
-        active={selectionActionsModalActive}
+      <SelectionActionsModal
+        active={isSelectionActionsOpen}
         close={closeSelectionActionsModal}
-      >
-        <div className={styles["selection-actions-modal"]}>
-          <div className={styles["selection-actions-modal-header"]}>
-            <p className={styles["selection-actions-modal-text"]}>
-              Actions for {selectedItemIds.length} selected
-              {selectedItemIds.length === 1 ? " song" : " songs"}
-            </p>
-            <button
-              type="button"
-              className={styles["selection-actions-close-button"]}
-              onClick={closeSelectionActionsModal}
-              aria-label="Close selected song actions"
-            >
-              x
-            </button>
-          </div>
-          <div className={styles["selection-actions-modal-actions"]}>
-            <button
-              type="button"
-              className={styles["selection-actions-analyze-button"]}
-              onClick={onAnalyzeSelected}
-            >
-              Analyze Timing
-            </button>
-            <button
-              type="button"
-              className={styles["selection-actions-analyze-button"]}
-              onClick={onAnalyzeUncalibratedSelected}
-              disabled={selectedUncalibratedCount === 0}
-            >
-              Analyze Uncalibrated
-            </button>
-            <button
-              type="button"
-              className={styles["selection-actions-delete-button"]}
-              onClick={onDeleteSelected}
-            >
-              Delete Songs
-            </button>
-            <button
-              type="button"
-              className={styles["selection-actions-cancel-button"]}
-              onClick={closeSelectionActionsModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <Modal active={deleteAllModalActive} close={closeDeleteAllModal}>
-        <div className={styles["delete-all-modal"]}>
-          <div className={styles["delete-all-modal-header"]}>
-            <div>
-              <h2 className={styles["delete-all-modal-title"]}>
-                Delete all songs
-              </h2>
-              <p className={styles["delete-all-modal-text"]}>
-                This will remove every song from your playlist.
-              </p>
-            </div>
-            <button
-              type="button"
-              className={styles["delete-all-close-button"]}
-              onClick={closeDeleteAllModal}
-              aria-label="Close delete all confirmation"
-            >
-              x
-            </button>
-          </div>
-          <div className={styles["delete-all-modal-actions"]}>
-            <button
-              type="button"
-              className={styles["delete-all-cancel-button"]}
-              onClick={closeDeleteAllModal}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className={styles["delete-all-confirm-button"]}
-              onClick={confirmDeleteAll}
-            >
-              Delete all
-            </button>
-          </div>
-        </div>
-      </Modal>
+        selectedCount={selectedItemIds.length}
+        selectedUncalibratedCount={selectedUncalibratedCount}
+        onAnalyzeSelected={onAnalyzeSelected}
+        onAnalyzeUncalibratedSelected={onAnalyzeUncalibratedSelected}
+        onDeleteSelected={onDeleteSelected}
+      />
+      <DeleteAllModal
+        active={isDeleteAllOpen}
+        close={closeDeleteAllModal}
+        confirmDeleteAll={confirmDeleteAll}
+      />
     </>
   );
 };
