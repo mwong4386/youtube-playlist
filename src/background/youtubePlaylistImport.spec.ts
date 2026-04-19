@@ -374,7 +374,7 @@ test("resolveYoutubePlaylist falls back to temporary tab extraction when fetch p
 });
 
 test("resolveYoutubePlaylist registers the fallback listener before opening the temporary tab", async () => {
-  const originalChrome = (globalThis as { chrome?: unknown }).chrome;
+  const originalChrome = (globalThis as unknown as { chrome?: unknown }).chrome;
   const imported = [
     createPlaylistItem("fast-fallback-video", {
       id: "fast-fallback-video-0",
@@ -387,7 +387,7 @@ test("resolveYoutubePlaylist registers the fallback listener before opening the 
       ) => void)
     | null = null;
 
-  (globalThis as {
+  (globalThis as unknown as {
     chrome?: {
       runtime: {
         onMessage: {
@@ -469,7 +469,7 @@ test("resolveYoutubePlaylist registers the fallback listener before opening the 
 
     expectEqual(items, imported);
   } finally {
-    (globalThis as { chrome?: unknown }).chrome = originalChrome;
+    (globalThis as unknown as { chrome?: unknown }).chrome = originalChrome;
   }
 });
 
@@ -559,11 +559,11 @@ test("importYoutubePlaylist replaces the saved playlist in replace mode", async 
 });
 
 test("importYoutubePlaylist default storage path updates only the active named song list", async () => {
-  const originalChrome = (globalThis as { chrome?: unknown }).chrome;
+  const originalChrome = (globalThis as unknown as { chrome?: unknown }).chrome;
   const imported = [createPlaylistItem("imported-video")];
   const writes: Record<string, unknown>[] = [];
 
-  (globalThis as {
+  (globalThis as unknown as {
     chrome?: {
       runtime: { onMessage: { addListener: () => void; removeListener: () => void } };
       storage: {
@@ -634,7 +634,7 @@ test("importYoutubePlaylist default storage path updates only the active named s
       },
     ]);
   } finally {
-    (globalThis as { chrome?: unknown }).chrome = originalChrome;
+    (globalThis as unknown as { chrome?: unknown }).chrome = originalChrome;
   }
 });
 

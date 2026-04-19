@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "lib": ["es2022", "dom"],
+    "lib": ["es2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "./.test-dist",
@@ -9,12 +9,10 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "jsx": "react-jsx",
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "include": [
     "src/**/*.spec.ts",
-    "src/react-app-env.d.ts",
     "src/background/actionBadge.ts",
     "src/background/playbackNavigation.ts",
     "src/contentScript/bookmarkButtonFeedback.ts",

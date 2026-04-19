@@ -34,9 +34,7 @@ import {
   type GeminiAnalyzeScope,
 } from "./geminiAnalyzeRequest";
 import {
-  getInfoModalPresentation,
   shouldShowInfoModalTransport,
-  type InfoModalPresentation,
 } from "./infoModalPlaybackState";
 
 interface Props {
@@ -81,8 +79,6 @@ const InfoModal = ({
   onAnalyzeSongBoundaries,
 }: Props) => {
   const [selectedProfileId, setSelectedProfileId] = useState("");
-  const [presentation, setPresentation] =
-    useState<InfoModalPresentation>("expanded");
   const [activeView, setActiveView] = useState<InfoModalView>("info");
   const [isAnalyzing, setAnalyzing] = useState(false);
   const [analyzeMessage, setAnalyzeMessage] = useState("");
@@ -161,23 +157,11 @@ const InfoModal = ({
       reset();
     }
     setSelectedProfileId("");
-    setPresentation(
-      getInfoModalPresentation({
-        itemId,
-        currentPlaybackItemId,
-      })
-    );
     setActiveView("info");
     setAnalyzing(false);
     setAnalyzeMessage("");
     setLatestGeminiSuggestion(undefined);
   }, [active, item?.id, reset]);
-
-  useEffect(() => {
-    if (active && !showTransport && presentation === "collapsed") {
-      setPresentation("expanded");
-    }
-  }, [active, presentation, showTransport]);
 
   useEffect(() => {
     const normalizedSelectedProfileId = normalizeSelectedAudioEqProfileId(
@@ -305,361 +289,300 @@ const InfoModal = ({
     );
     close();
   };
-  const expandToInfo = () => {
-    setPresentation("expanded");
-    setActiveView("info");
-  };
   const onDismiss = () => {
-    if (showTransport) {
-      setPresentation("collapsed");
-      return;
-    }
-
     close();
   };
-  const showEditorSection = presentation !== "collapsed";
 
   return (
     <Modal active={active} close={close}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        {showEditorSection ? (
-          <div className={styles["header-row"]}>
-            <button
-              className={styles["cross-button"]}
-              onClick={onDismiss}
-              type="button"
-              aria-label={showTransport ? "Collapse player" : "Close editor"}
-              title={showTransport ? "Collapse player" : "Close editor"}
+        <div className={styles["header-row"]}>
+          <button
+            className={styles["cross-button"]}
+            onClick={onDismiss}
+            type="button"
+            aria-label="Close editor"
+            title="Close editor"
+          >
+            x
+          </button>
+          <button className={styles["save-button"]} type="submit">
+            Save
+          </button>
+        </div>
+        <div className={styles["content"]}>
+          <p className={`${styles["video-title"]} line-clamp-4`}>
+            {item?.title}
+          </p>
+          <p className={styles["channel-name"]}>{item?.channelName}</p>
+          <div className={styles["editor-section"]}>
+            <div
+              className={styles["modal-tab-row"]}
+              role="tablist"
+              aria-label="Song editor sections"
             >
-              {showTransport ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  className={styles["cross-button-icon"]}
-                >
-                  <path
-                    d="m6 9 6 6 6-6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              ) : (
-                "x"
-              )}
-            </button>
-            <button className={styles["save-button"]} type="submit">
-              Save
-            </button>
-          </div>
-        ) : null}
-        <div
-          className={`${styles["content"]} ${
-            presentation === "collapsed" ? styles["content-collapsed"] : ""
-          }`}
-        >
-          {showEditorSection ? (
-            <>
-              <p className={`${styles["video-title"]} line-clamp-4`}>
-                {item?.title}
-              </p>
-              <p className={styles["channel-name"]}>{item?.channelName}</p>
-              <div className={styles["editor-section"]}>
-                <div
-                  className={styles["modal-tab-row"]}
-                  role="tablist"
-                  aria-label="Song editor sections"
-                >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === "info"}
+                className={`${styles["modal-tab-button"]} ${
+                  activeView === "info" ? styles["modal-tab-button-active"] : ""
+                }`}
+                onClick={() => {
+                  setActiveView("info");
+                }}
+              >
+                Info
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === "eq"}
+                className={`${styles["modal-tab-button"]} ${
+                  activeView === "eq" ? styles["modal-tab-button-active"] : ""
+                }`}
+                onClick={() => {
+                  setActiveView("eq");
+                }}
+              >
+                EQ
+              </button>
+            </div>
+            {activeView === "info" ? (
+              <>
+                <div className={styles["time-grid"]}>
+                  <label className={styles["time-label"]}>Start Time</label>
+                  <span className={styles["time"]}>
+                    <input
+                      className={styles["time-inputgroup"]}
+                      type="text"
+                      placeholder="HH"
+                      maxLength={2}
+                      size={2}
+                      pattern="[0-9]{0,2}"
+                      {...register("hours", {
+                        required: true,
+                        valueAsNumber: true,
+                        validate: (value) => {
+                          const maxDuration = item?.maxDuration;
+                          if (
+                            typeof maxDuration !== "number" ||
+                            !Number.isFinite(maxDuration) ||
+                            maxDuration <= 0
+                          ) {
+                            return true;
+                          }
+
+                          const timestamp =
+                            toNumber(value) * 3600 +
+                            toNumber(getValues("minutes")) * 60 +
+                            toNumber(getValues("seconds"));
+
+                          return timestamp <= maxDuration;
+                        },
+                      })}
+                    />
+                    <span className={styles["semicolon"]}>:</span>
+                    <input
+                      className={styles["time-inputgroup"]}
+                      type="text"
+                      placeholder="mm"
+                      maxLength={2}
+                      size={2}
+                      pattern="[0-5]?[0-9]"
+                      {...register("minutes", {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <span className={styles["semicolon"]}>:</span>
+                    <input
+                      className={styles["time-inputgroup"]}
+                      type="text"
+                      placeholder="ss"
+                      maxLength={2}
+                      size={2}
+                      pattern="[0-5]?[0-9]"
+                      {...register("seconds", {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                  </span>
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={activeView === "info"}
-                    className={`${styles["modal-tab-button"]} ${
-                      activeView === "info"
-                        ? styles["modal-tab-button-active"]
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setActiveView("info");
-                    }}
+                    className={styles["analyze-button"]}
+                    disabled={isAnalyzing}
+                    onClick={onAnalyze}
                   >
-                    Info
+                    {isAnalyzing ? "Analyzing..." : "Analyze"}
                   </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activeView === "eq"}
-                    className={`${styles["modal-tab-button"]} ${
-                      activeView === "eq"
-                        ? styles["modal-tab-button-active"]
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setActiveView("eq");
-                    }}
+
+                  <label className={styles["time-label"]}>End Time</label>
+                  <span className={styles["time"]}>
+                    <input
+                      id="end-hour"
+                      className={styles["time-inputgroup"]}
+                      type="text"
+                      placeholder="HH"
+                      maxLength={2}
+                      size={2}
+                      {...register("endHours", {
+                        required: !watch("untilEnd"),
+                        valueAsNumber: true,
+                      })}
+                      {...(!watch("untilEnd")
+                        ? { pattern: "[0-9]{0,2}" }
+                        : { disabled: true })}
+                    />
+                    <span className={styles["semicolon"]}>:</span>
+                    <input
+                      id="end-minute"
+                      className={styles["time-inputgroup"]}
+                      type="text"
+                      placeholder="mm"
+                      maxLength={2}
+                      size={2}
+                      {...register("endMinutes", {
+                        required: !watch("untilEnd"),
+                        valueAsNumber: true,
+                      })}
+                      {...(!watch("untilEnd")
+                        ? { pattern: "[0-5]?[0-9]" }
+                        : { disabled: true })}
+                    />
+                    <span className={styles["semicolon"]}>:</span>
+                    <input
+                      id="end-second"
+                      className={styles["time-inputgroup"]}
+                      type="text"
+                      placeholder="ss"
+                      maxLength={2}
+                      size={2}
+                      {...register("endSeconds", {
+                        required: !watch("untilEnd"),
+                        valueAsNumber: true,
+                      })}
+                      {...(!watch("untilEnd")
+                        ? { pattern: "[0-5]?[0-9]" }
+                        : { disabled: true })}
+                    />
+                  </span>
+                  <label
+                    className={styles["checkbox-label"]}
+                    htmlFor="untilEnd"
                   >
-                    EQ
-                  </button>
+                    <input
+                      type="checkbox"
+                      id="untilEnd"
+                      value="Y"
+                      {...register("untilEnd")}
+                      className={styles["checkbox"]}
+                    />
+                    <span>until End</span>
+                  </label>
                 </div>
-                {activeView === "info" ? (
-                  <>
-                    <div className={styles["time-grid"]}>
-                      <label className={styles["time-label"]}>Start Time</label>
-                      <span className={styles["time"]}>
-                        <input
-                          className={styles["time-inputgroup"]}
-                          type="text"
-                          placeholder="HH"
-                          maxLength={2}
-                          size={2}
-                          pattern="[0-9]{0,2}"
-                          {...register("hours", {
-                            required: true,
-                            valueAsNumber: true,
-                            validate: (value) => {
-                              const maxDuration = item?.maxDuration;
-                              if (
-                                typeof maxDuration !== "number" ||
-                                !Number.isFinite(maxDuration) ||
-                                maxDuration <= 0
-                              ) {
-                                return true;
-                              }
-
-                              const timestamp =
-                                toNumber(value) * 3600 +
-                                toNumber(getValues("minutes")) * 60 +
-                                toNumber(getValues("seconds"));
-
-                              return timestamp <= maxDuration;
-                            },
-                          })}
-                        />
-                        <span className={styles["semicolon"]}>:</span>
-                        <input
-                          className={styles["time-inputgroup"]}
-                          type="text"
-                          placeholder="mm"
-                          maxLength={2}
-                          size={2}
-                          pattern="[0-5]?[0-9]"
-                          {...register("minutes", {
-                            required: true,
-                            valueAsNumber: true,
-                          })}
-                        />
-                        <span className={styles["semicolon"]}>:</span>
-                        <input
-                          className={styles["time-inputgroup"]}
-                          type="text"
-                          placeholder="ss"
-                          maxLength={2}
-                          size={2}
-                          pattern="[0-5]?[0-9]"
-                          {...register("seconds", {
-                            required: true,
-                            valueAsNumber: true,
-                          })}
-                        />
-                      </span>
-                      <button
-                        type="button"
-                        className={styles["analyze-button"]}
-                        disabled={isAnalyzing}
-                        onClick={onAnalyze}
-                      >
-                        {isAnalyzing ? "Analyzing..." : "Analyze"}
-                      </button>
-
-                      <label className={styles["time-label"]}>End Time</label>
-                      <span className={styles["time"]}>
-                        <input
-                          id="end-hour"
-                          className={styles["time-inputgroup"]}
-                          type="text"
-                          placeholder="HH"
-                          maxLength={2}
-                          size={2}
-                          {...register("endHours", {
-                            required: !watch("untilEnd"),
-                            valueAsNumber: true,
-                          })}
-                          {...(!watch("untilEnd")
-                            ? { pattern: "[0-9]{0,2}" }
-                            : { disabled: true })}
-                        />
-                        <span className={styles["semicolon"]}>:</span>
-                        <input
-                          id="end-minute"
-                          className={styles["time-inputgroup"]}
-                          type="text"
-                          placeholder="mm"
-                          maxLength={2}
-                          size={2}
-                          {...register("endMinutes", {
-                            required: !watch("untilEnd"),
-                            valueAsNumber: true,
-                          })}
-                          {...(!watch("untilEnd")
-                            ? { pattern: "[0-5]?[0-9]" }
-                            : { disabled: true })}
-                        />
-                        <span className={styles["semicolon"]}>:</span>
-                        <input
-                          id="end-second"
-                          className={styles["time-inputgroup"]}
-                          type="text"
-                          placeholder="ss"
-                          maxLength={2}
-                          size={2}
-                          {...register("endSeconds", {
-                            required: !watch("untilEnd"),
-                            valueAsNumber: true,
-                          })}
-                          {...(!watch("untilEnd")
-                            ? { pattern: "[0-5]?[0-9]" }
-                            : { disabled: true })}
-                        />
-                      </span>
+                <div className={styles["analyze-row"]}>
+                  <p className={styles["helper-text"]}>{analyzeMessage}</p>
+                </div>
+                <div className={styles["error"]}>
+                  {(errors.hours || errors.minutes || errors.seconds) && (
+                    <span role="alert">Incorrect start time</span>
+                  )}
+                </div>
+                <div className={styles["error"]}>
+                  {(errors.endHours ||
+                    errors.endMinutes ||
+                    errors.endSeconds) && (
+                    <span role="alert">Incorrect end time</span>
+                  )}
+                </div>
+                <div className={styles["volume-row"]}>
+                  <label className={styles["volume-label"]}>Volume</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    id="cs-volume"
+                    className={styles["volume-slider"]}
+                    {...register("volume", {
+                      required: true,
+                      valueAsNumber: true,
+                      onChange: onvolumechange,
+                    })}
+                  />
+                  <span id="cs-volume-text" className={styles["volume-text"]}>
+                    {watch("volume")}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                {profiles.length > 0 && (
+                  <div className={styles["eq-profile-container"]}>
+                    <label
+                      className={styles["eq-profile-label"]}
+                      htmlFor="song-eq-profile"
+                    >
+                      EQ Profile
+                    </label>
+                    <select
+                      id="song-eq-profile"
+                      className={styles["eq-profile-select"]}
+                      value={selectedProfileId}
+                      onChange={onProfileChange}
+                    >
+                      <option value="">Custom</option>
+                      {profiles.map((profile) => (
+                        <option key={profile.id} value={profile.id}>
+                          {profile.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className={styles["eq-section"]}>
+                  <p className={styles["eq-title"]}>Song EQ</p>
+                  {AUDIO_EQ_BANDS.map((band) => (
+                    <div key={band.key} className={styles["eq-row"]}>
                       <label
-                        className={styles["checkbox-label"]}
-                        htmlFor="untilEnd"
+                        className={styles["eq-band-label"]}
+                        htmlFor={band.key}
                       >
-                        <input
-                          type="checkbox"
-                          id="untilEnd"
-                          value="Y"
-                          {...register("untilEnd")}
-                          className={styles["checkbox"]}
-                        />
-                        <span>until End</span>
+                        {band.label}
                       </label>
-                    </div>
-                    <div className={styles["analyze-row"]}>
-                      <p className={styles["helper-text"]}>{analyzeMessage}</p>
-                    </div>
-                    <div className={styles["error"]}>
-                      {(errors.hours || errors.minutes || errors.seconds) && (
-                        <span role="alert">Incorrect start time</span>
-                      )}
-                    </div>
-                    <div className={styles["error"]}>
-                      {(errors.endHours ||
-                        errors.endMinutes ||
-                        errors.endSeconds) && (
-                        <span role="alert">Incorrect end time</span>
-                      )}
-                    </div>
-                    <div className={styles["volume-row"]}>
-                      <label className={styles["volume-label"]}>Volume</label>
                       <input
+                        id={band.key}
+                        className={styles["eq-slider"]}
                         type="range"
-                        min="0"
-                        max="100"
+                        min="-10"
+                        max="10"
                         step="1"
-                        id="cs-volume"
-                        className={styles["volume-slider"]}
-                        {...register("volume", {
-                          required: true,
+                        {...register(band.key, {
                           valueAsNumber: true,
-                          onChange: onvolumechange,
+                          onChange: onSongAudioEqChange,
                         })}
                       />
-                      <span
-                        id="cs-volume-text"
-                        className={styles["volume-text"]}
-                      >
-                        {watch("volume")}
+                      <span className={styles["eq-value"]}>
+                        {watch(band.key)}
                       </span>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    {profiles.length > 0 && (
-                      <div className={styles["eq-profile-container"]}>
-                        <label
-                          className={styles["eq-profile-label"]}
-                          htmlFor="song-eq-profile"
-                        >
-                          EQ Profile
-                        </label>
-                        <select
-                          id="song-eq-profile"
-                          className={styles["eq-profile-select"]}
-                          value={selectedProfileId}
-                          onChange={onProfileChange}
-                        >
-                          <option value="">Custom</option>
-                          {profiles.map((profile) => (
-                            <option key={profile.id} value={profile.id}>
-                              {profile.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    <div className={styles["eq-section"]}>
-                      <p className={styles["eq-title"]}>Song EQ</p>
-                      {AUDIO_EQ_BANDS.map((band) => (
-                        <div key={band.key} className={styles["eq-row"]}>
-                          <label
-                            className={styles["eq-band-label"]}
-                            htmlFor={band.key}
-                          >
-                            {band.label}
-                          </label>
-                          <input
-                            id={band.key}
-                            className={styles["eq-slider"]}
-                            type="range"
-                            min="-10"
-                            max="10"
-                            step="1"
-                            {...register(band.key, {
-                              valueAsNumber: true,
-                              onChange: onSongAudioEqChange,
-                            })}
-                          />
-                          <span className={styles["eq-value"]}>
-                            {watch(band.key)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              {showTransport ? (
-                <div className={styles["transport-section"]}>
-                  <InfoModalTransport
-                    item={item}
-                    isPlaying={isPlaybackActive}
-                    isExpanded={showEditorSection}
-                    onExpand={expandToInfo}
-                  />
+                  ))}
                 </div>
-              ) : null}
-            </>
-          ) : showTransport ? (
+              </>
+            )}
+          </div>
+          {showTransport ? (
             <div className={styles["transport-section"]}>
               <InfoModalTransport
                 item={item}
                 isPlaying={isPlaybackActive}
-                isExpanded={showEditorSection}
-                onExpand={expandToInfo}
+                isExpanded={true}
+                onExpand={() => {}}
               />
             </div>
-          ) : (
-            <>
-              <p className={`${styles["video-title"]} line-clamp-4`}>
-                {item?.title}
-              </p>
-              <p className={styles["channel-name"]}>{item?.channelName}</p>
-            </>
-          )}
+          ) : null}
         </div>
       </form>
     </Modal>

@@ -38,42 +38,19 @@ test("playlist no longer renders a standalone now-playing banner component", () 
   expectEqual(playlistSource.includes("playlist-bottom-spacer"), false);
 });
 
-test("InfoModal source owns the collapsed player-first presentation", () => {
-  expectEqual(infoModalSource.includes("InfoModalPresentation"), true);
+test("InfoModal source is a clean editor without collapsed presentation", () => {
+  expectEqual(infoModalSource.includes("InfoModalPresentation"), false);
   expectEqual(infoModalSource.includes("currentPlaybackItemId"), true);
-  expectEqual(infoModalSource.includes('presentation === "collapsed"'), true);
-  expectEqual(infoModalSource.includes('setPresentation("expanded")'), true);
+  expectEqual(infoModalSource.includes('presentation === "collapsed"'), false);
+  expectEqual(infoModalSource.includes('setPresentation'), false);
   expectEqual(infoModalSource.includes("<InfoModalTransport"), true);
-  expectEqual(infoModalSource.includes('{showEditorSection ? ('), true);
-  expectEqual(
-    infoModalSource.includes(
-      '{showEditorSection ? (\n          <div className={styles["header-row"]}>'
-    ),
-    true
-  );
-  expectEqual(infoModalSource.includes('styles["header-spacer"]'), false);
-  expectEqual(
-    infoModalSource.includes(
-      ') : showTransport ? (\n            <>\n              <p className={`${styles["video-title"]} line-clamp-4`}>'
-    ),
-    false
-  );
-  expectEqual(
-    infoModalSource.includes(
-      ') : showTransport ? (\n            <div className={styles["transport-section"]}>'
-    ),
-    true
-  );
+  expectEqual(infoModalSource.includes("showEditorSection"), false);
+  expectEqual(infoModalSource.includes('aria-label="Close editor"'), true);
+  expectEqual(infoModalSource.includes('title="Close editor"'), true);
 });
 
-test("InfoModal source preserves editor state across playback changes and keeps expanded transport below the editor", () => {
+test("InfoModal source preserves editor state across item changes and keeps transport below the editor", () => {
   expectEqual(infoModalSource.includes("}, [active, item?.id, reset]);"), true);
-  expectEqual(
-    infoModalSource.includes(
-      'if (active && !showTransport && presentation === "collapsed")'
-    ),
-    true
-  );
   expectEqual(
     infoModalSource.lastIndexOf('<div className={styles["transport-section"]}>') >
       infoModalSource.indexOf('<div className={styles["editor-section"]}>'),
@@ -81,16 +58,14 @@ test("InfoModal source preserves editor state across playback changes and keeps 
   );
 });
 
-test("InfoModal source uses a collapse control to return the current song to mini player mode", () => {
+test("InfoModal source uses a simple close control", () => {
   expectEqual(infoModalSource.includes("const onDismiss = () => {"), true);
-  expectEqual(infoModalSource.includes('if (showTransport) {'), true);
-  expectEqual(infoModalSource.includes('setPresentation("collapsed");'), true);
   expectEqual(infoModalSource.includes("close();"), true);
-  expectEqual(infoModalSource.includes('aria-label={showTransport ? "Collapse player" : "Close editor"}'), true);
-  expectEqual(infoModalSource.includes('title={showTransport ? "Collapse player" : "Close editor"}'), true);
+  expectEqual(infoModalSource.includes('aria-label="Close editor"'), true);
+  expectEqual(infoModalSource.includes('title="Close editor"'), true);
 });
 
-test("collapsed player-first modal trims leftover bottom spacing around the transport", () => {
+test("collapsed player-first modal classes are still present in CSS for now", () => {
   expectEqual(infoModalStyles.includes(".content-collapsed"), true);
   expectEqual(infoModalStyles.includes("margin-bottom: 0;"), true);
   expectEqual(infoModalStyles.includes(".transport-section"), true);

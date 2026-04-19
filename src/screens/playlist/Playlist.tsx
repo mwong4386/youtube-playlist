@@ -10,6 +10,7 @@ import {
 } from "./analyzeImportBanner";
 import NewSongListModal from "./NewSongListModal";
 import styles from "./Playlist.module.css";
+import PlaybackShelf from "./components/PlaybackShelf";
 import PlaylistContent from "./PlaylistContent";
 import PlaylistHeader from "./PlaylistHeader";
 import PlaylistImportModal from "./PlaylistImportModal";
@@ -218,62 +219,71 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   return (
     <>
-      <div className={styles["content-container"]}>
-        <PlaylistHeader
-          playlist={playlist}
-          songLists={songListsState.songLists}
-          activeSongListName={activeSongListName}
-          onDelete={onDeleteAll}
-          onOpenEqSettings={openEqSettings}
-          onOpenGeminiSettings={openGeminiSettings}
-          onOpenImportModal={openPlaylistImportModal}
-          onOpenNewSongListModal={openNewSongListModal}
-          onSelectSongList={onSelectSongList}
-          onRenameSongList={onRenameSongList}
-          onClearSelection={clearSelection}
-          onToggleSelectAll={toggleSelectAll}
-          onOpenSelectionActions={onOpenSelectionActions}
-          allSelected={allSelected}
-          someSelected={someSelected}
-          selectedCount={selectedItemIds.length}
-          themePreference={themePreference}
-          setThemePreference={setThemePreference}
-        />
-        <PlaylistContent
-          playlist={playlist}
-          isSelectionMode={headerMode === "selection"}
-          draggingItemId={draggingItemId}
-          playing={playing}
-          playingId={playingId}
-          selectedItemIds={selectedItemIds}
-          showAnalyzeImportBanner={showAnalyzeImportBatchState}
-          analyzeImportBannerTitle={analyzeImportBanner?.title}
-          analyzeImportBannerDetail={analyzeImportBanner?.detail}
-          analyzeImportBannerActionLabel={analyzeImportBanner?.actionLabel}
-          analyzeImportBannerDismissible={analyzeImportBanner?.dismissible}
-          onStopAnalyzeImportBatch={onStopAnalyzeImportBatch}
-          onDismissAnalyzeImportBanner={onDismissAnalyzeImportBanner}
-          onToggleSelected={toggleSelectedItem}
-          onOpenInfoModal={openInfoModal}
-          onOpenPlaybackModal={openPlaybackModal}
-          onMoveTo={onMoveTo}
-          onPlaylistContainerDragOver={onPlaylistContainerDragOver}
-          onPlaylistContainerDrop={onPlaylistContainerDrop}
-          setDraggingItemId={setDraggingItemId}
-        />
-        <InfoModal
-          active={!!selectedInfoItem}
-          close={closeInfoModal}
-          onvolumechange={onvolumechange}
-          onAudioEqChange={onAudioEqChange}
-          profiles={audioEqProfiles}
-          save={onSave}
-          onAnalyzeSongBoundaries={analyzeSongBoundaries}
-          currentPlaybackItemId={effectivePlaybackItemId}
-          isPlaybackActive={playing}
-          item={selectedInfoItem}
-        />
+      <div className={styles["page-container"]}>
+        <div className={styles["content-container"]}>
+          <PlaylistHeader
+            playlist={playlist}
+            songLists={songListsState.songLists}
+            activeSongListName={activeSongListName}
+            onDelete={onDeleteAll}
+            onOpenEqSettings={openEqSettings}
+            onOpenGeminiSettings={openGeminiSettings}
+            onOpenImportModal={openPlaylistImportModal}
+            onOpenNewSongListModal={openNewSongListModal}
+            onSelectSongList={onSelectSongList}
+            onRenameSongList={onRenameSongList}
+            onClearSelection={clearSelection}
+            onToggleSelectAll={toggleSelectAll}
+            onOpenSelectionActions={onOpenSelectionActions}
+            allSelected={allSelected}
+            someSelected={someSelected}
+            selectedCount={selectedItemIds.length}
+            themePreference={themePreference}
+            setThemePreference={setThemePreference}
+          />
+          <PlaylistContent
+            playlist={playlist}
+            isSelectionMode={headerMode === "selection"}
+            draggingItemId={draggingItemId}
+            playing={playing}
+            playingId={playingId}
+            selectedItemIds={selectedItemIds}
+            showAnalyzeImportBanner={showAnalyzeImportBatchState}
+            analyzeImportBannerTitle={analyzeImportBanner?.title}
+            analyzeImportBannerDetail={analyzeImportBanner?.detail}
+            analyzeImportBannerActionLabel={analyzeImportBanner?.actionLabel}
+            analyzeImportBannerDismissible={analyzeImportBanner?.dismissible}
+            onStopAnalyzeImportBatch={onStopAnalyzeImportBatch}
+            onDismissAnalyzeImportBanner={onDismissAnalyzeImportBanner}
+            onToggleSelected={toggleSelectedItem}
+            onOpenInfoModal={openInfoModal}
+            onOpenPlaybackModal={openPlaybackModal}
+            onMoveTo={onMoveTo}
+            onPlaylistContainerDragOver={onPlaylistContainerDragOver}
+            onPlaylistContainerDrop={onPlaylistContainerDrop}
+            setDraggingItemId={setDraggingItemId}
+          />
+        </div>
+        {playingId && playlist.find((i) => i.id === playingId) && (
+          <PlaybackShelf
+            item={playlist.find((i) => i.id === playingId)!}
+            isPlaying={playing}
+            onExpand={() => openInfoModal(playingId)}
+          />
+        )}
       </div>
+      <InfoModal
+        active={!!selectedInfoItem}
+        close={closeInfoModal}
+        onvolumechange={onvolumechange}
+        onAudioEqChange={onAudioEqChange}
+        profiles={audioEqProfiles}
+        save={onSave}
+        onAnalyzeSongBoundaries={analyzeSongBoundaries}
+        currentPlaybackItemId={effectivePlaybackItemId}
+        isPlaybackActive={playing}
+        item={selectedInfoItem}
+      />
       <SettingsModal
         active={isEqSettingsOpen}
         close={closeEqSettings}

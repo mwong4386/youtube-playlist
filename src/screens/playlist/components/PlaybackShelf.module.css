@@ -1,0 +1,7 @@
+.shelf-container {
+  background: var(--surface-secondary);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom);
+}

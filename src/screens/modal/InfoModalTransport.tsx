@@ -1,3 +1,4 @@
+/// <reference types="chrome" />
 import { useEffect, useRef, useState } from "react";
 import MsgType from "../../constants/msgType";
 import MPlaylistItem from "../../models/MPlaylistItem";
