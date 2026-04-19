@@ -109,13 +109,15 @@ const PlaybackShelf = ({
           onSubmit={handleSubmit(onSubmit)}
           className={styles["editor-form"]}
         >
-          <div className={styles["editor-header"]}>
+          <div className={styles["header-row"]}>
             <button
-              className={styles["close-button"]}
+              className={styles["cross-button"]}
               onClick={onToggleExpand}
               type="button"
+              aria-label="Close editor"
+              title="Close editor"
             >
-              Cancel
+              x
             </button>
             <button className={styles["save-button"]} type="submit">
               Save

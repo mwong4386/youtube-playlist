@@ -72,6 +72,7 @@ interface UsePlaylistActionsArgs {
   setNewSongListError: Dispatch<SetStateAction<string>>;
   setPendingPlaybackItemId: Dispatch<SetStateAction<string | undefined>>;
   setSelectedInfoItemId: Dispatch<SetStateAction<string | undefined>>;
+  setIsShelfExpanded: Dispatch<SetStateAction<boolean>>;
   dismissAnalyzeImportBanner: (bannerKey: string) => void;
 }
 
@@ -104,6 +105,7 @@ const usePlaylistActions = ({
   setNewSongListError,
   setPendingPlaybackItemId,
   setSelectedInfoItemId,
+  setIsShelfExpanded,
   dismissAnalyzeImportBanner,
 }: UsePlaylistActionsArgs) => {
   const openEqSettings = () => {
@@ -531,13 +533,16 @@ const usePlaylistActions = ({
   };
 
   const openInfoModal = (itemId: string) => {
+    if (itemId === playingId) {
+      setIsShelfExpanded(true);
+      return;
+    }
     setPendingPlaybackItemId(undefined);
     setSelectedInfoItemId(itemId);
   };
 
   const openPlaybackModal = (itemId: string) => {
     setPendingPlaybackItemId(itemId);
-    setSelectedInfoItemId(itemId);
   };
 
   return {

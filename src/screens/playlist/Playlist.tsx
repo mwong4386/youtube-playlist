@@ -156,6 +156,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setNewSongListError,
     setPendingPlaybackItemId,
     setSelectedInfoItemId,
+    setIsShelfExpanded,
     dismissAnalyzeImportBanner,
   });
 
