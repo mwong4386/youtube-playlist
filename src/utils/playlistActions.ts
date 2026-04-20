@@ -25,6 +25,9 @@ export const updateSelectedVolumeMultiplier = (
   selectedItemIds: string[],
   multiplier: number
 ): MPlaylistItem[] => {
+  if (selectedItemIds.length === 0 || multiplier === 1) {
+    return playlist;
+  }
   const selectedItemIdSet = new Set(selectedItemIds);
   return playlist.map((item) => {
     if (!selectedItemIdSet.has(item.id)) {
