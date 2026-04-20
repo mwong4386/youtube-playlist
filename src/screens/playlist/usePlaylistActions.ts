@@ -18,6 +18,7 @@ import {
   cancelDeleteAllConfirmation,
   confirmDeleteAllConfirmation,
   deleteSelectedPlaylistItems,
+  updateSelectedVolumeMultiplier,
 } from "../../utils/playlistActions";
 import { createSongList, renameSongList } from "../../utils/songLists";
 import {
@@ -465,6 +466,25 @@ const usePlaylistActions = ({
     );
   };
 
+  const onAdjustVolumeSelected = (multiplier: number) => {
+    if (selectedItemIds.length === 0) {
+      return;
+    }
+
+    updateActiveSongListItems(
+      (currentPlaylist) =>
+        updateSelectedVolumeMultiplier(currentPlaylist, selectedItemIds, multiplier),
+      () => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+
+        clearSelection();
+        closeSelectionActionsModal();
+      },
+    );
+  };
+
   const onAnalyzeSelected = () => {
     if (selectedItemIds.length === 0) {
       return;
@@ -557,6 +577,7 @@ const usePlaylistActions = ({
     closeSelectionActionsModal,
     confirmDeleteAll,
     importYoutubePlaylist,
+    onAdjustVolumeSelected,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
