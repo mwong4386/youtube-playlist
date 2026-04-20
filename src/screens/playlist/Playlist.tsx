@@ -119,6 +119,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onStopAnalyzeImportBatch,
     onUpdateProfile,
     onvolumechange,
+    onAdjustVolumeSelected,
     openEqSettings,
     openGeminiSettings,
     openInfoModal,
@@ -197,6 +198,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     pendingPlaybackItemId,
   );
   const selectedInfoItem = playlist.find((item) => item.id === selectedInfoItemId);
+  const firstSelectedItemVolume =
+    selectedItemIds.length > 0
+      ? playlist.find((item) => item.id === selectedItemIds[0])?.volume
+      : undefined;
 
   useEffect(() => {
     if (!selectedInfoItemId || currentPlaybackItemId) {
@@ -325,9 +330,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         close={closeSelectionActionsModal}
         selectedCount={selectedItemIds.length}
         selectedUncalibratedCount={selectedUncalibratedCount}
+        firstSelectedItemVolume={firstSelectedItemVolume}
         onAnalyzeSelected={onAnalyzeSelected}
         onAnalyzeUncalibratedSelected={onAnalyzeUncalibratedSelected}
         onDeleteSelected={onDeleteSelected}
+        onAdjustVolumeSelected={onAdjustVolumeSelected}
       />
       <DeleteAllModal
         active={isDeleteAllOpen}

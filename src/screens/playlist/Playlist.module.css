@@ -602,3 +602,83 @@
 button:hover {
   cursor: pointer;
 }
+
+.selection-actions-volume-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.selection-actions-volume-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selection-actions-volume-multiplier-input {
+  width: 80px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.selection-actions-volume-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.selection-actions-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.selection-actions-volume-preview {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 4px;
+}
+
+.selection-actions-volume-submit-button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent-color);
+  color: white;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-color) 25%, transparent);
+}
+
+.selection-actions-back-button {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
