@@ -132,6 +132,7 @@ const SelectionActionsModal = ({
                 value={multiplier}
                 onChange={(e) => setMultiplier(Number(e.target.value))}
                 className={styles["selection-actions-volume-multiplier-input"]}
+                aria-label="Volume multiplier"
               />
               <input
                 type="range"
@@ -141,6 +142,7 @@ const SelectionActionsModal = ({
                 value={multiplier}
                 onChange={(e) => setMultiplier(Number(e.target.value))}
                 className={styles["selection-actions-volume-slider"]}
+                aria-label="Volume multiplier slider"
               />
             </div>
 
