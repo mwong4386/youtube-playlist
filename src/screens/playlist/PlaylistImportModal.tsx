@@ -9,7 +9,8 @@ import Modal from "../modal/Modal";
 import styles from "./PlaylistImportModal.module.css";
 import {
   DEFAULT_PLAYLIST_IMPORT_ERROR_MESSAGE,
-  type PlaylistImportSubmissionResult,
+  type PlaylistImportPreviewState,
+  type PlaylistImportPreviewSubmissionResult,
 } from "./playlistImportResult";
 
 interface Props {
@@ -18,7 +19,12 @@ interface Props {
   onImportJson: (playlist: MPlaylistItem[]) => void;
   onSubmit: (
     request: PlaylistImportRequest
-  ) => Promise<PlaylistImportSubmissionResult>;
+  ) => Promise<PlaylistImportPreviewSubmissionResult>;
+  onCommitPreview: (
+    previewItems: MPlaylistItem[],
+    selectedPreviewItemIds: string[],
+    mode: PlaylistImportMode,
+  ) => void;
 }
 
 const PlaylistImportModal = ({
@@ -26,9 +32,11 @@ const PlaylistImportModal = ({
   close,
   onImportJson,
   onSubmit,
+  onCommitPreview,
 }: Props) => {
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [mode, setMode] = useState<PlaylistImportMode>("append");
+  const [preview, setPreview] = useState<PlaylistImportPreviewState | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const activeRequestIdRef = useRef(0);
@@ -38,6 +46,7 @@ const PlaylistImportModal = ({
     if (!active) {
       setPlaylistUrl("");
       setMode("append");
+      setPreview(null);
       setErrorMessage("");
       setLoading(false);
     }
@@ -77,7 +86,9 @@ const PlaylistImportModal = ({
         mode,
       });
 
-      if (
+      if (activeRequestIdRef.current === requestId && active && result.ok) {
+        setPreview(result.preview);
+      } else if (
         activeRequestIdRef.current === requestId &&
         active &&
         !result.ok
@@ -125,12 +136,64 @@ const PlaylistImportModal = ({
     reader.readAsText(file, "UTF-8");
   };
 
+  const selectedCount = preview?.selectedItemIds.length ?? 0;
+  const allPreviewItemsSelected =
+    !!preview && preview.items.length > 0 && selectedCount === preview.items.length;
+
+  const togglePreviewItem = (itemId: string) => {
+    setPreview((currentPreview) => {
+      if (!currentPreview) {
+        return currentPreview;
+      }
+
+      const selectedItemIds = currentPreview.selectedItemIds.includes(itemId)
+        ? currentPreview.selectedItemIds.filter((selectedId) => selectedId !== itemId)
+        : [...currentPreview.selectedItemIds, itemId];
+
+      return {
+        ...currentPreview,
+        selectedItemIds,
+      };
+    });
+  };
+
+  const toggleAllPreviewItems = () => {
+    setPreview((currentPreview) => {
+      if (!currentPreview) {
+        return currentPreview;
+      }
+
+      return {
+        ...currentPreview,
+        selectedItemIds:
+          currentPreview.selectedItemIds.length === currentPreview.items.length
+            ? []
+            : currentPreview.items.map((item) => item.id),
+      };
+    });
+  };
+
+  const backToImportForm = () => {
+    setPreview(null);
+    setErrorMessage("");
+  };
+
+  const commitPreview = () => {
+    if (!preview || preview.selectedItemIds.length === 0) {
+      return;
+    }
+
+    onCommitPreview(preview.items, preview.selectedItemIds, preview.mode);
+  };
+
   return (
     <Modal active={active} close={guardedClose}>
       <div className={styles.panel}>
         <div className={styles.header}>
           <div className={styles.headerMain}>
-            <h2 className={styles.title}>Import Playlist</h2>
+            <h2 className={styles.title}>
+              {preview ? "Preview Import" : "Import Playlist"}
+            </h2>
           </div>
           <button
             type="button"
@@ -142,7 +205,74 @@ const PlaylistImportModal = ({
             x
           </button>
         </div>
-        <div className={styles.form}>
+        {preview ? (
+          <div className={styles.form}>
+            <section className={styles.importSection}>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>
+                  Choose songs to {preview.mode === "replace" ? "keep" : "insert"}
+                </h3>
+                <p className={styles.sectionDescription}>
+                  {selectedCount} of {preview.items.length} songs selected
+                  {preview.skippedDuplicates > 0
+                    ? `, ${preview.skippedDuplicates} duplicate songs skipped`
+                    : ""}
+                  .
+                </p>
+              </div>
+              <label className={styles.previewSelectAll}>
+                <input
+                  type="checkbox"
+                  checked={allPreviewItemsSelected}
+                  onChange={toggleAllPreviewItems}
+                />
+                <span>Select all songs</span>
+              </label>
+              <div className={styles.previewList}>
+                {preview.items.map((item) => (
+                  <label className={styles.previewItem} key={item.id}>
+                    <input
+                      type="checkbox"
+                      checked={preview.selectedItemIds.includes(item.id)}
+                      onChange={() => togglePreviewItem(item.id)}
+                    />
+                    <span className={styles.previewItemContent}>
+                      <span className={styles.previewItemTitle}>{item.title}</span>
+                      <span className={styles.previewItemMeta}>
+                        {item.channelName}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={backToImportForm}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={guardedClose}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={commitPreview}
+                  disabled={selectedCount === 0}
+                >
+                  Insert selected
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : (
+          <div className={styles.form}>
           <section className={styles.importSection}>
             <div className={styles.sectionHeader}>
               <h3 className={styles.sectionTitle}>Import from YouTube playlist</h3>
@@ -226,7 +356,7 @@ const PlaylistImportModal = ({
                   className={styles.primaryButton}
                   disabled={loading}
                 >
-                  {loading ? "Importing..." : "Import"}
+                  {loading ? "Loading preview..." : "Preview"}
                 </button>
               </div>
             </form>
@@ -262,7 +392,8 @@ const PlaylistImportModal = ({
               {errorMessage}
             </p>
           ) : null}
-        </div>
+          </div>
+        )}
       </div>
     </Modal>
   );

@@ -18,6 +18,7 @@ const enum MsgType {
   ExitPip,
   RefreshSavedBadge,
   AnalyzeSongBoundaries,
+  PreviewYoutubePlaylistImport,
   ImportYoutubePlaylist,
   ImportYoutubePlaylistFallbackResult,
   AnalyzeImportedPlaylist,

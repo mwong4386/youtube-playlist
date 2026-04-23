@@ -4,6 +4,8 @@ import {
 import MsgType from "../constants/msgType";
 import type {
   PlaylistImportErrorCode,
+  PlaylistImportPreviewRequest,
+  PlaylistImportPreviewResponse,
   PlaylistImportRequest,
   PlaylistImportResponse,
 } from "../models/PlaylistImport";
@@ -688,12 +690,49 @@ const importYoutubePlaylist = async (
   }
 };
 
+const previewYoutubePlaylistImport = async (
+  request: PlaylistImportPreviewRequest,
+  dependencies: ImportYoutubePlaylistDependencies = {}
+): Promise<PlaylistImportPreviewResponse> => {
+  if (!isYoutubePlaylistUrl(request.playlistUrl)) {
+    return {
+      ok: false,
+      code: "invalid-url",
+      message: "Invalid YouTube playlist URL.",
+    };
+  }
+
+  const resolvePlaylist = dependencies.resolvePlaylist ?? resolveYoutubePlaylist;
+
+  try {
+    return {
+      ok: true,
+      items: await resolvePlaylist(request.playlistUrl),
+    };
+  } catch (error) {
+    if (isPlaylistImportError(error)) {
+      return {
+        ok: false,
+        code: error.code,
+        message: error.message,
+      };
+    }
+
+    return {
+      ok: false,
+      code: "playlist-unavailable",
+      message: "YouTube playlist is unavailable.",
+    };
+  }
+};
+
 export {
   buildImportedPlaylistItems,
   extractPlaylistEntriesFromHtml,
   importYoutubePlaylist,
   isYoutubePlaylistUrl,
   normalizeYoutubePlaylistUrl,
+  previewYoutubePlaylistImport,
   resolveYoutubePlaylist,
   resolveYoutubePlaylistByFetch,
   parseDurationLabelToSeconds,

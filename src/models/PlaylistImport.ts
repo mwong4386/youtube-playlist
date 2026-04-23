@@ -1,3 +1,5 @@
+import type MPlaylistItem from "./MPlaylistItem";
+
 const ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY = "analyzeImportBatchState";
 
 type PlaylistImportMode = "append" | "replace";
@@ -5,6 +7,10 @@ type PlaylistImportMode = "append" | "replace";
 interface PlaylistImportRequest {
   playlistUrl: string;
   mode: PlaylistImportMode;
+}
+
+interface PlaylistImportPreviewRequest {
+  playlistUrl: string;
 }
 
 interface AnalyzeImportBatchRequest {
@@ -34,6 +40,15 @@ interface PlaylistImportFailure {
 
 type PlaylistImportResponse = PlaylistImportSuccess | PlaylistImportFailure;
 
+interface PlaylistImportPreviewSuccess {
+  ok: true;
+  items: MPlaylistItem[];
+}
+
+type PlaylistImportPreviewResponse =
+  | PlaylistImportPreviewSuccess
+  | PlaylistImportFailure;
+
 interface AnalyzeImportBatchState {
   active: boolean;
   totalCount: number;
@@ -51,6 +66,9 @@ export type {
   PlaylistImportFailure,
   PlaylistImportErrorCode,
   PlaylistImportMode,
+  PlaylistImportPreviewRequest,
+  PlaylistImportPreviewResponse,
+  PlaylistImportPreviewSuccess,
   PlaylistImportRequest,
   PlaylistImportResponse,
   PlaylistImportSuccess,

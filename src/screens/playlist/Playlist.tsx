@@ -96,10 +96,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     closePlaylistImportModal,
     closeSelectionActionsModal,
     confirmDeleteAll,
-    importYoutubePlaylist,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
+    onCommitPlaylistImportPreview,
     onCreateProfile,
     onCreateSongList,
     onDeleteAll,
@@ -126,6 +126,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     openNewSongListModal,
     openPlaybackModal,
     openPlaylistImportModal,
+    previewYoutubePlaylistImport,
     toggleSelectAll,
     toggleSelectedItem,
   } = usePlaylistActions({
@@ -317,7 +318,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         active={isPlaylistImportOpen}
         close={closePlaylistImportModal}
         onImportJson={onImportJson}
-        onSubmit={importYoutubePlaylist}
+        onSubmit={previewYoutubePlaylistImport}
+        onCommitPreview={onCommitPlaylistImportPreview}
       />
       <NewSongListModal
         active={isNewSongListOpen}

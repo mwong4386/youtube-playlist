@@ -5,6 +5,7 @@ import {
   extractPlaylistEntriesFromHtml,
   importYoutubePlaylist,
   normalizeYoutubePlaylistUrl,
+  previewYoutubePlaylistImport,
   resolveYoutubePlaylist,
   resolveYoutubePlaylistByFetch,
 } from "./youtubePlaylistImport";
@@ -501,6 +502,52 @@ test("importYoutubePlaylist appends new imported items and writes the merged pla
     skippedDuplicates: 1,
   });
   expectEqual(writes, [[...existing, imported[1]]]);
+});
+
+test("previewYoutubePlaylistImport returns resolved items without writing storage", async () => {
+  const imported = [createPlaylistItem("imported-video")];
+  let wrote = false;
+
+  const response = await previewYoutubePlaylistImport(
+    {
+      playlistUrl: "https://www.youtube.com/watch?v=abc123&list=PL123",
+    },
+    {
+      writePlaylist: async () => {
+        wrote = true;
+      },
+      resolvePlaylist: async () => imported,
+    }
+  );
+
+  expectEqual(response, {
+    ok: true,
+    items: imported,
+  });
+  expectEqual(wrote, false);
+});
+
+test("previewYoutubePlaylistImport returns invalid-url without resolving", async () => {
+  let resolveCount = 0;
+
+  const response = await previewYoutubePlaylistImport(
+    {
+      playlistUrl: "https://www.youtube.com/watch?v=abc123",
+    },
+    {
+      resolvePlaylist: async () => {
+        resolveCount += 1;
+        return [];
+      },
+    }
+  );
+
+  expectEqual(response, {
+    ok: false,
+    code: "invalid-url",
+    message: "Invalid YouTube playlist URL.",
+  });
+  expectEqual(resolveCount, 0);
 });
 
 test("importYoutubePlaylist returns an error when append mode only finds duplicates", async () => {

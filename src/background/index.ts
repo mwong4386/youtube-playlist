@@ -47,7 +47,10 @@ import {
   fetchGeminiGenerateContentWithRetries,
   readGeminiErrorResponse,
 } from "./geminiRequest";
-import { importYoutubePlaylist } from "./youtubePlaylistImport";
+import {
+  importYoutubePlaylist,
+  previewYoutubePlaylistImport,
+} from "./youtubePlaylistImport";
 import type {
   AnalyzeImportBatchRequest,
   AnalyzeImportBatchState,
@@ -759,6 +762,10 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
       break;
     case MsgType.AnalyzeSongBoundaries:
       return analyzeSongBoundaries(message.itemId);
+    case MsgType.PreviewYoutubePlaylistImport:
+      return previewYoutubePlaylistImport({
+        playlistUrl: message.playlistUrl,
+      });
     case MsgType.ImportYoutubePlaylist:
       return importYoutubePlaylist({
         playlistUrl: message.playlistUrl,
@@ -867,6 +874,7 @@ const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
   chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     if (
       message?.name === MsgType.AnalyzeSongBoundaries ||
+      message?.name === MsgType.PreviewYoutubePlaylistImport ||
       message?.name === MsgType.ImportYoutubePlaylist ||
       message?.name === MsgType.AnalyzeImportedPlaylist ||
       message?.name === MsgType.StopAnalyzeImportedPlaylist

@@ -10,6 +10,8 @@ import type {
 import type MPlaylistItem from "../../models/MPlaylistItem";
 import type {
   AnalyzeImportBatchState,
+  PlaylistImportMode,
+  PlaylistImportPreviewResponse,
   PlaylistImportRequest,
   PlaylistImportResponse,
 } from "../../models/PlaylistImport";
@@ -27,9 +29,15 @@ import {
 } from "./analyzeImportBanner";
 import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import {
+  resolvePlaylistImportPreviewSubmission,
   resolvePlaylistImportSubmission,
+  type PlaylistImportPreviewSubmissionResult,
   type PlaylistImportSubmissionResult,
 } from "./playlistImportResult";
+import {
+  commitPlaylistImportPreview,
+  createPlaylistImportPreview,
+} from "./playlistImportPreview";
 import {
   clearSelectedItemIds,
   filterUncalibratedPlaylistItemIds,
@@ -264,6 +272,53 @@ const usePlaylistActions = ({
         },
       );
     });
+  };
+
+  const previewYoutubePlaylistImport = (
+    request: PlaylistImportRequest,
+  ): Promise<PlaylistImportPreviewSubmissionResult> => {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          name: MsgType.PreviewYoutubePlaylistImport,
+          playlistUrl: request.playlistUrl,
+        },
+        (response: PlaylistImportPreviewResponse | undefined) => {
+          resolve(
+            resolvePlaylistImportPreviewSubmission(
+              response,
+              chrome.runtime.lastError ?? null,
+              (items) => ({
+                source: "youtube",
+                mode: request.mode,
+                ...createPlaylistImportPreview(playlist, items, request.mode),
+              }),
+            ),
+          );
+        },
+      );
+    });
+  };
+
+  const onCommitPlaylistImportPreview = (
+    previewItems: MPlaylistItem[],
+    selectedPreviewItemIds: string[],
+    mode: PlaylistImportMode,
+  ) => {
+    if (selectedPreviewItemIds.length === 0) {
+      return;
+    }
+
+    updateActiveSongListItems(
+      (currentPlaylist) =>
+        commitPlaylistImportPreview(
+          currentPlaylist,
+          previewItems,
+          selectedPreviewItemIds,
+          mode,
+        ),
+      closePlaylistImportModal,
+    );
   };
 
   const onSave = (
@@ -587,6 +642,7 @@ const usePlaylistActions = ({
     onDeleteProfile,
     onDeleteSelected,
     onDismissAnalyzeImportBanner,
+    onCommitPlaylistImportPreview,
     onImportJson,
     onMoveTo,
     onMoveToEnd,
@@ -607,6 +663,7 @@ const usePlaylistActions = ({
     openNewSongListModal,
     openPlaybackModal,
     openPlaylistImportModal,
+    previewYoutubePlaylistImport,
     toggleSelectAll,
     toggleSelectedItem,
   };
