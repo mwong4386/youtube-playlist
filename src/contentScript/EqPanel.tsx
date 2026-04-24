@@ -1,6 +1,7 @@
 import AudioEqSettings from "../models/AudioEq";
 import AudioEqProfile from "../models/AudioEqProfile";
-import { AUDIO_EQ_BANDS, AUDIO_EQ_MAX, AUDIO_EQ_MIN } from "../utils/audioEq";
+import { AUDIO_EQ_MAX, AUDIO_EQ_MIN } from "../utils/audioEq";
+import { AudioEqVerticalBands } from "../screens/audioEq/AudioEqVerticalBands";
 import {
   getEqPanelHintText,
   shouldShowEqProfileSelect,
@@ -15,10 +16,6 @@ type EqPanelProps = {
   onProfileChange: (profileId: string) => void;
   onSliderInput: (bandKey: keyof AudioEqSettings, value: number) => void;
   onSliderChange: (bandKey: keyof AudioEqSettings, value: number) => void;
-};
-
-const formatEqValue = (value: number) => {
-  return value > 0 ? `+${value}` : `${value}`;
 };
 
 const EqPanel = ({
@@ -72,31 +69,32 @@ const EqPanel = ({
           ))}
         </select>
       </div>
-      <div className="yt-playlist-eq-panel__bands">
-        {AUDIO_EQ_BANDS.map((band) => (
-          <div key={band.key} className="yt-playlist-eq-panel__band">
-            <span className="yt-playlist-eq-panel__value" data-eq-value={band.key}>
-              {formatEqValue(settings[band.key])}
-            </span>
-            <div className="yt-playlist-eq-panel__track">
-              <input
-                className="yt-playlist-eq-panel__slider"
-                data-eq-slider={band.key}
-                type="range"
-                min={AUDIO_EQ_MIN}
-                max={AUDIO_EQ_MAX}
-                step={1}
-                value={settings[band.key]}
-                onInput={(event) =>
-                  onSliderInput(band.key, Number((event.target as HTMLInputElement).value))
-                }
-                onChange={(event) => onSliderChange(band.key, Number(event.currentTarget.value))}
-              />
-            </div>
-            <span className="yt-playlist-eq-panel__label">{band.shortLabel}</span>
-          </div>
-        ))}
-      </div>
+      <AudioEqVerticalBands
+        settings={settings}
+        classes={{
+          list: "yt-playlist-eq-panel__bands",
+          band: "yt-playlist-eq-panel__band",
+          value: "yt-playlist-eq-panel__value",
+          track: "yt-playlist-eq-panel__track",
+          slider: "yt-playlist-eq-panel__slider",
+          label: "yt-playlist-eq-panel__label",
+        }}
+        renderSlider={(band, sliderClassName) => (
+          <input
+            className={sliderClassName}
+            data-eq-slider={band.key}
+            type="range"
+            min={AUDIO_EQ_MIN}
+            max={AUDIO_EQ_MAX}
+            step={1}
+            value={settings[band.key]}
+            onInput={(event) =>
+              onSliderInput(band.key, Number((event.target as HTMLInputElement).value))
+            }
+            onChange={(event) => onSliderChange(band.key, Number(event.currentTarget.value))}
+          />
+        )}
+      />
     </>
   );
 };

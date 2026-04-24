@@ -9,11 +9,8 @@ import {
   type GeminiAnalyzeSuccess,
 } from "../../models/GeminiSettings";
 import MPlaylistItem from "../../models/MPlaylistItem";
-import {
-  AUDIO_EQ_BANDS,
-  DEFAULT_AUDIO_EQ_SETTINGS,
-  normalizeAudioEqSettings,
-} from "../../utils/audioEq";
+import { DEFAULT_AUDIO_EQ_SETTINGS, normalizeAudioEqSettings } from "../../utils/audioEq";
+import { AudioEqVerticalBands } from "../audioEq/AudioEqVerticalBands";
 import {
   clearSelectedAudioEqProfileId,
   normalizeSelectedAudioEqProfileId,
@@ -88,6 +85,7 @@ export const SongEditor = ({
   } = formMethods;
 
   const itemId = item?.id;
+  const currentAudioEq = normalizeAudioEqSettings(watch());
 
   useEffect(() => {
     analyzeScopeRef.current = syncAnalyzeScope(
@@ -477,14 +475,20 @@ export const SongEditor = ({
             )}
             <div className={styles["eq-section"]}>
               <p className={styles["eq-title"]}>Song EQ</p>
-              {AUDIO_EQ_BANDS.map((band) => (
-                <div key={band.key} className={styles["eq-row"]}>
-                  <label className={styles["eq-band-label"]} htmlFor={band.key}>
-                    {band.label}
-                  </label>
+              <AudioEqVerticalBands
+                settings={currentAudioEq}
+                classes={{
+                  list: styles["eq-bands"],
+                  band: styles["eq-band"],
+                  value: styles["eq-value"],
+                  track: styles["eq-track"],
+                  slider: styles["eq-slider"],
+                  label: styles["eq-band-label"],
+                }}
+                renderSlider={(band, sliderClassName) => (
                   <input
                     id={band.key}
-                    className={styles["eq-slider"]}
+                    className={sliderClassName}
                     type="range"
                     min="-10"
                     max="10"
@@ -494,9 +498,8 @@ export const SongEditor = ({
                       onChange: onSongAudioEqChange,
                     })}
                   />
-                  <span className={styles["eq-value"]}>{watch(band.key)}</span>
-                </div>
-              ))}
+                )}
+              />
             </div>
           </>
         )}

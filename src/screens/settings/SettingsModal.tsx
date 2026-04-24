@@ -3,6 +3,10 @@ import AudioEqProfile, {
   AUDIO_EQ_PROFILE_LIMIT,
 } from "../../models/AudioEqProfile";
 import Modal from "../modal/Modal";
+import {
+  AudioEqSliderList,
+  formatAudioEqValue,
+} from "../audioEq/AudioEqSliderList";
 import styles from "./SettingsModal.module.css";
 import AudioEqSettings from "../../models/AudioEq";
 import {
@@ -19,13 +23,9 @@ import {
   updateAudioEqProfileDraftName,
 } from "../../utils/audioEqProfiles";
 
-const formatEqValue = (value: number) => {
-  return value > 0 ? `+${value}` : `${value}`;
-};
-
 const getAudioEqSummary = (audioEq: AudioEqSettings) => {
   return AUDIO_EQ_BANDS.map((band) => {
-    return `${band.shortLabel} ${formatEqValue(audioEq[band.key])}`;
+    return `${band.shortLabel} ${formatAudioEqValue(audioEq[band.key])}`;
   }).join(" • ");
 };
 
@@ -294,34 +294,38 @@ const SettingsModal = ({
               }}
             />
           </label>
-          <div className={styles["slider-list"]}>
-            {AUDIO_EQ_BANDS.map((band) => (
-              <label key={band.key} className={styles["slider-row"]}>
-                <span className={styles["slider-label"]}>{band.label}</span>
-                <input
-                  type="range"
-                  min={AUDIO_EQ_MIN}
-                  max={AUDIO_EQ_MAX}
-                  step="1"
-                  value={profileForm.audioEq[band.key]}
-                  className={styles["slider-input"]}
-                  onChange={(event) => {
-                    const nextValue = Number(event.currentTarget.value);
-                    setProfileForm((current) =>
-                      updateAudioEqProfileDraftBand(
-                        current,
-                        band.key,
-                        nextValue
-                      )
-                    );
-                  }}
-                />
-                <span className={styles["slider-value"]}>
-                  {formatEqValue(profileForm.audioEq[band.key])}
-                </span>
-              </label>
-            ))}
-          </div>
+          <AudioEqSliderList
+            bands={AUDIO_EQ_BANDS}
+            settings={profileForm.audioEq}
+            classes={{
+              list: styles["slider-list"],
+              row: styles["slider-row"],
+              label: styles["slider-label"],
+              slider: styles["slider-input"],
+              value: styles["slider-value"],
+            }}
+            renderSlider={(band, sliderClassName) => (
+              <input
+                id={band.key}
+                type="range"
+                min={AUDIO_EQ_MIN}
+                max={AUDIO_EQ_MAX}
+                step="1"
+                value={profileForm.audioEq[band.key]}
+                className={sliderClassName}
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+                  setProfileForm((current) =>
+                    updateAudioEqProfileDraftBand(
+                      current,
+                      band.key,
+                      nextValue
+                    )
+                  );
+                }}
+              />
+            )}
+          />
           <div className={styles["editor-actions"]}>
             <button
               type="button"
