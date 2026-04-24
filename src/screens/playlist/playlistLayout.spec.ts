@@ -134,11 +134,20 @@ test("playlist play button active state is defined for the paper-dark contract",
   expectEqual(activeButton !== null, true);
 });
 
-test("playlist stylesheet removes stale glass-era tokens globally", () => {
-  expectEqual(playlistStyles.includes("border-radius: 999px;"), false);
-  expectEqual(playlistStyles.includes("border-radius: 28px;"), false);
-  expectEqual(playlistStyles.includes("border-radius: 20px;"), false);
-  expectEqual(playlistStyles.includes("backdrop-filter:"), false);
+test("playlist paper-dark chrome removes stale glass-era tokens from the header, rows, and play button", () => {
+  const headerRail = getCssBlock(playlistStyles, ".header-control-rail");
+  const rowContainer = getCssBlock(playlistStyles, ".playlist-item-container");
+  const playButton = getCssBlock(playlistStyles, ".play-button");
+
+  expectEqual(headerRail !== null, true);
+  expectEqual(rowContainer !== null, true);
+  expectEqual(playButton !== null, true);
+  expectEqual(headerRail?.includes("border-radius: 28px;"), false);
+  expectEqual(rowContainer?.includes("border-radius: 20px;"), false);
+  expectEqual(playButton?.includes("border-radius: 999px;"), false);
+  expectEqual(headerRail?.includes("backdrop-filter:"), false);
+  expectEqual(rowContainer?.includes("backdrop-filter:"), false);
+  expectEqual(playButton?.includes("backdrop-filter:"), false);
 });
 
 test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {

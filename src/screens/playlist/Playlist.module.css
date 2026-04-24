@@ -75,6 +75,8 @@
   border: 0;
   width: 34px;
   height: 34px;
+  background: color-mix(in srgb, var(--surface-secondary) 90%, black 10%);
+  color: var(--text-primary);
   padding: 0;
   border-radius: 8px;
   box-shadow: none;
@@ -326,7 +328,7 @@
 }
 
 .analyze-import-banner {
-  border-radius: 12px;
+  border-radius: 20px;
   border: 1px solid
     color-mix(in srgb, var(--success-color) 28%, var(--border-color));
   background: linear-gradient(
@@ -402,7 +404,7 @@
   color: var(--text-secondary);
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 20px;
   line-height: 1;
   flex-shrink: 0;
@@ -563,7 +565,7 @@
   color: var(--text-primary);
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 20px;
   line-height: 1;
 }
