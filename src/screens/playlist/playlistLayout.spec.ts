@@ -8,6 +8,15 @@ const expectEqual = (actual: unknown, expected: unknown) => {
   }
 };
 
+const getCssBlock = (source: string, selector: string) => {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = source.match(
+    new RegExp(`(^|\\n)${escapedSelector}\\s*\\{([\\s\\S]*?)\\n\\}`, "m"),
+  );
+
+  return match?.[2] ?? null;
+};
+
 const playlistStyles = readFileSync(
   join(process.cwd(), "src/screens/playlist/Playlist.module.css"),
   "utf8",
@@ -93,18 +102,52 @@ test("playlist layout uses a flex content column so the banner does not steal li
   expectEqual(playlistSource.includes("<PlaylistHeader"), true);
 });
 
-test("playlist chrome uses an embedded top control rail inside the main shell", () => {
-  expectEqual(playlistStyles.includes(".header-container"), true);
-  expectEqual(playlistStyles.includes(".header-control-rail"), true);
-  expectEqual(playlistStyles.includes(".header-center-well"), true);
-  expectEqual(playlistStyles.includes(".header-side-button"), true);
-  expectEqual(playlistStyles.includes("position: fixed;"), false);
-  expectEqual(playlistStyles.includes("border-radius: 999px;"), true);
-  expectEqual(playlistStyles.includes("border-radius: 28px;"), true);
-  expectEqual(playlistStyles.includes(".playlist-item-container"), true);
-  expectEqual(playlistStyles.includes("border-radius: 20px;"), true);
-  expectEqual(playlistStyles.includes(".playlist-item-highlight"), true);
-  expectEqual(playlistStyles.includes("box-shadow: 0 18px 32px -28px"), true);
+test("playlist header rail uses a flatter paper-dark control surface", () => {
+  const headerRail = getCssBlock(playlistStyles, ".header-control-rail");
+
+  expectEqual(headerRail !== null, true);
+  expectEqual(headerRail?.includes("border-bottom: 1px solid"), true);
+});
+
+test("playlist rows use flatter paper-dark container styling", () => {
+  const rowContainer = getCssBlock(playlistStyles, ".playlist-item-container");
+
+  expectEqual(rowContainer !== null, true);
+  expectEqual(rowContainer?.includes("border-bottom: 1px solid"), true);
+});
+
+test("playlist selected row state is defined for the paper-dark contract", () => {
+  const selectedRow = getCssBlock(playlistStyles, ".playlist-item-selected");
+
+  expectEqual(selectedRow !== null, true);
+});
+
+test("playlist play button idle state is defined for the paper-dark contract", () => {
+  const idleButton = getCssBlock(playlistStyles, ".play-button-idle");
+
+  expectEqual(idleButton !== null, true);
+});
+
+test("playlist play button active state is defined for the paper-dark contract", () => {
+  const activeButton = getCssBlock(playlistStyles, ".play-button-active");
+
+  expectEqual(activeButton !== null, true);
+});
+
+test("playlist paper-dark chrome removes stale glass-era tokens from the header, rows, and play button", () => {
+  const headerRail = getCssBlock(playlistStyles, ".header-control-rail");
+  const rowContainer = getCssBlock(playlistStyles, ".playlist-item-container");
+  const playButton = getCssBlock(playlistStyles, ".play-button");
+
+  expectEqual(headerRail !== null, true);
+  expectEqual(rowContainer !== null, true);
+  expectEqual(playButton !== null, true);
+  expectEqual(headerRail?.includes("border-radius: 28px;"), false);
+  expectEqual(rowContainer?.includes("border-radius: 20px;"), false);
+  expectEqual(playButton?.includes("border-radius: 999px;"), false);
+  expectEqual(headerRail?.includes("backdrop-filter:"), false);
+  expectEqual(rowContainer?.includes("backdrop-filter:"), false);
+  expectEqual(playButton?.includes("backdrop-filter:"), false);
 });
 
 test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {
@@ -545,11 +588,11 @@ test("playlist normal header uses the center area for the active song list selec
     true,
   );
   expectEqual(
-    /\.header-control-rail\s*\{[^}]*padding:\s*0 14px;/s.test(playlistStyles),
+    /\.header-control-rail\s*\{[^}]*padding:\s*0 12px;/s.test(playlistStyles),
     true,
   );
   expectEqual(
-    /\.header-side-pocket\s*\{[^}]*width:\s*58px;[^}]*min-width:\s*58px;[^}]*height:\s*58px;/s.test(
+    /\.header-side-pocket\s*\{[^}]*width:\s*42px;[^}]*min-width:\s*42px;[^}]*height:\s*42px;/s.test(
       playlistStyles,
     ),
     true,
@@ -561,7 +604,7 @@ test("playlist normal header uses the center area for the active song list selec
     false,
   );
   expectEqual(
-    /\.header-center-well\s*\{[^}]*min-height:\s*48px;/s.test(playlistStyles),
+    /\.header-center-well\s*\{[^}]*min-height:\s*42px;/s.test(playlistStyles),
     true,
   );
   expectEqual(

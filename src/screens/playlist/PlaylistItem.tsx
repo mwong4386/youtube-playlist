@@ -20,6 +20,13 @@ const PlaylistItem = ({
   onPlayItem,
 }: props) => {
   const isActivePlayback = isPlaying && IPlaying;
+  const rowClassName = `${styles["playlist-item-container"]} ${
+    IPlaying ? styles["playlist-item-highlight"] : ""
+  } ${selected ? styles["playlist-item-selected"] : ""}`.trim();
+  const playButtonClassName = `${styles["play-button"]} ${
+    isActivePlayback ? styles["play-button-active"] : styles["play-button-idle"]
+  }`;
+  const playButtonLabel = `${isActivePlayback ? "Pause" : "Play"} ${item.title}`;
 
   const onPlay = () => {
     if (isActivePlayback) {
@@ -30,11 +37,7 @@ const PlaylistItem = ({
     }
   };
   return (
-    <div
-      className={`${styles["playlist-item-container"]} ${
-        IPlaying && styles["playlist-item-highlight"]
-      }`}
-    >
+    <div className={rowClassName}>
       <div className={styles["state-container"]}>
         <label className={styles["playlist-item-checkbox"]}>
           <input
@@ -59,7 +62,12 @@ const PlaylistItem = ({
         <div className={styles["channel-name"]}>{item.channelName}</div>
       </div>
       <div className={styles["play-container"]}>
-        <button type="button" className={styles["play-button"]} onClick={onPlay}>
+        <button
+          type="button"
+          className={playButtonClassName}
+          aria-label={playButtonLabel}
+          onClick={onPlay}
+        >
           {isActivePlayback ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
