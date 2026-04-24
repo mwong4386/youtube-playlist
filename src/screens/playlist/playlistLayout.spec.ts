@@ -579,11 +579,11 @@ test("playlist normal header uses the center area for the active song list selec
     true,
   );
   expectEqual(
-    /\.header-control-rail\s*\{[^}]*padding:\s*0 14px;/s.test(playlistStyles),
+    /\.header-control-rail\s*\{[^}]*padding:\s*0 12px;/s.test(playlistStyles),
     true,
   );
   expectEqual(
-    /\.header-side-pocket\s*\{[^}]*width:\s*58px;[^}]*min-width:\s*58px;[^}]*height:\s*58px;/s.test(
+    /\.header-side-pocket\s*\{[^}]*width:\s*42px;[^}]*min-width:\s*42px;[^}]*height:\s*42px;/s.test(
       playlistStyles,
     ),
     true,
@@ -595,7 +595,7 @@ test("playlist normal header uses the center area for the active song list selec
     false,
   );
   expectEqual(
-    /\.header-center-well\s*\{[^}]*min-height:\s*48px;/s.test(playlistStyles),
+    /\.header-center-well\s*\{[^}]*min-height:\s*42px;/s.test(playlistStyles),
     true,
   );
   expectEqual(
