@@ -8,6 +8,15 @@ const expectEqual = (actual: unknown, expected: unknown) => {
   }
 };
 
+const getCssBlock = (source: string, selector: string) => {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = source.match(
+    new RegExp(`(^|\\n)${escapedSelector}\\s*\\{([\\s\\S]*?)\\n\\}`, "m"),
+  );
+
+  return match?.[2] ?? null;
+};
+
 const playlistStyles = readFileSync(
   join(process.cwd(), "src/screens/playlist/Playlist.module.css"),
   "utf8",
@@ -93,17 +102,41 @@ test("playlist layout uses a flex content column so the banner does not steal li
   expectEqual(playlistSource.includes("<PlaylistHeader"), true);
 });
 
-test("playlist chrome uses a flatter paper-dark control rail and row styling", () => {
-  expectEqual(playlistStyles.includes(".header-control-rail"), true);
-  expectEqual(playlistStyles.includes("border-radius: 999px;"), false);
-  expectEqual(playlistStyles.includes("border-radius: 28px;"), false);
-  expectEqual(playlistStyles.includes(".playlist-item-container"), true);
-  expectEqual(playlistStyles.includes("border-radius: 20px;"), false);
-  expectEqual(playlistStyles.includes("backdrop-filter:"), false);
-  expectEqual(playlistStyles.includes("border-bottom: 1px solid"), true);
-  expectEqual(playlistStyles.includes(".playlist-item-selected"), true);
-  expectEqual(playlistStyles.includes(".play-button-idle"), true);
-  expectEqual(playlistStyles.includes(".play-button-active"), true);
+test("playlist header rail uses a flatter paper-dark control surface", () => {
+  const headerRail = getCssBlock(playlistStyles, ".header-control-rail");
+
+  expectEqual(headerRail !== null, true);
+  expectEqual(headerRail?.includes("border-radius: 999px;"), false);
+  expectEqual(headerRail?.includes("border-radius: 28px;"), false);
+  expectEqual(headerRail?.includes("backdrop-filter:"), false);
+  expectEqual(headerRail?.includes("border-bottom: 1px solid"), true);
+});
+
+test("playlist rows use flatter paper-dark container styling", () => {
+  const rowContainer = getCssBlock(playlistStyles, ".playlist-item-container");
+
+  expectEqual(rowContainer !== null, true);
+  expectEqual(rowContainer?.includes("border-radius: 20px;"), false);
+  expectEqual(rowContainer?.includes("backdrop-filter:"), false);
+  expectEqual(rowContainer?.includes("border-bottom: 1px solid"), true);
+});
+
+test("playlist selected row state is defined for the paper-dark contract", () => {
+  const selectedRow = getCssBlock(playlistStyles, ".playlist-item-selected");
+
+  expectEqual(selectedRow !== null, true);
+});
+
+test("playlist play button idle state is defined for the paper-dark contract", () => {
+  const idleButton = getCssBlock(playlistStyles, ".play-button-idle");
+
+  expectEqual(idleButton !== null, true);
+});
+
+test("playlist play button active state is defined for the paper-dark contract", () => {
+  const activeButton = getCssBlock(playlistStyles, ".play-button-active");
+
+  expectEqual(activeButton !== null, true);
 });
 
 test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {
