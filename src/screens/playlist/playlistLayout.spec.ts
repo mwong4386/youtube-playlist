@@ -484,7 +484,7 @@ test("playlist styles include selection header and checkbox classes", () => {
 test("playlist selection header keeps the centered home button in action mode", () => {
   expectEqual(
     playlistHeaderSource.includes(
-      'className={styles["header-center-container"]}',
+      'className={`${styles["header-center-container"]} ${styles["header-side-pocket"]}`}',
     ),
     true,
   );
@@ -501,13 +501,13 @@ test("playlist selection header keeps the centered home button in action mode", 
 test("playlist normal header uses the center area for the active song list selector", () => {
   expectEqual(
     playlistHeaderSource.includes(
-      'className={styles["header-left-container"]}',
+      'className={`${styles["header-left-container"]} ${styles["header-side-pocket"]}`}',
     ),
     true,
   );
   expectEqual(
     playlistHeaderSource.includes(
-      'className={styles["header-center-container"]}',
+      'className={`${styles["header-center-container"]} ${styles["header-center-well"]}`}',
     ),
     true,
   );

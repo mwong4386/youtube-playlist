@@ -609,10 +609,10 @@ const applyBookmarkButtonVisualState = (
   button.dataset.feedbackState = state;
   button.replaceChildren(createBookmarkButtonContent(state));
   button.title =
-    state === "success" ? "Added to song list" : "Click to open bookmark dialog";
+    state === "success" ? "Added to song list" : "Click to add to song list";
   button.setAttribute(
     "aria-label",
-    state === "success" ? "Added to song list" : "Open add to playlist dialog",
+    state === "success" ? "Added to song list" : "Add to song list",
   );
   button.disabled = state === "success";
 };
@@ -1080,12 +1080,12 @@ const onYoutubeVideoPage = (
       getConfirmButton().removeEventListener("click", onCSConfirm);
       getConfirmButton().addEventListener("click", onCSConfirm);
     }
-    //Add a + button to the youtube control button group, it will open the dialog
+    // Add a + button to the YouTube control button group that saves directly.
     const bookmarkBtn = document.createElement("button");
     bookmarkBtn.className = "ytp-button bookmark-button";
     ensureBookmarkButtonFeedbackController(bookmarkBtn);
 
-    bookmarkBtn.addEventListener("click", onCSOpenDialogClickHandler);
+    bookmarkBtn.addEventListener("click", onCSQuickAddClickHandler);
     const injected = ensureControlButtonsInjected(bookmarkBtn, eqButton);
     clearControlInjectionRetry();
     if (!injected) {
@@ -1278,6 +1278,62 @@ const onCSOpenDialogClickHandler = () => {
   );
 };
 
+const saveBookmarkItem = async (data: MPlaylistItem) => {
+  const storageMap = await getStorageMap([
+    SONG_LISTS_STORAGE_KEY,
+    ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+  ]);
+  const list = readActiveSongListItemsFromStorageMap(storageMap);
+  const songListsStorageUpdate = buildActiveSongListStorageUpdate(storageMap, [
+    ...list,
+    data,
+  ]);
+
+  await chrome.storage.sync.set(songListsStorageUpdate);
+
+  const bookmarkButton = getBookmarkButton();
+  if (bookmarkButton) {
+    ensureBookmarkButtonFeedbackController(bookmarkButton).showSuccess();
+  }
+  chrome.runtime.sendMessage({
+    name: MsgType.RefreshSavedBadge,
+  });
+};
+
+const onCSQuickAddClickHandler = () => {
+  clearErrorMsg();
+  const title = sanitizeYoutubeVideoTitle(document.title);
+  const channelName = getChannelNameFromPage()?.textContent || "";
+  const video = getYoutubePlayer();
+  const url = window.location.href;
+  const videoId = new URL(url).searchParams.get("v") || "";
+
+  if (!videoId || !video) {
+    return;
+  }
+
+  const data: MPlaylistItem = {
+    id: uuidv4(),
+    url,
+    videoId,
+    title,
+    channelName,
+    timestamp: 0,
+    endTimestamp: undefined,
+    maxDuration: video.duration,
+    volume: Math.floor(video.volume * 100),
+    audioEq: cloneAudioEqSettings(currentAudioEqSettings),
+  };
+
+  void (async () => {
+    try {
+      await saveBookmarkItem(data);
+    } catch (error) {
+      console.log(error);
+    }
+  })();
+};
+
 const onResetClick = () => {
   getStartHourInput().value = "0";
   getStartMinuteInput().value = "0";
@@ -1334,26 +1390,8 @@ const onBookmarkSave = (url: string, videoId: string) => {
 
   void (async () => {
     try {
-      const storageMap = await getStorageMap([
-        SONG_LISTS_STORAGE_KEY,
-        ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
-      ]);
-      const list = readActiveSongListItemsFromStorageMap(storageMap);
-      const songListsStorageUpdate = buildActiveSongListStorageUpdate(
-        storageMap,
-        [...list, data]
-      );
-
-      await chrome.storage.sync.set(songListsStorageUpdate);
-
+      await saveBookmarkItem(data);
       getDialog().close();
-      const bookmarkButton = getBookmarkButton();
-      if (bookmarkButton) {
-        ensureBookmarkButtonFeedbackController(bookmarkButton).showSuccess();
-      }
-      chrome.runtime.sendMessage({
-        name: MsgType.RefreshSavedBadge,
-      });
     } catch (error) {
       console.log(error);
       getConfirmButton().disabled = false;
