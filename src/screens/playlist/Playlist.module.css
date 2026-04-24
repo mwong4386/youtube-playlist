@@ -3,25 +3,25 @@
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  padding: 14px 8px;
+  padding: 18px 8px;
   color: var(--text-primary);
   border: 0;
   border-bottom: 1px solid
     color-mix(in srgb, var(--border-color) 54%, transparent);
   border-radius: 0;
-  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
+  background: transparent;
   box-shadow: none;
 }
 
 .playlist-item-highlight {
-  background: color-mix(in srgb, var(--accent-color) 8%, var(--surface-primary));
+  background: color-mix(in srgb, var(--accent-color) 6%, transparent);
 }
 
 .playlist-item-selected {
   background: color-mix(
     in srgb,
-    var(--surface-secondary) 82%,
-    var(--surface-primary)
+    var(--surface-secondary) 28%,
+    transparent
   );
 }
 
@@ -75,16 +75,16 @@
   border: 0;
   width: 34px;
   height: 34px;
-  background: color-mix(in srgb, var(--surface-secondary) 90%, black 10%);
-  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 92%, white 8%);
+  color: white;
   padding: 0;
   border-radius: 8px;
   box-shadow: none;
 }
 
 .play-button-idle {
-  background: color-mix(in srgb, var(--surface-secondary) 90%, black 10%);
-  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 92%, white 8%);
+  color: white;
 }
 
 .play-button-active {
@@ -112,7 +112,7 @@
 
 .header-container {
   width: 100%;
-  padding: 0 0 12px;
+  padding: 0 0 2px;
 }
 
 .header-control-rail {
@@ -122,11 +122,11 @@
   gap: 10px;
   min-height: 58px;
   padding: 0 12px;
-  background: color-mix(in srgb, var(--surface-primary) 92%, black 8%);
+  background: transparent;
   border: 0;
   border-bottom: 1px solid
     color-mix(in srgb, var(--border-color) 72%, transparent);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: none;
 }
 
