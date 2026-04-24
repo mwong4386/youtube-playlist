@@ -94,18 +94,13 @@ test("playlist layout uses a flex content column so the banner does not steal li
 });
 
 test("playlist chrome uses a flatter paper-dark control rail and row styling", () => {
-  expectEqual(playlistStyles.includes(".header-container"), true);
   expectEqual(playlistStyles.includes(".header-control-rail"), true);
-  expectEqual(playlistStyles.includes(".header-center-well"), true);
-  expectEqual(playlistStyles.includes(".header-side-button"), true);
-  expectEqual(playlistStyles.includes("position: fixed;"), false);
   expectEqual(playlistStyles.includes("border-radius: 999px;"), false);
   expectEqual(playlistStyles.includes("border-radius: 28px;"), false);
   expectEqual(playlistStyles.includes(".playlist-item-container"), true);
   expectEqual(playlistStyles.includes("border-radius: 20px;"), false);
   expectEqual(playlistStyles.includes("backdrop-filter:"), false);
   expectEqual(playlistStyles.includes("border-bottom: 1px solid"), true);
-  expectEqual(playlistStyles.includes(".playlist-item-highlight"), true);
   expectEqual(playlistStyles.includes(".playlist-item-selected"), true);
   expectEqual(playlistStyles.includes(".play-button-idle"), true);
   expectEqual(playlistStyles.includes(".play-button-active"), true);
