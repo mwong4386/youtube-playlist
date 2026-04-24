@@ -93,18 +93,22 @@ test("playlist layout uses a flex content column so the banner does not steal li
   expectEqual(playlistSource.includes("<PlaylistHeader"), true);
 });
 
-test("playlist chrome uses an embedded top control rail inside the main shell", () => {
+test("playlist chrome uses a flatter paper-dark control rail and row styling", () => {
   expectEqual(playlistStyles.includes(".header-container"), true);
   expectEqual(playlistStyles.includes(".header-control-rail"), true);
   expectEqual(playlistStyles.includes(".header-center-well"), true);
   expectEqual(playlistStyles.includes(".header-side-button"), true);
   expectEqual(playlistStyles.includes("position: fixed;"), false);
-  expectEqual(playlistStyles.includes("border-radius: 999px;"), true);
-  expectEqual(playlistStyles.includes("border-radius: 28px;"), true);
+  expectEqual(playlistStyles.includes("border-radius: 999px;"), false);
+  expectEqual(playlistStyles.includes("border-radius: 28px;"), false);
   expectEqual(playlistStyles.includes(".playlist-item-container"), true);
-  expectEqual(playlistStyles.includes("border-radius: 20px;"), true);
+  expectEqual(playlistStyles.includes("border-radius: 20px;"), false);
+  expectEqual(playlistStyles.includes("backdrop-filter:"), false);
+  expectEqual(playlistStyles.includes("border-bottom: 1px solid"), true);
   expectEqual(playlistStyles.includes(".playlist-item-highlight"), true);
-  expectEqual(playlistStyles.includes("box-shadow: 0 18px 32px -28px"), true);
+  expectEqual(playlistStyles.includes(".playlist-item-selected"), true);
+  expectEqual(playlistStyles.includes(".play-button-idle"), true);
+  expectEqual(playlistStyles.includes(".play-button-active"), true);
 });
 
 test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {
