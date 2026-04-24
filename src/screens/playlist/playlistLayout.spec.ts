@@ -106,9 +106,6 @@ test("playlist header rail uses a flatter paper-dark control surface", () => {
   const headerRail = getCssBlock(playlistStyles, ".header-control-rail");
 
   expectEqual(headerRail !== null, true);
-  expectEqual(headerRail?.includes("border-radius: 999px;"), false);
-  expectEqual(headerRail?.includes("border-radius: 28px;"), false);
-  expectEqual(headerRail?.includes("backdrop-filter:"), false);
   expectEqual(headerRail?.includes("border-bottom: 1px solid"), true);
 });
 
@@ -116,8 +113,6 @@ test("playlist rows use flatter paper-dark container styling", () => {
   const rowContainer = getCssBlock(playlistStyles, ".playlist-item-container");
 
   expectEqual(rowContainer !== null, true);
-  expectEqual(rowContainer?.includes("border-radius: 20px;"), false);
-  expectEqual(rowContainer?.includes("backdrop-filter:"), false);
   expectEqual(rowContainer?.includes("border-bottom: 1px solid"), true);
 });
 
@@ -137,6 +132,13 @@ test("playlist play button active state is defined for the paper-dark contract",
   const activeButton = getCssBlock(playlistStyles, ".play-button-active");
 
   expectEqual(activeButton !== null, true);
+});
+
+test("playlist stylesheet removes stale glass-era tokens globally", () => {
+  expectEqual(playlistStyles.includes("border-radius: 999px;"), false);
+  expectEqual(playlistStyles.includes("border-radius: 28px;"), false);
+  expectEqual(playlistStyles.includes("border-radius: 20px;"), false);
+  expectEqual(playlistStyles.includes("backdrop-filter:"), false);
 });
 
 test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {
