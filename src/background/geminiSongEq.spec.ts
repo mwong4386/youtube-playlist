@@ -256,6 +256,56 @@ test("parseGeminiSongEqResponse accepts valid JSON text", () => {
   );
 });
 
+test("parseGeminiSongEqResponse accepts native Gemini function calls", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  functionCall: {
+                    name: "adjustSongEq",
+                    args: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: 1,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                        band16k: -4,
+                      },
+                      reason: "Tames the bright top end.",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    {
+      ok: true,
+      suggestion: {
+        songId: "song-1",
+        audioEq: {
+          clearBass: 1,
+          band400: 0,
+          band1k: -1,
+          band2k5: -2,
+          band6k3: -3,
+          band16k: -4,
+        },
+        reason: "Tames the bright top end.",
+      },
+    },
+  );
+});
+
 test("parseGeminiSongEqResponse reads markdown-fenced JSON", () => {
   expectEqual(
     parseGeminiSongEqResponse(
@@ -298,6 +348,90 @@ test("parseGeminiSongEqResponse reads markdown-fenced JSON", () => {
           band2k5: -2,
           band6k3: -3,
           band16k: -4,
+        },
+        reason: "",
+      },
+    },
+  );
+});
+
+test("parseGeminiSongEqResponse rejects non-finite band values", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  functionCall: {
+                    name: "adjustSongEq",
+                    args: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: Number.POSITIVE_INFINITY,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                        band16k: Number.NaN,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    invalidSongEqResponse,
+  );
+});
+
+test("parseGeminiSongEqResponse clamps and rounds band values", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    functionName: "adjustSongEq",
+                    arguments: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: 15,
+                        band400: -12,
+                        band1k: 1.6,
+                        band2k5: -1.4,
+                        band6k3: 0.49,
+                        band16k: 9.5,
+                      },
+                    },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    {
+      ok: true,
+      suggestion: {
+        songId: "song-1",
+        audioEq: {
+          clearBass: 10,
+          band400: -10,
+          band1k: 2,
+          band2k5: -1,
+          band6k3: 0,
+          band16k: 10,
         },
         reason: "",
       },
