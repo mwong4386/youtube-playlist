@@ -42,7 +42,7 @@ type GeminiSongEqUserRequest = {
 };
 
 type GeminiCreateEqProfileFunctionCall = {
-  functionName: GeminiFunctionName;
+  functionName: "createEqProfile";
   arguments: {
     name: string;
     audioEq: AudioEqSettings;
@@ -51,7 +51,7 @@ type GeminiCreateEqProfileFunctionCall = {
 };
 
 type GeminiAdjustSongEqFunctionCall = {
-  functionName: GeminiFunctionName;
+  functionName: "adjustSongEq";
   arguments: {
     songId: string;
     audioEq: AudioEqSettings;
