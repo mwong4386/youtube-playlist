@@ -78,6 +78,7 @@ interface UsePlaylistActionsArgs {
   setDraggingItemId: Dispatch<SetStateAction<string | undefined>>;
   setIsEqSettingsOpen: Dispatch<SetStateAction<boolean>>;
   setIsGeminiSettingsOpen: Dispatch<SetStateAction<boolean>>;
+  setIsGeminiEqBuilderOpen: Dispatch<SetStateAction<boolean>>;
   setIsPlaylistImportOpen: Dispatch<SetStateAction<boolean>>;
   setIsNewSongListOpen: Dispatch<SetStateAction<boolean>>;
   setIsDeleteAllOpen: Dispatch<SetStateAction<boolean>>;
@@ -111,6 +112,7 @@ const usePlaylistActions = ({
   setDraggingItemId,
   setIsEqSettingsOpen,
   setIsGeminiSettingsOpen,
+  setIsGeminiEqBuilderOpen,
   setIsPlaylistImportOpen,
   setIsNewSongListOpen,
   setIsDeleteAllOpen,
@@ -136,6 +138,14 @@ const usePlaylistActions = ({
 
   const closeGeminiSettings = () => {
     setIsGeminiSettingsOpen(false);
+  };
+
+  const openGeminiEqBuilder = () => {
+    setIsGeminiEqBuilderOpen(true);
+  };
+
+  const closeGeminiEqBuilder = () => {
+    setIsGeminiEqBuilderOpen(false);
   };
 
   const openPlaylistImportModal = () => {
@@ -653,6 +663,7 @@ const usePlaylistActions = ({
     clearSelection,
     closeDeleteAllModal,
     closeEqSettings,
+    closeGeminiEqBuilder,
     closeGeminiSettings,
     closeInfoModal,
     closeNewSongListModal,
@@ -687,6 +698,7 @@ const usePlaylistActions = ({
     onUpdateProfile,
     onvolumechange,
     openEqSettings,
+    openGeminiEqBuilder,
     openGeminiSettings,
     openInfoModal,
     openNewSongListModal,

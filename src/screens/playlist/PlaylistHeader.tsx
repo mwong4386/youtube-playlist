@@ -18,6 +18,7 @@ import {
 interface props {
   onDelete: () => void;
   onOpenEqSettings: () => void;
+  onOpenGeminiEqBuilder: () => void;
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
   onOpenNewSongListModal: () => void;
@@ -39,6 +40,7 @@ const PlaylistHeader = ({
   playlist,
   onDelete,
   onOpenEqSettings,
+  onOpenGeminiEqBuilder,
   onOpenGeminiSettings,
   onOpenImportModal,
   onOpenNewSongListModal,
@@ -248,22 +250,27 @@ const PlaylistHeader = ({
       },
       {
         id: 4,
+        description: "Gemini EQ",
+        callback: onOpenGeminiEqBuilder,
+      },
+      {
+        id: 5,
         description: "Gemini",
         callback: onOpenGeminiSettings,
       },
       {
-        id: 5,
+        id: 6,
         description: `${
           enableAdjustVideoVolume ? "Disable" : "Enable"
         } Volume adjust`,
         callback: onToggleVolumeAdjust,
       },
       {
-        id: 6,
+        id: 7,
         description: "Import Playlist",
         callback: onOpenImportModal,
       },
-      { id: 7, description: "Export Playlist", callback: onExportJson },
+      { id: 8, description: "Export Playlist", callback: onExportJson },
       {
         id: 200,
         description: "Delete All",

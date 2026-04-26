@@ -255,6 +255,17 @@ test("playlist header source no longer exposes player pin actions", () => {
   expectEqual(playlistHeaderSource.includes("TogglePin"), false);
 });
 
+test("playlist menu exposes the Gemini EQ builder separately from Gemini settings", () => {
+  expectEqual(playlistHeaderSource.includes("Gemini EQ"), true);
+  expectEqual(playlistHeaderSource.includes("onOpenGeminiEqBuilder"), true);
+});
+
+test("playlist renders the reusable Gemini EQ builder screen", () => {
+  expectEqual(playlistSource.includes("GeminiEqProfileBuilder"), true);
+  expectEqual(playlistSource.includes("generateEqProfileWithGemini"), true);
+  expectEqual(playlistSource.includes("onCreateProfile={onCreateProfile}"), true);
+});
+
 test("action sheet source supports custom song list rows and inline rename icons", () => {
   expectEqual(actionSheetItemSource.includes("song-list-row"), true);
   expectEqual(actionSheetItemSource.includes("song-list-inline-edit"), true);

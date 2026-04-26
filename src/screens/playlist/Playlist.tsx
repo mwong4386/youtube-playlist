@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { ThemePreference } from "../../utils/theme";
 import DeleteAllModal from "./DeleteAllModal";
+import GeminiEqProfileBuilder from "../gemini/GeminiEqProfileBuilder";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import InfoModal from "../modal/InfoModal";
 import SettingsModal from "../settings/SettingsModal";
@@ -64,6 +65,8 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setIsEqSettingsOpen,
     isGeminiSettingsOpen,
     setIsGeminiSettingsOpen,
+    isGeminiEqBuilderOpen,
+    setIsGeminiEqBuilderOpen,
     isPlaylistImportOpen,
     setIsPlaylistImportOpen,
     isNewSongListOpen,
@@ -90,12 +93,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     clearSelection,
     closeDeleteAllModal,
     closeEqSettings,
+    closeGeminiEqBuilder,
     closeGeminiSettings,
     closeInfoModal,
     closeNewSongListModal,
     closePlaylistImportModal,
     closeSelectionActionsModal,
     confirmDeleteAll,
+    generateEqProfileWithGemini,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
@@ -121,6 +126,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onvolumechange,
     onAdjustVolumeSelected,
     openEqSettings,
+    openGeminiEqBuilder,
     openGeminiSettings,
     openInfoModal,
     openNewSongListModal,
@@ -150,6 +156,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setDraggingItemId,
     setIsEqSettingsOpen,
     setIsGeminiSettingsOpen,
+    setIsGeminiEqBuilderOpen,
     setIsPlaylistImportOpen,
     setIsNewSongListOpen,
     setIsDeleteAllOpen,
@@ -226,6 +233,27 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setSelectedInfoItemId(undefined);
   }, [playlist, selectedInfoItemId, setPendingPlaybackItemId, setSelectedInfoItemId]);
 
+  if (isGeminiEqBuilderOpen) {
+    return (
+      <>
+        <GeminiEqProfileBuilder
+          existingProfiles={audioEqProfiles}
+          onBack={closeGeminiEqBuilder}
+          onOpenSettings={openGeminiSettings}
+          onCreateProfile={onCreateProfile}
+          requestGeminiEqProfile={generateEqProfileWithGemini}
+        />
+        <GeminiSettingsModal
+          active={isGeminiSettingsOpen}
+          close={closeGeminiSettings}
+          geminiApiKey={geminiApiKey}
+          onSaveGeminiApiKey={onSaveGeminiApiKey}
+          onRemoveGeminiApiKey={onRemoveGeminiApiKey}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <div className={styles["page-container"]}>
@@ -236,6 +264,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             activeSongListName={activeSongListName}
             onDelete={onDeleteAll}
             onOpenEqSettings={openEqSettings}
+            onOpenGeminiEqBuilder={openGeminiEqBuilder}
             onOpenGeminiSettings={openGeminiSettings}
             onOpenImportModal={openPlaylistImportModal}
             onOpenNewSongListModal={openNewSongListModal}

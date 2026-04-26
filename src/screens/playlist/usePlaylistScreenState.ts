@@ -25,6 +25,7 @@ const usePlaylistScreenState = () => {
   >(undefined);
   const [isEqSettingsOpen, setIsEqSettingsOpen] = useState(false);
   const [isGeminiSettingsOpen, setIsGeminiSettingsOpen] = useState(false);
+  const [isGeminiEqBuilderOpen, setIsGeminiEqBuilderOpen] = useState(false);
   const [isPlaylistImportOpen, setIsPlaylistImportOpen] = useState(false);
   const [isNewSongListOpen, setIsNewSongListOpen] = useState(false);
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
@@ -59,6 +60,8 @@ const usePlaylistScreenState = () => {
     setIsEqSettingsOpen,
     isGeminiSettingsOpen,
     setIsGeminiSettingsOpen,
+    isGeminiEqBuilderOpen,
+    setIsGeminiEqBuilderOpen,
     isPlaylistImportOpen,
     setIsPlaylistImportOpen,
     isNewSongListOpen,
