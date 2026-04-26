@@ -2,10 +2,12 @@ import type { ChangeEvent, Dispatch, DragEvent, SetStateAction } from "react";
 import MsgType from "../../constants/msgType";
 import type AudioEqSettings from "../../models/AudioEq";
 import type AudioEqProfile from "../../models/AudioEqProfile";
-import type {
-  GeminiAnalyzeFailure,
-  GeminiAnalyzeSuccess,
-  GeminiBoundarySuggestion,
+import type { GeminiEqProfileUserRequest } from "../../models/GeminiActions";
+import {
+  GeminiAnalyzeErrorCode,
+  type GeminiAnalyzeFailure,
+  type GeminiAnalyzeSuccess,
+  type GeminiBoundarySuggestion,
 } from "../../models/GeminiSettings";
 import type MPlaylistItem from "../../models/MPlaylistItem";
 import type {
@@ -246,6 +248,41 @@ const usePlaylistActions = ({
         );
       },
     );
+  };
+
+  const generateEqProfileWithGemini = (
+    request: GeminiEqProfileUserRequest,
+  ): Promise<unknown> => {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          name: MsgType.GenerateEqProfileWithGemini,
+          userRequest: request.userRequest,
+          existingProfiles: request.existingProfiles,
+          songContext: request.songContext,
+        },
+        (response: unknown) => {
+          if (chrome.runtime.lastError) {
+            resolve({
+              ok: false,
+              code: GeminiAnalyzeErrorCode.RequestFailed,
+              message:
+                chrome.runtime.lastError.message ||
+                "Gemini EQ profile generation could not be completed.",
+            });
+            return;
+          }
+
+          resolve(
+            response ?? {
+              ok: false,
+              code: GeminiAnalyzeErrorCode.RequestFailed,
+              message: "Gemini did not return an EQ profile response.",
+            },
+          );
+        },
+      );
+    });
   };
 
   const importYoutubePlaylist = (
@@ -631,6 +668,7 @@ const usePlaylistActions = ({
     closePlaylistImportModal,
     closeSelectionActionsModal,
     confirmDeleteAll,
+    generateEqProfileWithGemini,
     importYoutubePlaylist,
     onAdjustVolumeSelected,
     onAnalyzeSelected,

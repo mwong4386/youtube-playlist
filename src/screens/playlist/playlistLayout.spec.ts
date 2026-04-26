@@ -37,6 +37,10 @@ const playlistActionsSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/usePlaylistActions.ts"),
   "utf8",
 );
+const backgroundSource = readFileSync(
+  join(process.cwd(), "src/background/index.ts"),
+  "utf8",
+);
 const playlistStorageSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/usePlaylistStorageSync.ts"),
   "utf8",
@@ -480,6 +484,17 @@ test("playlist source guards reorder targets and preserves selection on analyze 
   expectEqual(playlistActionsSource.includes("closeSelectionActionsModal();"), true);
   expectEqual(
     playlistActionsSource.includes("name: MsgType.AnalyzeImportedPlaylist"),
+    true,
+  );
+});
+
+test("playlist source wires the Gemini EQ profile generation message", () => {
+  expectEqual(
+    playlistActionsSource.includes("MsgType.GenerateEqProfileWithGemini"),
+    true,
+  );
+  expectEqual(
+    backgroundSource.includes("case MsgType.GenerateEqProfileWithGemini"),
     true,
   );
 });

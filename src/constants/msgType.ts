@@ -23,6 +23,7 @@ const enum MsgType {
   ImportYoutubePlaylistFallbackResult,
   AnalyzeImportedPlaylist,
   StopAnalyzeImportedPlaylist,
+  GenerateEqProfileWithGemini,
 }
 
 export default MsgType;

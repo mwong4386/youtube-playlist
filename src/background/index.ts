@@ -35,6 +35,10 @@ import {
   parseGeminiBoundaryResponse,
 } from "./geminiBoundaries";
 import {
+  buildGeminiEqProfileRequestBody,
+  parseGeminiEqProfileResponse,
+} from "./geminiEqProfiles";
+import {
   ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
   beginAnalyzeImportBatch,
   completeAnalyzeImportBatchItem,
@@ -55,6 +59,7 @@ import type {
   AnalyzeImportBatchRequest,
   AnalyzeImportBatchState,
 } from "../models/PlaylistImport";
+import type { GeminiEqProfileUserRequest } from "../models/GeminiActions";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
@@ -514,6 +519,65 @@ const analyzeSongBoundaries = async (itemId: string) => {
   }
 };
 
+const generateEqProfileWithGemini = async (
+  request: GeminiEqProfileUserRequest,
+) => {
+  try {
+    const apiKey = readStoredGeminiApiKey(
+      await chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY]),
+    );
+
+    if (!apiKey) {
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.MissingApiKey,
+        message: "Add a Gemini API key in settings before generating EQ profiles.",
+      };
+    }
+
+    const userRequest =
+      typeof request.userRequest === "string" ? request.userRequest.trim() : "";
+
+    if (!userRequest) {
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.InvalidResponse,
+        message: "Describe the EQ profile you want before asking Gemini.",
+      };
+    }
+
+    const requestBody = buildGeminiEqProfileRequestBody({
+      userRequest,
+      existingProfiles: Array.isArray(request.existingProfiles)
+        ? request.existingProfiles
+        : [],
+      songContext: request.songContext,
+    });
+
+    const { response } = await fetchGeminiGenerateContentWithRetries({
+      apiKey,
+      requestBody,
+    });
+
+    if (!response.ok) {
+      const errorResponse = await readGeminiErrorResponse(response);
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.RequestFailed,
+        message: errorResponse.message,
+      };
+    }
+
+    return parseGeminiEqProfileResponse(await response.json());
+  } catch {
+    return {
+      ok: false,
+      code: GeminiAnalyzeErrorCode.RequestFailed,
+      message: GEMINI_GENERIC_FAILURE_MESSAGE,
+    };
+  }
+};
+
 const updateAnalyzeImportBatchState = async (
   state: AnalyzeImportBatchState,
 ) => {
@@ -778,6 +842,12 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
       });
     case MsgType.StopAnalyzeImportedPlaylist:
       return stopAnalyzeImportBatchRun();
+    case MsgType.GenerateEqProfileWithGemini:
+      return generateEqProfileWithGemini({
+        userRequest: message.userRequest,
+        existingProfiles: message.existingProfiles,
+        songContext: message.songContext,
+      });
     default:
   }
 };
@@ -877,7 +947,8 @@ const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
       message?.name === MsgType.PreviewYoutubePlaylistImport ||
       message?.name === MsgType.ImportYoutubePlaylist ||
       message?.name === MsgType.AnalyzeImportedPlaylist ||
-      message?.name === MsgType.StopAnalyzeImportedPlaylist
+      message?.name === MsgType.StopAnalyzeImportedPlaylist ||
+      message?.name === MsgType.GenerateEqProfileWithGemini
     ) {
       void onMessageHandler(message, sender).then(sendResponse);
       return true;
