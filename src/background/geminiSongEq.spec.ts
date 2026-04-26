@@ -15,6 +15,10 @@ import {
   type GeminiSongEqUserRequest,
 } from "../models/GeminiActions";
 import { GeminiAnalyzeErrorCode } from "../models/GeminiSettings";
+import {
+  buildGeminiSongEqRequestBody,
+  parseGeminiSongEqResponse,
+} from "./geminiSongEq";
 
 const expectEqual = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -146,3 +150,261 @@ const invalidAdjustSongEqCall: GeminiAdjustSongEqFunctionCall = {
 
 void invalidCreateEqProfileCall;
 void invalidAdjustSongEqCall;
+
+const invalidSongEqResponse = {
+  ok: false,
+  code: GeminiAnalyzeErrorCode.InvalidResponse,
+  message: "Gemini did not return a usable song EQ adjustment.",
+};
+
+test("buildGeminiSongEqRequestBody includes only approved song EQ context", () => {
+  const body = buildGeminiSongEqRequestBody({
+    userRequest: "Make this less harsh",
+    existingProfiles: [
+      {
+        id: "profile-1",
+        name: "Warm Vocal",
+        audioEq: {
+          clearBass: 4,
+          band400: 2,
+          band1k: 1,
+          band2k5: 0,
+          band6k3: -1,
+          band16k: -2,
+        },
+      },
+    ],
+    songContext: {
+      id: "song-1",
+      title: "Bright Song",
+      channelName: "Artist",
+      videoId: "abc123",
+      url: "https://www.youtube.com/watch?v=abc123",
+      audioEq: {
+        clearBass: 0,
+        band400: 0,
+        band1k: 0,
+        band2k5: 0,
+        band6k3: 12,
+        band16k: -12,
+      },
+    },
+  });
+
+  const text = JSON.stringify(body);
+  expectEqual(text.includes("adjustSongEq"), true);
+  expectEqual(text.includes("createEqProfile"), false);
+  expectEqual(text.includes("askUserQuestion"), false);
+  expectEqual(text.includes("eqBandContract"), true);
+  expectEqual(text.includes("existingEqProfiles"), true);
+  expectEqual(text.includes("currentSong"), true);
+  expectEqual(text.includes("Make this less harsh"), true);
+  expectEqual(text.includes("Bright Song"), true);
+  expectEqual(text.includes("Warm Vocal"), true);
+  expectEqual(text.includes("profile-1"), false);
+  expectEqual(text.includes("geminiApiKey"), false);
+  expectEqual(text.includes("youtube_list"), false);
+});
+
+test("parseGeminiSongEqResponse accepts valid JSON text", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    functionName: "adjustSongEq",
+                    arguments: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: 1,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                        band16k: -4,
+                      },
+                      reason: "Tames the bright top end.",
+                    },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    {
+      ok: true,
+      suggestion: {
+        songId: "song-1",
+        audioEq: {
+          clearBass: 1,
+          band400: 0,
+          band1k: -1,
+          band2k5: -2,
+          band6k3: -3,
+          band16k: -4,
+        },
+        reason: "Tames the bright top end.",
+      },
+    },
+  );
+});
+
+test("parseGeminiSongEqResponse reads markdown-fenced JSON", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: `\`\`\`json\n${JSON.stringify({
+                    functionName: "adjustSongEq",
+                    arguments: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: 1,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                        band16k: -4,
+                      },
+                    },
+                  })}\n\`\`\``,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    {
+      ok: true,
+      suggestion: {
+        songId: "song-1",
+        audioEq: {
+          clearBass: 1,
+          band400: 0,
+          band1k: -1,
+          band2k5: -2,
+          band6k3: -3,
+          band16k: -4,
+        },
+        reason: "",
+      },
+    },
+  );
+});
+
+test("parseGeminiSongEqResponse rejects wrong function names", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    functionName: "createEqProfile",
+                    arguments: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: 1,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                        band16k: -4,
+                      },
+                    },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    invalidSongEqResponse,
+  );
+});
+
+test("parseGeminiSongEqResponse rejects mismatched song ids", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    functionName: "adjustSongEq",
+                    arguments: {
+                      songId: "other-song",
+                      audioEq: {
+                        clearBass: 1,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                        band16k: -4,
+                      },
+                    },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    invalidSongEqResponse,
+  );
+});
+
+test("parseGeminiSongEqResponse rejects missing required bands", () => {
+  expectEqual(
+    parseGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    functionName: "adjustSongEq",
+                    arguments: {
+                      songId: "song-1",
+                      audioEq: {
+                        clearBass: 1,
+                        band400: 0,
+                        band1k: -1,
+                        band2k5: -2,
+                        band6k3: -3,
+                      },
+                    },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1",
+    ),
+    invalidSongEqResponse,
+  );
+});
