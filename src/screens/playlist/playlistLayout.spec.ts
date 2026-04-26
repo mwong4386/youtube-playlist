@@ -41,6 +41,10 @@ const backgroundSource = readFileSync(
   join(process.cwd(), "src/background/index.ts"),
   "utf8",
 );
+const msgTypeSource = readFileSync(
+  join(process.cwd(), "src/constants/msgType.ts"),
+  "utf8",
+);
 const playlistStorageSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/usePlaylistStorageSync.ts"),
   "utf8",
@@ -512,11 +516,17 @@ test("playlist source wires the Gemini EQ profile generation message", () => {
 
 test("playlist source wires the Gemini song EQ adjustment message", () => {
   expectEqual(
-    playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"),
+    backgroundSource.includes("case MsgType.AdjustSongEqWithGemini"),
     true,
   );
   expectEqual(
-    backgroundSource.includes("case MsgType.AdjustSongEqWithGemini"),
+    backgroundSource.includes(
+      "message?.name === MsgType.AdjustSongEqWithGemini",
+    ),
+    true,
+  );
+  expectEqual(
+    msgTypeSource.includes("AdjustSongEqWithGemini"),
     true,
   );
 });
