@@ -55,6 +55,7 @@ test("CREATE_EQ_PROFILE_CAPABILITY exposes the approved action contract", () => 
   const contextScope: GeminiContextScope = "eqBandContract";
   const functionName: GeminiFunctionName = "createEqProfile";
   const songContext: GeminiSongContext = {
+    id: "song-1",
     title: "Song Title",
     channelName: "Artist",
     videoId: "abc123",
@@ -125,6 +126,7 @@ test("buildGeminiEqProfileRequestBody includes optional current song context", (
     userRequest: "Tune this for softer treble",
     existingProfiles: [],
     songContext: {
+      id: "song-1",
       title: "Song Title",
       channelName: "Artist",
       videoId: "abc123",
