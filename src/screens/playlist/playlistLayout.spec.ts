@@ -61,6 +61,10 @@ const selectionActionsModalSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/SelectionActionsModal.tsx"),
   "utf8",
 );
+const selectionActionsGeminiEqReviewSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/selectionActionsGeminiEqReview.ts"),
+  "utf8",
+);
 const playlistImportModalStyles = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistImportModal.module.css"),
   "utf8",
@@ -535,7 +539,7 @@ test("selection actions modal exposes review-first Gemini song EQ adjustment", (
   expectEqual(selectionActionsModalSource.includes("Gemini EQ"), true);
   expectEqual(selectionActionsModalSource.includes("Describe the EQ change"), true);
   expectEqual(selectionActionsModalSource.includes("Apply EQ"), true);
-  expectEqual(selectionActionsModalSource.includes("select one song"), true);
+  expectEqual(selectionActionsGeminiEqReviewSource.includes("select one song"), true);
   expectEqual(selectionActionsModalSource.includes("suggestion"), true);
 });
 

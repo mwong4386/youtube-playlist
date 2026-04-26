@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type AudioEqProfile from "../../models/AudioEqProfile";
 import type {
   GeminiSongEqResponse,
@@ -9,6 +9,15 @@ import type MPlaylistItem from "../../models/MPlaylistItem";
 import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
 import Modal from "../modal/Modal";
 import styles from "./Playlist.module.css";
+import {
+  createGeminiEqSubmission,
+  createInitialGeminiEqReviewState,
+  getGeminiEqSuggestionToApply,
+  isGeminiEqActionDisabled,
+  resetGeminiEqReviewState,
+  resolveGeminiEqSubmission,
+  type GeminiEqReviewState,
+} from "./selectionActionsGeminiEqReview";
 
 interface Props {
   active: boolean;
@@ -45,20 +54,18 @@ const SelectionActionsModal = ({
 }: Props) => {
   const [view, setView] = useState<"menu" | "volume" | "geminiEq">("menu");
   const [multiplier, setMultiplier] = useState<number>(1);
-  const [geminiEqRequest, setGeminiEqRequest] = useState("");
-  const [geminiEqStatus, setGeminiEqStatus] = useState("");
-  const [geminiEqSuggestion, setGeminiEqSuggestion] =
-    useState<GeminiSongEqSuggestion | null>(null);
-  const [isGeminiEqLoading, setIsGeminiEqLoading] = useState(false);
+  const [geminiEqReview, setGeminiEqReview] =
+    useState<GeminiEqReviewState>(createInitialGeminiEqReviewState);
+  const requestTokenRef = useRef(0);
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
   useEffect(() => {
     if (!active) {
+      requestTokenRef.current += 1;
       setView("menu");
       setMultiplier(1);
-      setGeminiEqRequest("");
-      setGeminiEqStatus("");
-      setGeminiEqSuggestion(null);
-      setIsGeminiEqLoading(false);
+      setGeminiEqReview(resetGeminiEqReviewState());
     }
   }, [active]);
 
@@ -78,46 +85,42 @@ const SelectionActionsModal = ({
   };
 
   const handleGenerateGeminiEq = async () => {
-    if (selectedCount !== 1 || !selectedSong) {
-      setGeminiEqStatus("Please select one song for Gemini EQ.");
-      setGeminiEqSuggestion(null);
-      return;
-    }
-
-    setGeminiEqStatus("Generating suggestion...");
-    setGeminiEqSuggestion(null);
-    setIsGeminiEqLoading(true);
-
-    const response = await onAdjustSongEqWithGemini({
-      userRequest: geminiEqRequest,
-      existingProfiles: audioEqProfiles,
-      songContext: {
-        id: selectedSong.id,
-        title: selectedSong.title,
-        channelName: selectedSong.channelName,
-        videoId: selectedSong.videoId,
-        url: selectedSong.url,
-        audioEq: selectedSong.audioEq,
-      },
+    const requestToken = requestTokenRef.current + 1;
+    requestTokenRef.current = requestToken;
+    const submission = createGeminiEqSubmission({
+      state: geminiEqReview,
+      selectedCount,
+      selectedSong,
+      audioEqProfiles,
+      requestToken,
     });
 
-    setIsGeminiEqLoading(false);
-
-    if (!response.ok) {
-      setGeminiEqStatus(response.message);
+    setGeminiEqReview(submission.state);
+    if (!submission.runtimeRequest) {
       return;
     }
 
-    setGeminiEqSuggestion(response.suggestion);
-    setGeminiEqStatus(response.suggestion.reason || "Review the suggestion.");
+    const response = await onAdjustSongEqWithGemini(submission.runtimeRequest);
+
+    setGeminiEqReview((currentState) =>
+      resolveGeminiEqSubmission({
+        state: currentState,
+        response,
+        responseToken: submission.requestToken,
+        latestRequestToken: requestTokenRef.current,
+        active: activeRef.current,
+      }),
+    );
   };
 
   const handleApplyGeminiEq = () => {
-    if (!geminiEqSuggestion) {
+    const suggestionToApply = getGeminiEqSuggestionToApply(geminiEqReview);
+
+    if (!suggestionToApply) {
       return;
     }
 
-    onApplyGeminiSongEqSuggestion(geminiEqSuggestion);
+    onApplyGeminiSongEqSuggestion(suggestionToApply);
   };
 
   return (
@@ -181,6 +184,7 @@ const SelectionActionsModal = ({
               type="button"
               className={styles["selection-actions-analyze-button"]}
               onClick={() => setView("geminiEq")}
+              disabled={isGeminiEqActionDisabled(selectedCount)}
             >
               Gemini EQ
             </button>
@@ -241,8 +245,13 @@ const SelectionActionsModal = ({
         ) : (
           <div className={styles["selection-actions-gemini-eq-form"]}>
             <textarea
-              value={geminiEqRequest}
-              onChange={(event) => setGeminiEqRequest(event.target.value)}
+              value={geminiEqReview.request}
+              onChange={(event) =>
+                setGeminiEqReview((currentState) => ({
+                  ...currentState,
+                  request: event.target.value,
+                }))
+              }
               className={styles["selection-actions-gemini-eq-textarea"]}
               placeholder="Describe the EQ change"
               aria-label="Describe the EQ change"
@@ -251,18 +260,18 @@ const SelectionActionsModal = ({
               type="button"
               className={styles["selection-actions-volume-submit-button"]}
               onClick={handleGenerateGeminiEq}
-              disabled={isGeminiEqLoading}
+              disabled={geminiEqReview.isLoading}
             >
               Generate
             </button>
 
-            {geminiEqStatus && (
+            {geminiEqReview.status && (
               <p className={styles["selection-actions-volume-preview"]}>
-                {geminiEqStatus}
+                {geminiEqReview.status}
               </p>
             )}
 
-            {geminiEqSuggestion && (
+            {geminiEqReview.suggestion && (
               <div className={styles["selection-actions-gemini-eq-preview"]}>
                 {AUDIO_EQ_BANDS.map((band) => (
                   <div
@@ -270,7 +279,7 @@ const SelectionActionsModal = ({
                     className={styles["selection-actions-gemini-eq-band"]}
                   >
                     <span>{band.label}</span>
-                    <span>{geminiEqSuggestion.audioEq[band.key]} dB</span>
+                    <span>{geminiEqReview.suggestion?.audioEq[band.key]} dB</span>
                   </div>
                 ))}
               </div>
@@ -281,7 +290,7 @@ const SelectionActionsModal = ({
                 type="button"
                 className={styles["selection-actions-volume-submit-button"]}
                 onClick={handleApplyGeminiEq}
-                disabled={!geminiEqSuggestion}
+                disabled={!geminiEqReview.suggestion}
               >
                 Apply EQ
               </button>
@@ -289,8 +298,13 @@ const SelectionActionsModal = ({
                 type="button"
                 className={styles["selection-actions-cancel-button"]}
                 onClick={() => {
-                  setGeminiEqSuggestion(null);
-                  setGeminiEqStatus("");
+                  requestTokenRef.current += 1;
+                  setGeminiEqReview((currentState) => ({
+                    ...currentState,
+                    status: "",
+                    suggestion: null,
+                    isLoading: false,
+                  }));
                 }}
               >
                 Dismiss
