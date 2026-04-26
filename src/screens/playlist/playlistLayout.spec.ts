@@ -531,6 +531,22 @@ test("playlist source wires the Gemini song EQ adjustment message", () => {
   );
 });
 
+test("selection actions modal exposes review-first Gemini song EQ adjustment", () => {
+  expectEqual(selectionActionsModalSource.includes("Gemini EQ"), true);
+  expectEqual(selectionActionsModalSource.includes("Describe the EQ change"), true);
+  expectEqual(selectionActionsModalSource.includes("Apply EQ"), true);
+  expectEqual(selectionActionsModalSource.includes("select one song"), true);
+  expectEqual(selectionActionsModalSource.includes("suggestion"), true);
+});
+
+test("playlist actions request and apply Gemini song EQ through existing playlist updates", () => {
+  expectEqual(playlistActionsSource.includes("adjustSongEqWithGemini"), true);
+  expectEqual(playlistActionsSource.includes("normalizeGeminiSongEqResponse"), true);
+  expectEqual(playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"), true);
+  expectEqual(playlistActionsSource.includes("onApplyGeminiSongEqSuggestion"), true);
+  expectEqual(playlistActionsSource.includes("updateActiveSongListItems"), true);
+});
+
 test("playlist item source renders a checkbox for selection mode", () => {
   expectEqual(playlistItemSource.includes('type="checkbox"'), true);
   expectEqual(playlistItemSource.includes("checked={selected}"), true);

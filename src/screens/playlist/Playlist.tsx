@@ -89,6 +89,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     activeSongListName,
   );
   const {
+    adjustSongEqWithGemini,
     analyzeSongBoundaries,
     clearSelection,
     closeDeleteAllModal,
@@ -125,6 +126,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onUpdateProfile,
     onvolumechange,
     onAdjustVolumeSelected,
+    onApplyGeminiSongEqSuggestion,
     openEqSettings,
     openGeminiEqBuilder,
     openGeminiSettings,
@@ -209,6 +211,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const firstSelectedItemVolume =
     selectedItemIds.length > 0
       ? playlist.find((item) => item.id === selectedItemIds[0])?.volume
+      : undefined;
+  const selectedActionSong =
+    selectedItemIds.length === 1
+      ? playlist.find((item) => item.id === selectedItemIds[0])
       : undefined;
 
   useEffect(() => {
@@ -361,11 +367,15 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         close={closeSelectionActionsModal}
         selectedCount={selectedItemIds.length}
         selectedUncalibratedCount={selectedUncalibratedCount}
+        selectedSong={selectedActionSong}
+        audioEqProfiles={audioEqProfiles}
         firstSelectedItemVolume={firstSelectedItemVolume}
         onAnalyzeSelected={onAnalyzeSelected}
         onAnalyzeUncalibratedSelected={onAnalyzeUncalibratedSelected}
         onDeleteSelected={onDeleteSelected}
         onAdjustVolumeSelected={onAdjustVolumeSelected}
+        onAdjustSongEqWithGemini={adjustSongEqWithGemini}
+        onApplyGeminiSongEqSuggestion={onApplyGeminiSongEqSuggestion}
       />
       <DeleteAllModal
         active={isDeleteAllOpen}

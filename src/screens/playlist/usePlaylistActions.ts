@@ -5,6 +5,9 @@ import type AudioEqProfile from "../../models/AudioEqProfile";
 import type {
   GeminiEqProfileResponse,
   GeminiEqProfileUserRequest,
+  GeminiSongEqResponse,
+  GeminiSongEqSuggestion,
+  GeminiSongEqUserRequest,
 } from "../../models/GeminiActions";
 import {
   type GeminiAnalyzeFailure,
@@ -32,6 +35,7 @@ import {
   shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner";
 import { normalizeGeminiEqProfileResponse } from "../gemini/geminiEqProfileResponse";
+import { normalizeGeminiSongEqResponse } from "../gemini/geminiSongEqResponse";
 import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import {
   resolvePlaylistImportPreviewSubmission,
@@ -278,6 +282,30 @@ const usePlaylistActions = ({
           resolve(
             normalizeGeminiEqProfileResponse(
               response,
+              chrome.runtime.lastError,
+            ),
+          );
+        },
+      );
+    });
+  };
+
+  const adjustSongEqWithGemini = (
+    request: GeminiSongEqUserRequest,
+  ): Promise<GeminiSongEqResponse> => {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          name: MsgType.AdjustSongEqWithGemini,
+          userRequest: request.userRequest,
+          existingProfiles: request.existingProfiles,
+          songContext: request.songContext,
+        },
+        (response: unknown) => {
+          resolve(
+            normalizeGeminiSongEqResponse(
+              response,
+              request.songContext.id,
               chrome.runtime.lastError,
             ),
           );
@@ -578,6 +606,30 @@ const usePlaylistActions = ({
     );
   };
 
+  const onApplyGeminiSongEqSuggestion = (
+    suggestion: GeminiSongEqSuggestion,
+  ) => {
+    updateActiveSongListItems(
+      (currentPlaylist) =>
+        currentPlaylist.map((playlistItem) =>
+          playlistItem.id === suggestion.songId
+            ? {
+                ...playlistItem,
+                audioEq: suggestion.audioEq,
+              }
+            : playlistItem,
+        ),
+      () => {
+        if (chrome.runtime.lastError) {
+          return;
+        }
+
+        clearSelection();
+        closeSelectionActionsModal();
+      },
+    );
+  };
+
   const onAnalyzeSelected = () => {
     if (selectedItemIds.length === 0) {
       return;
@@ -659,6 +711,7 @@ const usePlaylistActions = ({
   };
 
   return {
+    adjustSongEqWithGemini,
     analyzeSongBoundaries,
     clearSelection,
     closeDeleteAllModal,
@@ -673,6 +726,7 @@ const usePlaylistActions = ({
     generateEqProfileWithGemini,
     importYoutubePlaylist,
     onAdjustVolumeSelected,
+    onApplyGeminiSongEqSuggestion,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
