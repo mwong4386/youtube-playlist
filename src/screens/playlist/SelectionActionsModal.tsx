@@ -277,44 +277,30 @@ const SelectionActionsModal = ({
             )}
 
             {geminiEqReview.suggestion && (
-              <div className={styles["selection-actions-gemini-eq-preview"]}>
-                {AUDIO_EQ_BANDS.map((band) => (
-                  <div
-                    key={band.key}
-                    className={styles["selection-actions-gemini-eq-band"]}
-                  >
-                    <span>{band.label}</span>
-                    <span>{geminiEqReview.suggestion?.audioEq[band.key]} dB</span>
-                  </div>
-                ))}
-              </div>
-            )}
+              <>
+                <div className={styles["selection-actions-gemini-eq-preview"]}>
+                  {AUDIO_EQ_BANDS.map((band) => (
+                    <div
+                      key={band.key}
+                      className={styles["selection-actions-gemini-eq-band"]}
+                    >
+                      <span>{band.label}</span>
+                      <span>{geminiEqReview.suggestion?.audioEq[band.key]} dB</span>
+                    </div>
+                  ))}
+                </div>
 
-            <div className={styles["selection-actions-gemini-eq-actions"]}>
-              <button
-                type="button"
-                className={styles["selection-actions-volume-submit-button"]}
-                onClick={handleApplyGeminiEq}
-                disabled={!geminiEqReview.suggestion}
-              >
-                Apply EQ
-              </button>
-              <button
-                type="button"
-                className={styles["selection-actions-cancel-button"]}
-                onClick={() => {
-                  requestTokenRef.current += 1;
-                  setGeminiEqReview((currentState) => ({
-                    ...currentState,
-                    status: "",
-                    suggestion: null,
-                    isLoading: false,
-                  }));
-                }}
-              >
-                Dismiss
-              </button>
-            </div>
+                <div className={styles["selection-actions-gemini-eq-actions"]}>
+                  <button
+                    type="button"
+                    className={styles["selection-actions-volume-submit-button"]}
+                    onClick={handleApplyGeminiEq}
+                  >
+                    Apply EQ
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

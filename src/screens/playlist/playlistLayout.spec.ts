@@ -540,6 +540,15 @@ test("selection actions modal exposes review-first Gemini song EQ adjustment", (
   expectEqual(selectionActionsModalSource.includes("Describe the EQ change"), true);
   expectEqual(selectionActionsModalSource.includes("selectedSong?.title"), true);
   expectEqual(selectionActionsModalSource.includes("Apply EQ"), true);
+  expectEqual(
+    selectionActionsModalSource.includes("geminiEqReview.suggestion &&"),
+    true,
+  );
+  expectEqual(
+    selectionActionsModalSource.includes("disabled={!geminiEqReview.suggestion}"),
+    false,
+  );
+  expectEqual(selectionActionsModalSource.includes("Dismiss"), false);
   expectEqual(selectionActionsGeminiEqReviewSource.includes("select one song"), true);
   expectEqual(selectionActionsModalSource.includes("suggestion"), true);
 });
