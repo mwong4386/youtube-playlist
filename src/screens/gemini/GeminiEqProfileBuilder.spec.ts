@@ -35,6 +35,12 @@ test("GeminiEqProfileBuilder requests Gemini before creating a profile", () => {
   expectEqual(source.includes("if (!suggestion)"), true);
 });
 
+test("GeminiEqProfileBuilder allows optional prompt text", () => {
+  expectEqual(source.includes("Describe the EQ profile you want first."), false);
+  expectEqual(source.includes("Describe an optional EQ preference"), true);
+  expectEqual(source.includes("userRequest: normalizedRequest"), true);
+});
+
 test("GeminiEqProfileBuilder supports optional song context", () => {
   expectEqual(source.includes("songContext?"), true);
   expectEqual(source.includes("songContext,"), true);

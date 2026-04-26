@@ -57,6 +57,10 @@ const buildGeminiEqProfileRequestBody = ({
     userRequest,
   };
 
+  const requestInstruction = userRequest.trim()
+    ? "Use userRequest as the user's specific EQ profile preference."
+    : "No specific user preference was provided; infer a tasteful EQ profile from existingEqProfiles and currentSong when present.";
+
   return {
     contents: [
       {
@@ -70,6 +74,7 @@ const buildGeminiEqProfileRequestBody = ({
               "arguments.name must be a concise profile name.",
               "arguments.audioEq must include clearBass, band400, band1k, band2k5, band6k3, and band16k values from -10 to 10.",
               "arguments.reason should briefly explain the EQ choice.",
+              requestInstruction,
               JSON.stringify(approvedContext),
             ].join("\n"),
           },

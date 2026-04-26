@@ -149,6 +149,16 @@ test("buildGeminiEqProfileRequestBody includes optional current song context", (
   expectEqual(text.includes("currentSong"), true);
 });
 
+test("buildGeminiEqProfileRequestBody explains empty requests as taste-based profile suggestions", () => {
+  const body = buildGeminiEqProfileRequestBody({
+    userRequest: "",
+    existingProfiles: [],
+  });
+
+  const text = JSON.stringify(body);
+  expectEqual(text.includes("No specific user preference was provided"), true);
+});
+
 test("parseGeminiEqProfileResponse accepts a valid createEqProfile call", () => {
   expectEqual(parseGeminiEqProfileResponse(validPayload), {
     ok: true,

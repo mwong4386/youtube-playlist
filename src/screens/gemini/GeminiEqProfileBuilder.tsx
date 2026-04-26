@@ -39,11 +39,6 @@ const GeminiEqProfileBuilder = ({
   const onGenerate = async () => {
     const normalizedRequest = userRequest.trim();
 
-    if (!normalizedRequest) {
-      setMessage("Describe the EQ profile you want first.");
-      return;
-    }
-
     setIsGenerating(true);
     setSuggestion(null);
     setMessage("");
@@ -105,14 +100,14 @@ const GeminiEqProfileBuilder = ({
       </header>
       <div className={styles.body}>
         <label className={styles.label}>
-          Describe the profile
+          Describe an optional EQ preference
           <textarea
             className={styles.textarea}
             value={userRequest}
             onChange={(event) => {
               setUserRequest(event.currentTarget.value);
             }}
-            placeholder="Make a warm vocal profile for acoustic live performances."
+            placeholder="Make vocals warmer, add bass, or leave blank for Gemini to infer."
           />
         </label>
         <div className={styles.actions}>
