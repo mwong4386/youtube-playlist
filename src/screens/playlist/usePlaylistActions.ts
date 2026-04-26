@@ -5,6 +5,8 @@ import type AudioEqProfile from "../../models/AudioEqProfile";
 import type {
   GeminiEqProfileResponse,
   GeminiEqProfileUserRequest,
+  GeminiSongEqResponse,
+  GeminiSongEqUserRequest,
 } from "../../models/GeminiActions";
 import {
   type GeminiAnalyzeFailure,
@@ -281,6 +283,24 @@ const usePlaylistActions = ({
               chrome.runtime.lastError,
             ),
           );
+        },
+      );
+    });
+  };
+
+  const adjustSongEqWithGemini = (
+    request: GeminiSongEqUserRequest,
+  ): Promise<GeminiSongEqResponse> => {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        {
+          name: MsgType.AdjustSongEqWithGemini,
+          userRequest: request.userRequest,
+          existingProfiles: request.existingProfiles,
+          songContext: request.songContext,
+        },
+        (response: GeminiSongEqResponse) => {
+          resolve(response);
         },
       );
     });
@@ -659,6 +679,7 @@ const usePlaylistActions = ({
   };
 
   return {
+    adjustSongEqWithGemini,
     analyzeSongBoundaries,
     clearSelection,
     closeDeleteAllModal,

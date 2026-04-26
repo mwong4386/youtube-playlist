@@ -39,6 +39,10 @@ import {
   parseGeminiEqProfileResponse,
 } from "./geminiEqProfiles";
 import {
+  buildGeminiSongEqRequestBody,
+  parseGeminiSongEqResponse,
+} from "./geminiSongEq";
+import {
   ANALYZE_IMPORT_BATCH_STATE_STORAGE_KEY,
   beginAnalyzeImportBatch,
   completeAnalyzeImportBatchItem,
@@ -59,7 +63,10 @@ import type {
   AnalyzeImportBatchRequest,
   AnalyzeImportBatchState,
 } from "../models/PlaylistImport";
-import type { GeminiEqProfileUserRequest } from "../models/GeminiActions";
+import type {
+  GeminiEqProfileUserRequest,
+  GeminiSongEqUserRequest,
+} from "../models/GeminiActions";
 
 let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
@@ -578,6 +585,79 @@ const generateEqProfileWithGemini = async (
   }
 };
 
+const adjustSongEqWithGemini = async (request: GeminiSongEqUserRequest) => {
+  try {
+    const apiKey = readStoredGeminiApiKey(
+      await chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY]),
+    );
+
+    if (!apiKey) {
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.MissingApiKey,
+        message: "Add a Gemini API key in settings before adjusting song EQ.",
+      };
+    }
+
+    const userRequest =
+      typeof request.userRequest === "string" ? request.userRequest.trim() : "";
+
+    if (!userRequest) {
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.InvalidResponse,
+        message: "Describe the song EQ adjustment you want before asking Gemini.",
+      };
+    }
+
+    const songId =
+      typeof request.songContext?.id === "string"
+        ? request.songContext.id.trim()
+        : "";
+
+    if (!songId) {
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.InvalidResponse,
+        message: "Select a song before asking Gemini to adjust its EQ.",
+      };
+    }
+
+    const requestBody = buildGeminiSongEqRequestBody({
+      userRequest,
+      existingProfiles: Array.isArray(request.existingProfiles)
+        ? request.existingProfiles
+        : [],
+      songContext: {
+        ...request.songContext,
+        id: songId,
+      },
+    });
+
+    const { response } = await fetchGeminiGenerateContentWithRetries({
+      apiKey,
+      requestBody,
+    });
+
+    if (!response.ok) {
+      const errorResponse = await readGeminiErrorResponse(response);
+      return {
+        ok: false,
+        code: GeminiAnalyzeErrorCode.RequestFailed,
+        message: errorResponse.message,
+      };
+    }
+
+    return parseGeminiSongEqResponse(await response.json(), songId);
+  } catch {
+    return {
+      ok: false,
+      code: GeminiAnalyzeErrorCode.RequestFailed,
+      message: GEMINI_GENERIC_FAILURE_MESSAGE,
+    };
+  }
+};
+
 const updateAnalyzeImportBatchState = async (
   state: AnalyzeImportBatchState,
 ) => {
@@ -848,6 +928,12 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         existingProfiles: message.existingProfiles,
         songContext: message.songContext,
       });
+    case MsgType.AdjustSongEqWithGemini:
+      return adjustSongEqWithGemini({
+        userRequest: message.userRequest,
+        existingProfiles: message.existingProfiles,
+        songContext: message.songContext,
+      });
     default:
   }
 };
@@ -948,7 +1034,8 @@ const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
       message?.name === MsgType.ImportYoutubePlaylist ||
       message?.name === MsgType.AnalyzeImportedPlaylist ||
       message?.name === MsgType.StopAnalyzeImportedPlaylist ||
-      message?.name === MsgType.GenerateEqProfileWithGemini
+      message?.name === MsgType.GenerateEqProfileWithGemini ||
+      message?.name === MsgType.AdjustSongEqWithGemini
     ) {
       void onMessageHandler(message, sender).then(sendResponse);
       return true;

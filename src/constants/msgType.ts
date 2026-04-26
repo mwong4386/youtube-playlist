@@ -24,6 +24,7 @@ const enum MsgType {
   AnalyzeImportedPlaylist,
   StopAnalyzeImportedPlaylist,
   GenerateEqProfileWithGemini,
+  AdjustSongEqWithGemini,
 }
 
 export default MsgType;

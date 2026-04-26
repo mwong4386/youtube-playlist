@@ -510,6 +510,17 @@ test("playlist source wires the Gemini EQ profile generation message", () => {
   );
 });
 
+test("playlist source wires the Gemini song EQ adjustment message", () => {
+  expectEqual(
+    playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"),
+    true,
+  );
+  expectEqual(
+    backgroundSource.includes("case MsgType.AdjustSongEqWithGemini"),
+    true,
+  );
+});
+
 test("playlist item source renders a checkbox for selection mode", () => {
   expectEqual(playlistItemSource.includes('type="checkbox"'), true);
   expectEqual(playlistItemSource.includes("checked={selected}"), true);
