@@ -697,6 +697,14 @@ button:hover {
   box-sizing: border-box;
 }
 
+.selection-actions-gemini-eq-song-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .selection-actions-gemini-eq-preview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

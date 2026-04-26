@@ -244,6 +244,11 @@ const SelectionActionsModal = ({
           </div>
         ) : (
           <div className={styles["selection-actions-gemini-eq-form"]}>
+            {selectedSong?.title && (
+              <p className={styles["selection-actions-gemini-eq-song-title"]}>
+                {selectedSong.title}
+              </p>
+            )}
             <textarea
               value={geminiEqReview.request}
               onChange={(event) =>
