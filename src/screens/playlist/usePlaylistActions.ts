@@ -2,9 +2,11 @@ import type { ChangeEvent, Dispatch, DragEvent, SetStateAction } from "react";
 import MsgType from "../../constants/msgType";
 import type AudioEqSettings from "../../models/AudioEq";
 import type AudioEqProfile from "../../models/AudioEqProfile";
-import type { GeminiEqProfileUserRequest } from "../../models/GeminiActions";
+import type {
+  GeminiEqProfileResponse,
+  GeminiEqProfileUserRequest,
+} from "../../models/GeminiActions";
 import {
-  GeminiAnalyzeErrorCode,
   type GeminiAnalyzeFailure,
   type GeminiAnalyzeSuccess,
   type GeminiBoundarySuggestion,
@@ -29,6 +31,7 @@ import {
   getAnalyzeImportBannerVisibilityKey,
   shouldClearAnalyzeImportBatchStateOnDismiss,
 } from "./analyzeImportBanner";
+import { normalizeGeminiEqProfileResponse } from "../gemini/geminiEqProfileResponse";
 import { normalizeAnalyzeSongBoundariesResponse } from "./geminiAnalyzeResponse";
 import {
   resolvePlaylistImportPreviewSubmission,
@@ -252,7 +255,7 @@ const usePlaylistActions = ({
 
   const generateEqProfileWithGemini = (
     request: GeminiEqProfileUserRequest,
-  ): Promise<unknown> => {
+  ): Promise<GeminiEqProfileResponse> => {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
         {
@@ -262,23 +265,11 @@ const usePlaylistActions = ({
           songContext: request.songContext,
         },
         (response: unknown) => {
-          if (chrome.runtime.lastError) {
-            resolve({
-              ok: false,
-              code: GeminiAnalyzeErrorCode.RequestFailed,
-              message:
-                chrome.runtime.lastError.message ||
-                "Gemini EQ profile generation could not be completed.",
-            });
-            return;
-          }
-
           resolve(
-            response ?? {
-              ok: false,
-              code: GeminiAnalyzeErrorCode.RequestFailed,
-              message: "Gemini did not return an EQ profile response.",
-            },
+            normalizeGeminiEqProfileResponse(
+              response,
+              chrome.runtime.lastError,
+            ),
           );
         },
       );
