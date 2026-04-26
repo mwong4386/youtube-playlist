@@ -54,6 +54,10 @@ const buildGeminiSongEqRequestBody = ({
     userRequest,
   };
 
+  const requestInstruction = userRequest.trim()
+    ? "Use userRequest as the user's specific EQ preference."
+    : "No specific user preference was provided; infer a tasteful EQ from currentSong and existingEqProfiles.";
+
   return {
     contents: [
       {
@@ -67,6 +71,7 @@ const buildGeminiSongEqRequestBody = ({
               "arguments.songId must exactly match currentSong.id.",
               "arguments.audioEq must include clearBass, band400, band1k, band2k5, band6k3, and band16k values from -10 to 10.",
               "arguments.reason should briefly explain the EQ choice.",
+              requestInstruction,
               JSON.stringify(approvedContext),
             ].join("\n"),
           },

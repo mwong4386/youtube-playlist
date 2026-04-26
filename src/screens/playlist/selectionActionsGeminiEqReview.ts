@@ -19,7 +19,6 @@ type GeminiEqSubmission = {
   requestToken: number;
 };
 
-const EMPTY_REQUEST_MESSAGE = "Describe the EQ change first.";
 const SINGLE_SONG_MESSAGE = "Please select one song for Gemini EQ.";
 const GENERATING_MESSAGE = "Generating suggestion...";
 const REVIEW_MESSAGE = "Review the suggestion.";
@@ -63,19 +62,6 @@ const createGeminiEqSubmission = ({
   }
 
   const trimmedRequest = state.request.trim();
-
-  if (!trimmedRequest) {
-    return {
-      state: {
-        ...state,
-        status: EMPTY_REQUEST_MESSAGE,
-        suggestion: null,
-        isLoading: false,
-      },
-      runtimeRequest: null,
-      requestToken,
-    };
-  }
 
   return {
     state: {
@@ -138,7 +124,6 @@ const getGeminiEqSuggestionToApply = (state: GeminiEqReviewState) =>
   state.suggestion;
 
 export {
-  EMPTY_REQUEST_MESSAGE,
   GENERATING_MESSAGE,
   REVIEW_MESSAGE,
   SINGLE_SONG_MESSAGE,

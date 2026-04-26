@@ -537,7 +537,10 @@ test("playlist source wires the Gemini song EQ adjustment message", () => {
 
 test("selection actions modal exposes review-first Gemini song EQ adjustment", () => {
   expectEqual(selectionActionsModalSource.includes("Gemini EQ"), true);
-  expectEqual(selectionActionsModalSource.includes("Describe the EQ change"), true);
+  expectEqual(
+    selectionActionsModalSource.includes("Describe an optional EQ preference"),
+    true,
+  );
   expectEqual(selectionActionsModalSource.includes("selectedSong?.title"), true);
   expectEqual(selectionActionsModalSource.includes("Apply EQ"), true);
   expectEqual(

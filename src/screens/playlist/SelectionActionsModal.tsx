@@ -258,8 +258,8 @@ const SelectionActionsModal = ({
                 }))
               }
               className={styles["selection-actions-gemini-eq-textarea"]}
-              placeholder="Describe the EQ change"
-              aria-label="Describe the EQ change"
+              placeholder="Describe an optional EQ preference"
+              aria-label="Describe an optional EQ preference"
             />
             <button
               type="button"

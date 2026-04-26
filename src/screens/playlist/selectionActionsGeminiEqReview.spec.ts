@@ -91,7 +91,7 @@ test("gemini eq review trims requests and waits for explicit apply", () => {
   expectEqual(getGeminiEqSuggestionToApply(reviewedState), suggestion);
 });
 
-test("gemini eq review rejects empty local requests without calling runtime", () => {
+test("gemini eq review allows empty requests for context-based suggestions", () => {
   const submission = createGeminiEqSubmission({
     state: {
       ...initialState,
@@ -103,9 +103,10 @@ test("gemini eq review rejects empty local requests without calling runtime", ()
     requestToken: 1,
   });
 
-  expectEqual(submission.runtimeRequest, null);
-  expectEqual(submission.state.status, "Describe the EQ change first.");
-  expectEqual(submission.state.isLoading, false);
+  expectEqual(submission.runtimeRequest?.userRequest, "");
+  expectEqual(submission.runtimeRequest?.songContext.id, "song-1");
+  expectEqual(submission.state.status, "Generating suggestion...");
+  expectEqual(submission.state.isLoading, true);
 });
 
 test("gemini eq review ignores stale late responses", () => {
