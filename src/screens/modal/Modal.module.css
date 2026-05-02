@@ -120,6 +120,145 @@
     transform 0.2s ease,
     background-color 0.2s ease;
 }
+.chrome-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px 8px;
+  height: auto;
+  max-height: calc(100vh - (var(--glass-margin) * 4));
+  overflow: hidden;
+  box-sizing: border-box;
+  background: transparent;
+}
+.chrome-header {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.chrome-title-stack {
+  min-width: 0;
+  text-align: center;
+}
+.chrome-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+.chrome-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.chrome-header-action {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.chrome-close-button {
+  padding: 0;
+  background-color: transparent;
+  height: 36px;
+  width: 36px;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.86;
+}
+.chrome-primary-button,
+.chrome-confirm-button,
+.chrome-secondary-button,
+.chrome-danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+.chrome-primary-button:disabled,
+.chrome-confirm-button:disabled,
+.chrome-secondary-button:disabled,
+.chrome-danger-button:disabled {
+  opacity: 0.55;
+}
+.chrome-primary-button {
+  border: 0;
+  background-color: var(--modal-accent);
+  color: var(--modal-accent-contrast);
+}
+.chrome-confirm-button {
+  background-color: color-mix(in srgb, var(--success-color) 12%, transparent);
+  color: var(--success-color);
+  border: 1px solid color-mix(in srgb, var(--success-color) 30%, transparent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.chrome-secondary-button {
+  border: 1px solid var(--border-color);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+.chrome-danger-button {
+  border: 1px solid color-mix(in srgb, var(--danger-color, #d04a4a) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--danger-color, #d04a4a) 8%, var(--surface-primary));
+  color: var(--danger-color, #d04a4a);
+}
+.chrome-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.chrome-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border-color);
+}
+.chrome-inset-panel {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-primary) 82%, transparent);
+}
+.chrome-muted-panel {
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-tertiary) 72%, transparent);
+}
+.chrome-text-input {
+  width: 100%;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  padding: 11px 12px;
+  box-sizing: border-box;
+  font: inherit;
+}
 .video-title {
   font-size: 16px;
   font-weight: 700;

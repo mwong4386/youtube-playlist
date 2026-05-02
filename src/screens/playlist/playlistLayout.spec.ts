@@ -81,6 +81,10 @@ const actionSheetItemSource = readFileSync(
   join(process.cwd(), "src/screens/actionSheet/ActionSheetItem.tsx"),
   "utf8",
 );
+const actionSheetSource = readFileSync(
+  join(process.cwd(), "src/screens/actionSheet/ActionSheet.tsx"),
+  "utf8",
+);
 const actionSheetStyles = readFileSync(
   join(process.cwd(), "src/screens/actionSheet/ActionSheet.module.css"),
   "utf8",
@@ -728,6 +732,15 @@ test("new song list modal source uses shared modal pattern and inline error mess
   expectEqual(newSongListModalSource.includes('role="alert"'), true);
   expectEqual(newSongListModalSource.includes("Create list"), true);
   expectEqual(newSongListModalSource.includes('setSongListName("")'), true);
+});
+
+test("settings action sheet reuses the shared modal shell", () => {
+  expectEqual(actionSheetSource.includes('import Modal from "../modal/Modal"'), true);
+  expectEqual(actionSheetSource.includes("<Modal active={isActive} close={close}>"), true);
+  expectEqual(actionSheetStyles.includes(".settings-panel"), true);
+  expectEqual(getCssBlock(actionSheetStyles, ".container"), null);
+  expectEqual(getCssBlock(actionSheetStyles, ".backdrop"), null);
+  expectEqual(actionSheetStyles.includes("border-radius: var(--glass-radius);"), true);
 });
 
 test("playlist item play button routes through modal-opening playback wiring", () => {

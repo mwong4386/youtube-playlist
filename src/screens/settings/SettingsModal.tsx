@@ -3,6 +3,8 @@ import AudioEqProfile, {
   AUDIO_EQ_PROFILE_LIMIT,
 } from "../../models/AudioEqProfile";
 import Modal from "../modal/Modal";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
+import modalStyles from "../modal/Modal.module.css";
 import {
   AudioEqSliderList,
   formatAudioEqValue,
@@ -147,24 +149,32 @@ const SettingsModal = ({
   return (
     <>
       <Modal active={active} close={close}>
-        <div className={styles["panel"]}>
-          <div className={styles["header"]}>
-            <div className={styles["header-main"]}>
-              <h2 className={styles["title"]}>EQ Profiles</h2>
-              <span className={styles["badge"]}>
-                {audioEqProfiles.length}/{AUDIO_EQ_PROFILE_LIMIT}
-              </span>
-            </div>
-            <button
-              type="button"
-              className={styles["close-button"]}
-              onClick={close}
-              aria-label="Close settings"
-            >
-              x
-            </button>
-          </div>
-          <section className={styles["section"]} aria-labelledby="eq-profiles-section-title">
+        <div className={`${modalStyles["chrome-panel"]} ${styles["panel"]}`}>
+          <ModalChromeHeader
+            title="EQ Profiles"
+            subtitle="Reusable curves for saved songs"
+            closeLabel="Close settings"
+            onClose={close}
+            action={
+              canCreateProfile ? (
+                <button
+                  type="button"
+                  className={modalStyles["chrome-primary-button"]}
+                  onClick={startCreatingProfile}
+                >
+                  Create
+                </button>
+              ) : (
+                <span className={modalStyles["chrome-badge"]}>
+                  {audioEqProfiles.length}/{AUDIO_EQ_PROFILE_LIMIT}
+                </span>
+              )
+            }
+          />
+          <section
+            className={`${modalStyles["chrome-section"]} ${styles["section"]}`}
+            aria-labelledby="eq-profiles-section-title"
+          >
             <h3 id="eq-profiles-section-title" className={styles["section-title"]}>
               Manage reusable EQ curves
             </h3>
@@ -172,24 +182,16 @@ const SettingsModal = ({
               Create up to {AUDIO_EQ_PROFILE_LIMIT} reusable EQ profiles. Each profile
               saves all six bands.
             </p>
-            <div className={styles["profile-toolbar"]}>
-              <button
-                type="button"
-                className={styles["primary-button"]}
-                disabled={!canCreateProfile}
-                onClick={startCreatingProfile}
-              >
-                Create profile
-              </button>
-              {hasReachedProfileLimit ? (
-                <span className={styles["limit-note"]}>
-                  Delete a profile to add another.
-                </span>
-              ) : null}
-            </div>
+            {hasReachedProfileLimit ? (
+              <span className={styles["limit-note"]}>
+                Delete a profile to add another.
+              </span>
+            ) : null}
             <div className={styles["profile-list"]}>
               {audioEqProfiles.length === 0 ? (
-                <div className={styles["empty-state"]}>
+                <div
+                  className={`${modalStyles["chrome-inset-panel"]} ${styles["empty-state"]}`}
+                >
                   No EQ profiles yet. Create one to save your favorite curve.
                 </div>
               ) : (
@@ -198,7 +200,9 @@ const SettingsModal = ({
                   return (
                     <article
                       key={profile.id}
-                      className={`${styles["profile-card"]} ${
+                      className={`${modalStyles["chrome-inset-panel"]} ${
+                        styles["profile-card"]
+                      } ${
                         isSelected ? styles["profile-card-selected"] : ""
                       }`}
                     >
@@ -212,7 +216,7 @@ const SettingsModal = ({
                         <div className={styles["profile-actions"]}>
                           <button
                             type="button"
-                            className={styles["secondary-button"]}
+                            className={modalStyles["chrome-primary-button"]}
                             onClick={() => {
                               startEditingProfile(profile);
                             }}
@@ -221,7 +225,7 @@ const SettingsModal = ({
                           </button>
                           <button
                             type="button"
-                            className={styles["danger-button"]}
+                            className={modalStyles["chrome-danger-button"]}
                             onClick={() => {
                               onDeleteProfile(profile.id);
                               if (editingProfileId === profile.id) {
@@ -239,7 +243,10 @@ const SettingsModal = ({
               )}
             </div>
             {!canCreateProfile ? (
-              <section className={styles["editor"]} aria-labelledby="eq-profile-editor-title">
+              <section
+                className={`${modalStyles["chrome-muted-panel"]} ${styles["editor"]}`}
+                aria-labelledby="eq-profile-editor-title"
+              >
                 <div className={styles["editor-header"]}>
                   <div>
                     <h4 id="eq-profile-editor-title" className={styles["editor-title"]}>
@@ -257,27 +264,26 @@ const SettingsModal = ({
         </div>
       </Modal>
       <Modal active={isProfileEditorOpen} close={closeProfileEditor}>
-        <div className={styles["editor-panel"]}>
-          <div className={styles["editor-panel-header"]}>
-            <div>
-              <h3 className={styles["editor-title"]}>
-                {isEditing ? "Update profile" : "Create profile"}
-              </h3>
-              <p className={styles["editor-note"]}>
-                {isEditing
-                  ? "Adjust the name and band levels, then save your changes."
-                  : "Set a name and tune each band before saving the new profile."}
-              </p>
-            </div>
-            <button
-              type="button"
-              className={styles["close-button"]}
-              onClick={closeProfileEditor}
-              aria-label="Close profile editor"
-            >
-              x
-            </button>
-          </div>
+        <div className={`${modalStyles["chrome-panel"]} ${styles["editor-panel"]}`}>
+          <ModalChromeHeader
+            title={isEditing ? "Update profile" : "Create profile"}
+            subtitle={
+              isEditing
+                ? "Adjust the name and band levels"
+                : "Set a name and tune each band"
+            }
+            closeLabel="Close profile editor"
+            onClose={closeProfileEditor}
+            action={
+              <button
+                type="button"
+                className={modalStyles["chrome-confirm-button"]}
+                onClick={saveProfile}
+              >
+                Save
+              </button>
+            }
+          />
           <label className={styles["field"]}>
             <span className={styles["field-label"]}>Profile name</span>
             <input
@@ -285,7 +291,7 @@ const SettingsModal = ({
               value={profileForm.name}
               maxLength={40}
               placeholder="New profile"
-              className={styles["text-input"]}
+              className={modalStyles["chrome-text-input"]}
               onChange={(event) => {
                 const nextName = event.currentTarget.value;
                 setProfileForm((current) =>
@@ -329,17 +335,10 @@ const SettingsModal = ({
           <div className={styles["editor-actions"]}>
             <button
               type="button"
-              className={styles["secondary-button"]}
+              className={modalStyles["chrome-secondary-button"]}
               onClick={resetProfileForm}
             >
               {isProfileFormDirty ? "Reset changes" : "Reset"}
-            </button>
-            <button
-              type="button"
-              className={styles["primary-button"]}
-              onClick={saveProfile}
-            >
-              {isEditing ? "Save changes" : "Save profile"}
             </button>
           </div>
         </div>
