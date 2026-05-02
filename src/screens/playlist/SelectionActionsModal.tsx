@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type AudioEqProfile from "../../models/AudioEqProfile";
 import type {
   GeminiSongEqResponse,
@@ -52,10 +52,13 @@ const SelectionActionsModal = ({
   onAdjustSongEqWithGemini,
   onApplyGeminiSongEqSuggestion,
 }: Props) => {
-  const [view, setView] = useState<"menu" | "volume" | "geminiEq">("menu");
+  const [view, setView] = useState<"menu" | "timing" | "volume" | "geminiEq">(
+    "menu",
+  );
   const [multiplier, setMultiplier] = useState<number>(1);
-  const [geminiEqReview, setGeminiEqReview] =
-    useState<GeminiEqReviewState>(createInitialGeminiEqReviewState);
+  const [geminiEqReview, setGeminiEqReview] = useState<GeminiEqReviewState>(
+    createInitialGeminiEqReviewState,
+  );
   const requestTokenRef = useRef(0);
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -75,7 +78,9 @@ const SelectionActionsModal = ({
           100,
           Math.max(
             0,
-            Math.round(Number((firstSelectedItemVolume * multiplier).toPrecision(12))),
+            Math.round(
+              Number((firstSelectedItemVolume * multiplier).toPrecision(12)),
+            ),
           ),
         )
       : null;
@@ -143,6 +148,7 @@ const SelectionActionsModal = ({
             </p>
           )}
           <p className={styles["selection-actions-modal-title"]}>
+            {view === "timing" ? "Analyze Timing" : ""}
             {view === "volume" ? "Adjust Volume" : ""}
             {view === "geminiEq" ? "Gemini EQ" : ""}
           </p>
@@ -161,17 +167,9 @@ const SelectionActionsModal = ({
             <button
               type="button"
               className={styles["selection-actions-analyze-button"]}
-              onClick={onAnalyzeSelected}
+              onClick={() => setView("timing")}
             >
-              Analyze Timing
-            </button>
-            <button
-              type="button"
-              className={styles["selection-actions-analyze-button"]}
-              onClick={onAnalyzeUncalibratedSelected}
-              disabled={selectedUncalibratedCount === 0}
-            >
-              Analyze Uncalibrated
+              Detect Song Timing
             </button>
             <button
               type="button"
@@ -201,6 +199,24 @@ const SelectionActionsModal = ({
               onClick={close}
             >
               Cancel
+            </button>
+          </div>
+        ) : view === "timing" ? (
+          <div className={styles["selection-actions-modal-actions"]}>
+            <button
+              type="button"
+              className={styles["selection-actions-analyze-button"]}
+              onClick={onAnalyzeSelected}
+            >
+              All Selected
+            </button>
+            <button
+              type="button"
+              className={styles["selection-actions-analyze-button"]}
+              onClick={onAnalyzeUncalibratedSelected}
+              disabled={selectedUncalibratedCount === 0}
+            >
+              Uncalibrated Only
             </button>
           </div>
         ) : view === "volume" ? (
@@ -285,7 +301,9 @@ const SelectionActionsModal = ({
                       className={styles["selection-actions-gemini-eq-band"]}
                     >
                       <span>{band.label}</span>
-                      <span>{geminiEqReview.suggestion?.audioEq[band.key]} dB</span>
+                      <span>
+                        {geminiEqReview.suggestion?.audioEq[band.key]} dB
+                      </span>
                     </div>
                   ))}
                 </div>

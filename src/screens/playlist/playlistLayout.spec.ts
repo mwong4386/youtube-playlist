@@ -328,6 +328,9 @@ test("song list item rows use an explicit flex row container for title and edit 
 test("playlist source includes selected-song action modal wiring", () => {
   expectEqual(playlistSource.includes("isSelectionActionsOpen"), true);
   expectEqual(selectionActionsModalSource.includes("Analyze Timing"), true);
+  expectEqual(selectionActionsModalSource.includes('setView("timing")'), true);
+  expectEqual(selectionActionsModalSource.includes('view === "timing"'), true);
+  expectEqual(selectionActionsModalSource.includes("All Selected"), true);
   expectEqual(selectionActionsModalSource.includes("Delete Songs"), true);
   expectEqual(playlistSource.includes("Selected songs"), false);
   expectEqual(playlistActionsSource.includes("itemIds: selectedItemIds"), true);

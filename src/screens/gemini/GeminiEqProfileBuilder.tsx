@@ -82,7 +82,7 @@ const GeminiEqProfileBuilder = ({
       <header className={styles.header}>
         <button
           type="button"
-          className={styles.iconButton}
+          className={styles.backButton}
           onClick={onBack}
           aria-label="Back to playlist"
         >
@@ -91,11 +91,11 @@ const GeminiEqProfileBuilder = ({
         <h2 className={styles.title}>Gemini EQ</h2>
         <button
           type="button"
-          className={styles.iconButton}
+          className={styles.settingsButton}
           onClick={onOpenSettings}
           aria-label="Open Gemini settings"
         >
-          Settings
+          <img className={styles.settingsIcon} src="./assets/menu30.svg" alt="" />
         </button>
       </header>
       <div className={styles.body}>
@@ -118,13 +118,6 @@ const GeminiEqProfileBuilder = ({
             disabled={isGenerating}
           >
             {isGenerating ? "Generating..." : "Generate"}
-          </button>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={onOpenSettings}
-          >
-            Gemini settings
           </button>
         </div>
         <p className={styles.message} role="status" aria-live="polite">

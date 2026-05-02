@@ -19,11 +19,25 @@ const expectEqual = (actual: unknown, expected: unknown) => {
   }
 };
 
+const getCssBlock = (css: string, selector: string) => {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = css.match(
+    new RegExp(`(^|\\n)${escapedSelector}\\s*\\{([\\s\\S]*?)\\n\\}`, "m"),
+  );
+
+  return match?.[2] ?? "";
+};
+
 test("GeminiEqProfileBuilder exposes back and settings actions", () => {
   expectEqual(source.includes("onBack"), true);
   expectEqual(source.includes("onOpenSettings"), true);
   expectEqual(source.includes('aria-label="Back to playlist"'), true);
   expectEqual(source.includes('aria-label="Open Gemini settings"'), true);
+});
+
+test("GeminiEqProfileBuilder keeps one menu-style settings entry in the header", () => {
+  expectEqual(source.includes('src="./assets/menu30.svg"'), true);
+  expectEqual(source.includes(">Gemini settings<"), false);
 });
 
 test("GeminiEqProfileBuilder requests Gemini before creating a profile", () => {
@@ -59,6 +73,13 @@ test("GeminiEqProfileBuilder announces async status messages", () => {
 });
 
 test("GeminiEqProfileBuilder header actions fit text labels", () => {
+  expectEqual(cssSource.includes(".backButton,\n.settingsButton"), true);
   expectEqual(cssSource.includes("width: auto;"), true);
   expectEqual(cssSource.includes("padding: 0 10px;"), true);
+});
+
+test("GeminiEqProfileBuilder panel inherits the playlist surface", () => {
+  const panelBlock = getCssBlock(cssSource, ".panel");
+
+  expectEqual(panelBlock.includes("background:"), false);
 });

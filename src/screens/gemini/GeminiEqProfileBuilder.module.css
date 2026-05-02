@@ -5,35 +5,55 @@
   padding: 14px 14px 18px;
   box-sizing: border-box;
   color: var(--text-primary);
-  background: var(--surface-primary);
 }
 
 .header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(72px, auto) 1fr minmax(72px, auto);
   align-items: center;
   gap: 10px;
-  min-height: 42px;
-  border-bottom: 1px solid var(--border-color);
+  min-height: 58px;
+  padding: 0 12px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 72%, transparent);
 }
 
 .title {
-  flex: 1 1 auto;
   margin: 0;
   font-size: 17px;
   line-height: 1.2;
+  text-align: center;
 }
 
-.iconButton {
+.backButton,
+.settingsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
   width: auto;
-  min-width: 34px;
-  height: 34px;
+  min-width: 42px;
+  height: 42px;
   padding: 0 10px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
   color: var(--text-primary);
   background: transparent;
   font-size: 13px;
   line-height: 1;
+  box-shadow: none;
+}
+
+.settingsButton {
+  justify-self: end;
+  width: 42px;
+  padding: 0;
+}
+
+.settingsIcon {
+  width: 20px;
+  height: 20px;
+  filter: var(--icon-filter);
 }
 
 .body {
