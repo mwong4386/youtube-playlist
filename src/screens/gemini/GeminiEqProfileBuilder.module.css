@@ -29,6 +29,18 @@
   color: var(--text-secondary);
 }
 
+.embeddedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.embeddedTitle {
+  margin: 0;
+  font-size: 15px;
+}
+
 .body {
   display: flex;
   flex-direction: column;

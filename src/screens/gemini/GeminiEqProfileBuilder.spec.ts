@@ -57,6 +57,8 @@ test("GeminiEqProfileBuilder requests Gemini before creating a profile", () => {
 
 test("GeminiEqProfileBuilder allows optional prompt text", () => {
   expectEqual(source.includes("Describe the EQ profile you want first."), false);
+  expectEqual(source.includes(">Describe an optional EQ preference"), false);
+  expectEqual(source.includes('aria-label="Describe an optional EQ preference"'), true);
   expectEqual(source.includes("Describe an optional EQ preference"), true);
   expectEqual(source.includes("userRequest: normalizedRequest"), true);
 });
@@ -96,4 +98,17 @@ test("GeminiEqProfileBuilder panel inherits the playlist surface", () => {
   const panelBlock = getCssBlock(cssSource, ".panel");
 
   expectEqual(panelBlock.includes("background:"), false);
+});
+
+test("GeminiEqProfileBuilder can embed inside another profile creation view", () => {
+  expectEqual(source.includes("embedded?:"), true);
+  expectEqual(source.includes("onPreviewProfile?:"), true);
+  expectEqual(source.includes("!embedded &&"), true);
+  expectEqual(source.includes("Gemini assisted profile creation"), true);
+});
+
+test("embedded Gemini preview hydrates the host editor instead of duplicating bands", () => {
+  expectEqual(source.includes("onPreviewProfile(response.suggestion)"), true);
+  expectEqual(source.includes("{suggestion && !embedded && ("), true);
+  expectEqual(source.includes("Review and edit the EQ profile below."), true);
 });

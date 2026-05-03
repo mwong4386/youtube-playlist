@@ -19,7 +19,6 @@ import {
 interface props {
   onDelete: () => void;
   onOpenEqSettings: () => void;
-  onOpenGeminiEqBuilder: () => void;
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
   onOpenNewSongListModal: () => void;
@@ -41,7 +40,6 @@ const PlaylistHeader = ({
   playlist,
   onDelete,
   onOpenEqSettings,
-  onOpenGeminiEqBuilder,
   onOpenGeminiSettings,
   onOpenImportModal,
   onOpenNewSongListModal,
@@ -248,11 +246,6 @@ const PlaylistHeader = ({
         id: 3,
         description: "EQ Profiles",
         callback: onOpenEqSettings,
-      },
-      {
-        id: 4,
-        description: "Gemini EQ",
-        callback: onOpenGeminiEqBuilder,
       },
       {
         id: 5,

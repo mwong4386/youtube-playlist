@@ -10,6 +10,12 @@ import {
   AudioEqSliderList,
   formatAudioEqValue,
 } from "../audioEq/AudioEqSliderList";
+import type {
+  GeminiEqProfileResponse,
+  GeminiEqProfileSuggestion,
+  GeminiEqProfileUserRequest,
+} from "../../models/GeminiActions";
+import GeminiEqProfileBuilder from "../gemini/GeminiEqProfileBuilder";
 import styles from "./SettingsModal.module.css";
 import AudioEqSettings from "../../models/AudioEq";
 import {
@@ -39,6 +45,10 @@ interface Props {
   onCreateProfile: (name: string, audioEq: AudioEqSettings) => void;
   onUpdateProfile: (profile: AudioEqProfile) => void;
   onDeleteProfile: (id: string) => void;
+  onOpenGeminiSettings: () => void;
+  requestGeminiEqProfile: (
+    request: GeminiEqProfileUserRequest,
+  ) => Promise<GeminiEqProfileResponse>;
 }
 
 const SettingsModal = ({
@@ -48,6 +58,8 @@ const SettingsModal = ({
   onCreateProfile,
   onUpdateProfile,
   onDeleteProfile,
+  onOpenGeminiSettings,
+  requestGeminiEqProfile,
 }: Props) => {
   const [isProfileEditorOpen, setProfileEditorOpen] = useState(false);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
@@ -147,6 +159,18 @@ const SettingsModal = ({
     closeProfileEditor();
   };
 
+  const createGeminiProfile = (name: string, audioEq: AudioEqSettings) => {
+    onCreateProfile(name, audioEq);
+    closeProfileEditor();
+  };
+
+  const previewGeminiProfile = (suggestion: GeminiEqProfileSuggestion) => {
+    setProfileForm({
+      name: suggestion.name,
+      audioEq: suggestion.audioEq,
+    });
+  };
+
   return (
     <Modal active={active} close={isProfileEditorOpen ? closeProfileEditor : close}>
       {isProfileEditorOpen ? (
@@ -156,7 +180,7 @@ const SettingsModal = ({
             subtitle={
               isEditing
                 ? "Adjust the name and band levels"
-                : "Set a name and tune each band"
+                : "Use Gemini chat or tune the bands yourself"
             }
             closeLabel="Close profile editor"
             closeIcon={<BackIcon />}
@@ -171,6 +195,20 @@ const SettingsModal = ({
               </button>
             }
           />
+          {!isEditing && (
+            <GeminiEqProfileBuilder
+              existingProfiles={audioEqProfiles}
+              onBack={closeProfileEditor}
+              onOpenSettings={onOpenGeminiSettings}
+              onCreateProfile={createGeminiProfile}
+              requestGeminiEqProfile={requestGeminiEqProfile}
+              embedded={true}
+              onPreviewProfile={previewGeminiProfile}
+            />
+          )}
+          {!isEditing && (
+            <h3 className={styles["manual-title"]}>Manual tuning</h3>
+          )}
           <label className={styles["field"]}>
             <span className={styles["field-label"]}>Profile name</span>
             <input

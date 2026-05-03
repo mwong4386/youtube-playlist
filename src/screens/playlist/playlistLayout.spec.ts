@@ -267,13 +267,14 @@ test("playlist header source no longer exposes player pin actions", () => {
   expectEqual(playlistHeaderSource.includes("TogglePin"), false);
 });
 
-test("playlist menu exposes the Gemini EQ builder separately from Gemini settings", () => {
-  expectEqual(playlistHeaderSource.includes("Gemini EQ"), true);
-  expectEqual(playlistHeaderSource.includes("onOpenGeminiEqBuilder"), true);
+test("playlist menu groups Gemini EQ creation under EQ Profiles", () => {
+  expectEqual(playlistHeaderSource.includes("Gemini EQ"), false);
+  expectEqual(playlistHeaderSource.includes("onOpenGeminiEqBuilder"), false);
 });
 
-test("playlist renders the reusable Gemini EQ builder screen", () => {
-  expectEqual(playlistSource.includes("GeminiEqProfileBuilder"), true);
+test("playlist passes Gemini EQ creation into settings", () => {
+  expectEqual(playlistSource.includes("requestGeminiEqProfile={generateEqProfileWithGemini}"), true);
+  expectEqual(playlistSource.includes("onOpenGeminiSettings={openGeminiSettings}"), true);
   expectEqual(playlistSource.includes("generateEqProfileWithGemini"), true);
   expectEqual(playlistSource.includes("onCreateProfile={onCreateProfile}"), true);
 });
@@ -744,22 +745,21 @@ test("settings action sheet reuses the shared modal shell", () => {
   expectEqual(actionSheetStyles.includes("border-radius: var(--glass-radius);"), true);
 });
 
-test("Gemini EQ builder opens in the shared modal shell without replacing the playlist", () => {
-  expectEqual(playlistSource.includes('import Modal from "../modal/Modal"'), true);
+test("Gemini EQ builder no longer opens in a separate shared modal shell", () => {
   expectEqual(playlistSource.includes("if (isGeminiEqBuilderOpen)"), false);
   expectEqual(
     playlistSource.includes(
       "<Modal active={isGeminiEqBuilderOpen} close={closeGeminiEqBuilder}>",
     ),
-    true,
+    false,
   );
-  expectEqual(playlistSource.includes("<GeminiEqProfileBuilder"), true);
+  expectEqual(playlistSource.includes("<GeminiEqProfileBuilder"), false);
 });
 
-test("Gemini settings modal stays above the Gemini EQ builder when opened from it", () => {
+test("Gemini settings modal stays above settings when opened from profile creation", () => {
   expectEqual(
     playlistSource.indexOf("<GeminiSettingsModal") >
-      playlistSource.indexOf("<GeminiEqProfileBuilder"),
+      playlistSource.indexOf("<SettingsModal"),
     true,
   );
 });

@@ -61,6 +61,19 @@ test("profile editor header uses a back affordance instead of close chrome", () 
   expectEqual(settingsSource.includes("closeIcon={<BackIcon />}"), true);
 });
 
+test("create profile view groups Gemini chat with manual tuning", () => {
+  expectEqual(settingsSource.includes("GeminiEqProfileBuilder"), true);
+  expectEqual(settingsSource.includes("requestGeminiEqProfile"), true);
+  expectEqual(settingsSource.includes("Manual tuning"), true);
+  expectEqual(settingsSource.includes('embedded={true}'), true);
+});
+
+test("create profile view injects Gemini previews into manual tuning", () => {
+  expectEqual(settingsSource.includes("previewGeminiProfile"), true);
+  expectEqual(settingsSource.includes("onPreviewProfile={previewGeminiProfile}"), true);
+  expectEqual(settingsSource.includes("setProfileForm({"), true);
+});
+
 test("shared modal header renders a close icon by default", () => {
   const modalHeaderSource = readFileSync(
     join(process.cwd(), "src/screens/modal/ModalChromeHeader.tsx"),

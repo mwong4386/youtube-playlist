@@ -1,10 +1,8 @@
 import { useEffect } from "react";
 import { ThemePreference } from "../../utils/theme";
 import DeleteAllModal from "./DeleteAllModal";
-import GeminiEqProfileBuilder from "../gemini/GeminiEqProfileBuilder";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import InfoModal from "../modal/InfoModal";
-import Modal from "../modal/Modal";
 import SettingsModal from "../settings/SettingsModal";
 import {
   getAnalyzeImportBannerViewModel,
@@ -66,8 +64,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setIsEqSettingsOpen,
     isGeminiSettingsOpen,
     setIsGeminiSettingsOpen,
-    isGeminiEqBuilderOpen,
-    setIsGeminiEqBuilderOpen,
     isPlaylistImportOpen,
     setIsPlaylistImportOpen,
     isNewSongListOpen,
@@ -95,7 +91,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     clearSelection,
     closeDeleteAllModal,
     closeEqSettings,
-    closeGeminiEqBuilder,
     closeGeminiSettings,
     closeInfoModal,
     closeNewSongListModal,
@@ -129,7 +124,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onAdjustVolumeSelected,
     onApplyGeminiSongEqSuggestion,
     openEqSettings,
-    openGeminiEqBuilder,
     openGeminiSettings,
     openInfoModal,
     openNewSongListModal,
@@ -159,7 +153,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setDraggingItemId,
     setIsEqSettingsOpen,
     setIsGeminiSettingsOpen,
-    setIsGeminiEqBuilderOpen,
     setIsPlaylistImportOpen,
     setIsNewSongListOpen,
     setIsDeleteAllOpen,
@@ -250,7 +243,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             activeSongListName={activeSongListName}
             onDelete={onDeleteAll}
             onOpenEqSettings={openEqSettings}
-            onOpenGeminiEqBuilder={openGeminiEqBuilder}
             onOpenGeminiSettings={openGeminiSettings}
             onOpenImportModal={openPlaylistImportModal}
             onOpenNewSongListModal={openNewSongListModal}
@@ -321,16 +313,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onCreateProfile={onCreateProfile}
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
+        onOpenGeminiSettings={openGeminiSettings}
+        requestGeminiEqProfile={generateEqProfileWithGemini}
       />
-      <Modal active={isGeminiEqBuilderOpen} close={closeGeminiEqBuilder}>
-        <GeminiEqProfileBuilder
-          existingProfiles={audioEqProfiles}
-          onBack={closeGeminiEqBuilder}
-          onOpenSettings={openGeminiSettings}
-          onCreateProfile={onCreateProfile}
-          requestGeminiEqProfile={generateEqProfileWithGemini}
-        />
-      </Modal>
       <GeminiSettingsModal
         active={isGeminiSettingsOpen}
         close={closeGeminiSettings}
