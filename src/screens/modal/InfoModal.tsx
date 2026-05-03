@@ -14,7 +14,7 @@ import {
 } from "../../utils/audioEq";
 import Modal from "./Modal";
 import ModalChromeHeader from "./ModalChromeHeader";
-import InfoModalTransport from "./InfoModalTransport";
+import InfoModalTransport, { MarqueeText } from "./InfoModalTransport";
 import styles from "./Modal.module.css";
 import SongEditor, { type InfoModels } from "./SongEditor";
 import { hasValidManualTimestampRange } from "./manualTimestampValidation";
@@ -115,7 +115,14 @@ const InfoModal = ({
     <Modal active={active} close={close}>
       <form onSubmit={handleSubmit(onSubmit)} className={styles["chrome-panel"]}>
         <ModalChromeHeader
-          title="Edit Song"
+          title={item?.title || "Song"}
+          titleContent={
+            <div
+              className={`${styles["song-heading"]} ${styles["chrome-song-heading"]}`}
+            >
+              <MarqueeText text={item?.title || ""} className={styles["video-title"]} />
+            </div>
+          }
           closeLabel="Close editor"
           onClose={onDismiss}
           action={

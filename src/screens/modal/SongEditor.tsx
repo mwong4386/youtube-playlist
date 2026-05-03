@@ -249,8 +249,6 @@ export const SongEditor = ({
 
   return (
     <>
-      <p className={`${styles["video-title"]} line-clamp-4`}>{item?.title}</p>
-      <p className={styles["channel-name"]}>{item?.channelName}</p>
       <div className={styles["editor-section"]}>
         <div
           className={styles["modal-tab-row"]}

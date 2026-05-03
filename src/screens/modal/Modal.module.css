@@ -81,7 +81,7 @@
   color: var(--success-color);
   border: 1px solid color-mix(in srgb, var(--success-color) 30%, transparent);
   border-radius: 999px;
-  padding: 0 18px;
+  padding: 0 16px;
   font-weight: 800;
   font-size: 12px;
   letter-spacing: 0.05em;
@@ -107,9 +107,9 @@
 }
 .chrome-header {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) 76px;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   margin-bottom: 16px;
 }
 .chrome-title-stack {
@@ -234,17 +234,26 @@
   box-sizing: border-box;
   font: inherit;
 }
+.song-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 12px;
+  text-align: center;
+}
+.chrome-song-heading {
+  margin: 0;
+}
 .video-title {
   font-size: 16px;
   font-weight: 700;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  white-space: nowrap;
 }
 .channel-name {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-top: 0px;
-  margin-bottom: 12px;
+  white-space: nowrap;
 }
 .modal-tab-row {
   display: inline-flex;

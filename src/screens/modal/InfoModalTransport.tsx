@@ -20,7 +20,7 @@ interface MarqueeTextProps {
   className: string;
 }
 
-const MarqueeText = ({ text, className }: MarqueeTextProps) => {
+export const MarqueeText = ({ text, className }: MarqueeTextProps) => {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLSpanElement | null>(null);
   const [overflowDistance, setOverflowDistance] = useState(0);

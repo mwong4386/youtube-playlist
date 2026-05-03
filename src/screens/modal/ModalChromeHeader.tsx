@@ -5,6 +5,7 @@ import styles from "./Modal.module.css";
 interface Props {
   title: string;
   subtitle?: string;
+  titleContent?: ReactNode;
   badge?: ReactNode;
   action?: ReactNode;
   titleClassName?: string;
@@ -17,6 +18,7 @@ interface Props {
 const ModalChromeHeader = ({
   title,
   subtitle,
+  titleContent,
   badge,
   action,
   titleClassName,
@@ -38,14 +40,18 @@ const ModalChromeHeader = ({
         {closeIcon || <CloseIcon />}
       </button>
       <div className={styles["chrome-title-stack"]}>
-        <h2
-          className={`${styles["chrome-title"]} ${titleClassName || ""}`}
-        >
-          {title}
-        </h2>
-        {subtitle ? (
-          <p className={styles["chrome-subtitle"]}>{subtitle}</p>
-        ) : null}
+        {titleContent || (
+          <>
+            <h2
+              className={`${styles["chrome-title"]} ${titleClassName || ""}`}
+            >
+              {title}
+            </h2>
+            {subtitle ? (
+              <p className={styles["chrome-subtitle"]}>{subtitle}</p>
+            ) : null}
+          </>
+        )}
       </div>
       <div className={styles["chrome-header-action"]}>
         {action || badge || null}

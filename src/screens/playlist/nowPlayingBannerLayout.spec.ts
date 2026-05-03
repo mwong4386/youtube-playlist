@@ -24,6 +24,10 @@ const infoModalTransportSource = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModalTransport.tsx"),
   "utf8"
 );
+const modalChromeHeaderSource = readFileSync(
+  join(process.cwd(), "src/screens/modal/ModalChromeHeader.tsx"),
+  "utf8"
+);
 const playbackShelfSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/components/PlaybackShelf.tsx"),
   "utf8"
@@ -103,6 +107,34 @@ test("modal transport source exposes a dedicated expand surface and transport bu
   expectEqual(infoModalTransportStyles.includes(".transportActions"), true);
   expectEqual(infoModalTransportStyles.includes(".marqueeViewport"), true);
   expectEqual(infoModalTransportStyles.includes(".marqueeContent"), true);
+});
+
+test("InfoModal replaces the Edit Song header with a wide shared marquee title", () => {
+  expectEqual(
+    infoModalSource.includes('import InfoModalTransport, { MarqueeText } from "./InfoModalTransport";'),
+    true,
+  );
+  expectEqual(modalChromeHeaderSource.includes("titleContent?: ReactNode;"), true);
+  expectEqual(infoModalSource.includes("titleContent={"), true);
+  expectEqual(infoModalSource.includes("title=\"Edit Song\""), false);
+  expectEqual(songEditorSource.includes("line-clamp-4"), false);
+  expectEqual(songEditorSource.includes("song-heading"), false);
+  expectEqual(
+    infoModalSource.includes(
+      '<MarqueeText text={item?.title || ""} className={styles["video-title"]} />',
+    ),
+    true,
+  );
+  expectEqual(
+    infoModalSource.includes(
+      '<MarqueeText text={item?.channelName || ""} className={styles["channel-name"]} />',
+    ),
+    false,
+  );
+  expectEqual(infoModalStyles.includes(".song-heading"), true);
+  expectEqual(infoModalStyles.includes("grid-template-columns: 36px minmax(0, 1fr) auto;"), true);
+  expectEqual(infoModalStyles.includes("gap: 4px;"), true);
+  expectEqual(infoModalStyles.includes("white-space: nowrap;"), true);
 });
 
 test("expanded song editor reuses the shared modal close button style", () => {
