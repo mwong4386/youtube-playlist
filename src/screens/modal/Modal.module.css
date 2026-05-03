@@ -422,6 +422,50 @@
   padding: 14px 16px;
   box-sizing: border-box;
 }
+.gemini-eq-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 680px;
+  margin: 12px auto 0;
+}
+.gemini-eq-textarea {
+  width: 100%;
+  min-height: 74px;
+  resize: vertical;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background-color: var(--surface-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+.gemini-eq-action-row {
+  display: flex;
+  justify-content: center;
+}
+.gemini-eq-button {
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--modal-accent);
+  color: var(--modal-accent-contrast);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+}
+.gemini-eq-button:disabled {
+  opacity: 0.7;
+}
+.gemini-eq-status {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
 .eq-title {
   margin: 0 0 14px;
   font-size: 16px;

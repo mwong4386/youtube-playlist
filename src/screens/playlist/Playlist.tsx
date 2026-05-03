@@ -319,6 +319,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         profiles={audioEqProfiles}
         save={onSave}
         onAnalyzeSongBoundaries={analyzeSongBoundaries}
+        onAdjustSongEqWithGemini={adjustSongEqWithGemini}
         currentPlaybackItemId={effectivePlaybackItemId}
         isPlaybackActive={playing}
         item={selectedInfoItem}

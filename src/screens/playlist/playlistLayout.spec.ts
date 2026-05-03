@@ -65,6 +65,14 @@ const selectionActionsGeminiEqReviewSource = readFileSync(
   join(process.cwd(), "src/screens/playlist/selectionActionsGeminiEqReview.ts"),
   "utf8",
 );
+const infoModalSource = readFileSync(
+  join(process.cwd(), "src/screens/modal/InfoModal.tsx"),
+  "utf8",
+);
+const songEditorSource = readFileSync(
+  join(process.cwd(), "src/screens/modal/SongEditor.tsx"),
+  "utf8",
+);
 const playlistImportModalStyles = readFileSync(
   join(process.cwd(), "src/screens/playlist/PlaylistImportModal.module.css"),
   "utf8",
@@ -594,6 +602,30 @@ test("playlist actions request and apply Gemini song EQ through existing playlis
   expectEqual(playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"), true);
   expectEqual(playlistActionsSource.includes("onApplyGeminiSongEqSuggestion"), true);
   expectEqual(playlistActionsSource.includes("updateActiveSongListItems"), true);
+});
+
+test("InfoModal wires Gemini song EQ adjustment into SongEditor", () => {
+  expectEqual(infoModalSource.includes("onAdjustSongEqWithGemini"), true);
+  expectEqual(
+    infoModalSource.includes("onAdjustSongEqWithGemini={onAdjustSongEqWithGemini}"),
+    true,
+  );
+});
+
+test("Playlist passes Gemini song EQ adjustment into the edit song modal", () => {
+  expectEqual(
+    playlistSource.includes("onAdjustSongEqWithGemini={adjustSongEqWithGemini}"),
+    true,
+  );
+});
+
+test("SongEditor reuses the shared Gemini song EQ review helper", () => {
+  expectEqual(songEditorSource.includes("createGeminiEqSubmission"), true);
+  expectEqual(songEditorSource.includes("resolveGeminiEqSubmission"), true);
+  expectEqual(
+    songEditorSource.includes("setValue(band.key, suggestion.audioEq[band.key]"),
+    true,
+  );
 });
 
 test("playlist item source renders a checkbox for selection mode", () => {

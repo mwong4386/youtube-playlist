@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile from "../../models/AudioEqProfile";
+import type {
+  GeminiSongEqResponse,
+  GeminiSongEqUserRequest,
+} from "../../models/GeminiActions";
 import {
   type GeminiBoundarySuggestion,
   type GeminiAnalyzeFailure,
@@ -40,6 +44,9 @@ interface Props {
   onAnalyzeSongBoundaries: (
     itemId: string,
   ) => Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>;
+  onAdjustSongEqWithGemini: (
+    request: GeminiSongEqUserRequest,
+  ) => Promise<GeminiSongEqResponse>;
 }
 
 const toNumber = (value: number) => Number(value) || 0;
@@ -55,6 +62,7 @@ const InfoModal = ({
   currentPlaybackItemId,
   isPlaybackActive,
   onAnalyzeSongBoundaries,
+  onAdjustSongEqWithGemini,
 }: Props) => {
   const [latestGeminiSuggestion, setLatestGeminiSuggestion] = useState<
     GeminiBoundarySuggestion | undefined
@@ -138,6 +146,7 @@ const InfoModal = ({
             onvolumechange={onvolumechange}
             onAudioEqChange={onAudioEqChange}
             onAnalyzeSongBoundaries={onAnalyzeSongBoundaries}
+            onAdjustSongEqWithGemini={onAdjustSongEqWithGemini}
             formMethods={formMethods}
             latestGeminiSuggestion={latestGeminiSuggestion}
             setLatestGeminiSuggestion={setLatestGeminiSuggestion}

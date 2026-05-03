@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import AudioEqSettings from "../../models/AudioEq";
 import AudioEqProfile from "../../models/AudioEqProfile";
+import type {
+  GeminiSongEqResponse,
+  GeminiSongEqUserRequest,
+} from "../../models/GeminiActions";
 import {
   GeminiAnalyzeErrorCode,
   type GeminiBoundarySuggestion,
@@ -27,6 +31,12 @@ import {
   syncAnalyzeScope,
   type GeminiAnalyzeScope,
 } from "./geminiAnalyzeRequest";
+import {
+  createGeminiEqSubmission,
+  createInitialGeminiEqReviewState,
+  resolveGeminiEqSubmission,
+  type GeminiEqReviewState,
+} from "../playlist/selectionActionsGeminiEqReview";
 
 export type InfoModels = AudioEqSettings &
   GeminiSuggestionFormShape & {
@@ -43,6 +53,9 @@ interface SongEditorProps {
   onAnalyzeSongBoundaries: (
     itemId: string,
   ) => Promise<GeminiAnalyzeSuccess | GeminiAnalyzeFailure>;
+  onAdjustSongEqWithGemini: (
+    request: GeminiSongEqUserRequest,
+  ) => Promise<GeminiSongEqResponse>;
   formMethods: UseFormReturn<InfoModels>;
   latestGeminiSuggestion: GeminiBoundarySuggestion | undefined;
   setLatestGeminiSuggestion: (
@@ -59,6 +72,7 @@ export const SongEditor = ({
   onvolumechange,
   onAudioEqChange,
   onAnalyzeSongBoundaries,
+  onAdjustSongEqWithGemini,
   formMethods,
   latestGeminiSuggestion,
   setLatestGeminiSuggestion,
@@ -68,12 +82,18 @@ export const SongEditor = ({
   const [activeView, setActiveView] = useState<InfoModalView>("info");
   const [isAnalyzing, setAnalyzing] = useState(false);
   const [analyzeMessage, setAnalyzeMessage] = useState("");
+  const [geminiEqReview, setGeminiEqReview] = useState<GeminiEqReviewState>(
+    createInitialGeminiEqReviewState,
+  );
 
   const analyzeScopeRef = useRef<GeminiAnalyzeScope>({
     active: false,
     itemId: undefined,
     requestToken: 0,
   });
+  const geminiEqRequestTokenRef = useRef(0);
+  const editorActiveRef = useRef(active);
+  editorActiveRef.current = active;
 
   const {
     register,
@@ -143,6 +163,8 @@ export const SongEditor = ({
     setActiveView("info");
     setAnalyzing(false);
     setAnalyzeMessage("");
+    setGeminiEqReview(createInitialGeminiEqReviewState());
+    geminiEqRequestTokenRef.current += 1;
     setLatestGeminiSuggestion(undefined);
   }, [active, item?.id, reset, setLatestGeminiSuggestion]);
 
@@ -243,6 +265,81 @@ export const SongEditor = ({
     } finally {
       if (shouldApplyAnalyzeResult(analyzeScopeRef.current, request)) {
         setAnalyzing(false);
+      }
+    }
+  };
+
+  const applyGeminiEqSuggestionToForm = (
+    suggestion: NonNullable<GeminiEqReviewState["suggestion"]>,
+  ) => {
+    AUDIO_EQ_BANDS.forEach((band) => {
+      setValue(band.key, suggestion.audioEq[band.key], {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    });
+
+    if (selectedProfileId) {
+      setSelectedProfileId(clearSelectedAudioEqProfileId(selectedProfileId));
+    }
+
+    onAudioEqChange(suggestion.audioEq);
+  };
+
+  const onGenerateGeminiEq = async () => {
+    if (!item || geminiEqReview.isLoading) {
+      return;
+    }
+
+    const requestToken = geminiEqRequestTokenRef.current + 1;
+    geminiEqRequestTokenRef.current = requestToken;
+    const submission = createGeminiEqSubmission({
+      state: geminiEqReview,
+      selectedCount: 1,
+      selectedSong: {
+        ...item,
+        audioEq: currentAudioEq,
+      },
+      audioEqProfiles: profiles,
+      requestToken,
+    });
+
+    setGeminiEqReview(submission.state);
+
+    if (!submission.runtimeRequest) {
+      return;
+    }
+
+    try {
+      const response = await onAdjustSongEqWithGemini(submission.runtimeRequest);
+
+      if (
+        editorActiveRef.current &&
+        requestToken === geminiEqRequestTokenRef.current &&
+        response.ok
+      ) {
+        applyGeminiEqSuggestionToForm(response.suggestion);
+      }
+
+      setGeminiEqReview((currentState) =>
+        resolveGeminiEqSubmission({
+          state: currentState,
+          response,
+          responseToken: requestToken,
+          latestRequestToken: geminiEqRequestTokenRef.current,
+          active: editorActiveRef.current,
+        }),
+      );
+    } catch {
+      if (
+        editorActiveRef.current &&
+        requestToken === geminiEqRequestTokenRef.current
+      ) {
+        setGeminiEqReview((currentState) => ({
+          ...currentState,
+          status: "Couldn't adjust song EQ. Try again.",
+          isLoading: false,
+        }));
       }
     }
   };
@@ -471,6 +568,35 @@ export const SongEditor = ({
                 </select>
               </div>
             )}
+            <div className={styles["gemini-eq-form"]}>
+              <textarea
+                value={geminiEqReview.request}
+                onChange={(event) =>
+                  setGeminiEqReview((currentState) => ({
+                    ...currentState,
+                    request: event.target.value,
+                  }))
+                }
+                className={styles["gemini-eq-textarea"]}
+                placeholder="Describe an optional EQ preference"
+                aria-label="Describe an optional EQ preference"
+              />
+              <div className={styles["gemini-eq-action-row"]}>
+                <button
+                  type="button"
+                  className={styles["gemini-eq-button"]}
+                  onClick={onGenerateGeminiEq}
+                  disabled={geminiEqReview.isLoading}
+                >
+                  {geminiEqReview.isLoading ? "Generating..." : "Generate"}
+                </button>
+              </div>
+              {geminiEqReview.status && (
+                <p className={styles["gemini-eq-status"]}>
+                  {geminiEqReview.status}
+                </p>
+              )}
+            </div>
             <div className={styles["eq-section"]}>
               <p className={styles["eq-title"]}>Song EQ</p>
               <AudioEqVerticalBands
