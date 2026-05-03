@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CloseIcon } from "../icons";
 import styles from "./Modal.module.css";
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
   subtitle?: string;
   badge?: ReactNode;
   action?: ReactNode;
+  closeIcon?: ReactNode;
   closeLabel: string;
   onClose: () => void;
 }
@@ -15,6 +17,7 @@ const ModalChromeHeader = ({
   subtitle,
   badge,
   action,
+  closeIcon,
   closeLabel,
   onClose,
 }: Props) => {
@@ -27,7 +30,7 @@ const ModalChromeHeader = ({
         aria-label={closeLabel}
         title={closeLabel}
       >
-        x
+        {closeIcon || <CloseIcon />}
       </button>
       <div className={styles["chrome-title-stack"]}>
         <h2 className={styles["chrome-title"]}>{title}</h2>

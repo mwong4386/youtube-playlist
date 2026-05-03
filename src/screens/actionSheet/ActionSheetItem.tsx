@@ -3,6 +3,13 @@ import {
   getThemePreferenceIndex,
   THEME_PREFERENCE_OPTIONS,
 } from "../../utils/theme";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  EditIcon,
+  PlusIcon,
+} from "../icons";
 import styles from "./ActionSheet.module.css";
 
 interface props {
@@ -13,22 +20,20 @@ interface props {
 const renderIcon = (
   icon: "plus" | "chevron-down" | "edit" | "check" | "x"
 ) => {
-  const pathByIcon = {
-    plus: "M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z",
-    "chevron-down":
-      "M6.72 8.97a1 1 0 0 1 1.41 0L12 12.84l3.87-3.87a1 1 0 1 1 1.41 1.41l-4.58 4.59a1 1 0 0 1-1.41 0L6.72 10.38a1 1 0 0 1 0-1.41Z",
-    edit:
-      "M15.12 4.47a1.5 1.5 0 0 1 2.12 0l2.29 2.29a1.5 1.5 0 0 1 0 2.12L8.49 19.92a2 2 0 0 1-.84.5l-3.31.83a.75.75 0 0 1-.91-.91l.83-3.31a2 2 0 0 1 .5-.84L15.12 4.47Zm1.06 1.06-10 10-.49 1.95 1.95-.49 10-10-1.46-1.46Z",
-    check:
-      "M9.55 16.06 5.3 11.81a1 1 0 1 1 1.4-1.42l2.85 2.84 7.75-7.74a1 1 0 1 1 1.4 1.41l-8.45 8.45a1 1 0 0 1-1.4 0Z",
-    x: "M7.4 6 12 10.6 16.6 6a1 1 0 0 1 1.4 1.4L13.4 12l4.6 4.6a1 1 0 1 1-1.4 1.4L12 13.4 7.4 18a1 1 0 0 1-1.4-1.4l4.6-4.6L6 7.4A1 1 0 0 1 7.4 6Z",
-  } as const;
+  const iconClassName = styles["row-icon-svg"];
 
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles["row-icon-svg"]}>
-      <path fill="currentColor" d={pathByIcon[icon]} />
-    </svg>
-  );
+  switch (icon) {
+    case "plus":
+      return <PlusIcon className={iconClassName} />;
+    case "chevron-down":
+      return <ChevronDownIcon className={iconClassName} />;
+    case "edit":
+      return <EditIcon className={iconClassName} />;
+    case "check":
+      return <CheckIcon className={iconClassName} />;
+    case "x":
+      return <CloseIcon className={iconClassName} />;
+  }
 };
 
 const ActionSheetItem = ({ item, close }: props) => {

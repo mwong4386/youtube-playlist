@@ -283,6 +283,7 @@ test("action sheet source supports custom song list rows and inline rename icons
   expectEqual(actionSheetItemSource.includes("song-list-inline-edit"), true);
   expectEqual(actionSheetItemSource.includes("song-list-selector"), true);
   expectEqual(actionSheetItemSource.includes("trailingIcon"), true);
+  expectEqual(actionSheetItemSource.includes("EditIcon"), true);
   expectEqual(actionSheetItemSource.includes("saveIcon"), true);
   expectEqual(actionSheetItemSource.includes("cancelIcon"), true);
   expectEqual(actionSheetModelSource.includes("song-list-selector"), true);
@@ -741,6 +742,26 @@ test("settings action sheet reuses the shared modal shell", () => {
   expectEqual(getCssBlock(actionSheetStyles, ".container"), null);
   expectEqual(getCssBlock(actionSheetStyles, ".backdrop"), null);
   expectEqual(actionSheetStyles.includes("border-radius: var(--glass-radius);"), true);
+});
+
+test("Gemini EQ builder opens in the shared modal shell without replacing the playlist", () => {
+  expectEqual(playlistSource.includes('import Modal from "../modal/Modal"'), true);
+  expectEqual(playlistSource.includes("if (isGeminiEqBuilderOpen)"), false);
+  expectEqual(
+    playlistSource.includes(
+      "<Modal active={isGeminiEqBuilderOpen} close={closeGeminiEqBuilder}>",
+    ),
+    true,
+  );
+  expectEqual(playlistSource.includes("<GeminiEqProfileBuilder"), true);
+});
+
+test("Gemini settings modal stays above the Gemini EQ builder when opened from it", () => {
+  expectEqual(
+    playlistSource.indexOf("<GeminiSettingsModal") >
+      playlistSource.indexOf("<GeminiEqProfileBuilder"),
+    true,
+  );
 });
 
 test("playlist item play button routes through modal-opening playback wiring", () => {

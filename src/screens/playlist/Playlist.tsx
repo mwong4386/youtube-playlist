@@ -4,6 +4,7 @@ import DeleteAllModal from "./DeleteAllModal";
 import GeminiEqProfileBuilder from "../gemini/GeminiEqProfileBuilder";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import InfoModal from "../modal/InfoModal";
+import Modal from "../modal/Modal";
 import SettingsModal from "../settings/SettingsModal";
 import {
   getAnalyzeImportBannerViewModel,
@@ -239,27 +240,6 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setSelectedInfoItemId(undefined);
   }, [playlist, selectedInfoItemId, setPendingPlaybackItemId, setSelectedInfoItemId]);
 
-  if (isGeminiEqBuilderOpen) {
-    return (
-      <>
-        <GeminiEqProfileBuilder
-          existingProfiles={audioEqProfiles}
-          onBack={closeGeminiEqBuilder}
-          onOpenSettings={openGeminiSettings}
-          onCreateProfile={onCreateProfile}
-          requestGeminiEqProfile={generateEqProfileWithGemini}
-        />
-        <GeminiSettingsModal
-          active={isGeminiSettingsOpen}
-          close={closeGeminiSettings}
-          geminiApiKey={geminiApiKey}
-          onSaveGeminiApiKey={onSaveGeminiApiKey}
-          onRemoveGeminiApiKey={onRemoveGeminiApiKey}
-        />
-      </>
-    );
-  }
-
   return (
     <>
       <div className={styles["page-container"]}>
@@ -342,6 +322,15 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
       />
+      <Modal active={isGeminiEqBuilderOpen} close={closeGeminiEqBuilder}>
+        <GeminiEqProfileBuilder
+          existingProfiles={audioEqProfiles}
+          onBack={closeGeminiEqBuilder}
+          onOpenSettings={openGeminiSettings}
+          onCreateProfile={onCreateProfile}
+          requestGeminiEqProfile={generateEqProfileWithGemini}
+        />
+      </Modal>
       <GeminiSettingsModal
         active={isGeminiSettingsOpen}
         close={closeGeminiSettings}

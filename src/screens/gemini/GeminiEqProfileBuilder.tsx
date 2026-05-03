@@ -8,6 +8,8 @@ import type {
   GeminiSongContext,
 } from "../../models/GeminiActions";
 import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
+import GeminiKeyIcon from "../icons/GeminiKeyIcon";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
 import styles from "./GeminiEqProfileBuilder.module.css";
 
 interface Props {
@@ -79,25 +81,21 @@ const GeminiEqProfileBuilder = ({
 
   return (
     <section className={styles.panel} aria-label="Gemini EQ profile builder">
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={onBack}
-          aria-label="Back to playlist"
-        >
-          Back
-        </button>
-        <h2 className={styles.title}>Gemini EQ</h2>
-        <button
-          type="button"
-          className={styles.settingsButton}
-          onClick={onOpenSettings}
-          aria-label="Open Gemini settings"
-        >
-          <img className={styles.settingsIcon} src="./assets/menu30.svg" alt="" />
-        </button>
-      </header>
+      <ModalChromeHeader
+        title="Gemini EQ"
+        closeLabel="Close Gemini EQ"
+        onClose={onBack}
+        action={
+          <button
+            type="button"
+            className={styles.settingsButton}
+            onClick={onOpenSettings}
+            aria-label="Open Gemini settings"
+          >
+            <GeminiKeyIcon className={styles.settingsIcon} />
+          </button>
+        }
+      />
       <div className={styles.body}>
         <label className={styles.label}>
           Describe an optional EQ preference

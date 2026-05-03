@@ -197,6 +197,7 @@ Additional popup-only UI state:
 - Item creation currently always appends a new record; it does not deduplicate by `videoId`.
 - Popup layout is height-sensitive. If you add banners, helper rows, or new panels near the top of the popup, prefer putting them inside the scrollable content area instead of above it.
 - Reuse the action-sheet and modal patterns before inventing new popup surfaces; the UI now depends on those shared sheet styles for consistency.
+- Keep reusable SVG icons as small components in `src/screens/icons/`, one icon per file. Export all icons from `src/screens/icons/index.ts`. Feature components should import those icon components instead of embedding SVG markup inline. Icons should default to `currentColor` and rely on parent CSS for sizing. Content-script DOM-string icons live in `src/contentScript/icons.ts`, not in React screen components.
 
 ## Good Places To Add Features
 

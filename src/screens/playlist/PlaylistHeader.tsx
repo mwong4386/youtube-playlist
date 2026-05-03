@@ -10,6 +10,7 @@ import { type SongListRecord } from "../../models/SongList";
 import { getCurrentTimestamp } from "../../utils/date";
 import { ThemePreference } from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
+import { ChevronDownIcon, HomeIcon } from "../icons";
 import styles from "./Playlist.module.css";
 import {
   buildSongListSheetRows,
@@ -367,17 +368,7 @@ const PlaylistHeader = ({
               className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-home-button"]}`}
               aria-label="Return to playlist"
             >
-              <svg
-                className={styles["selection-header-home-icon"]}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  fill="currentColor"
-                  d="M12 3.5a1 1 0 0 1 .64.23l7 5.83a1 1 0 0 1-.64 1.77H18.5v7a1 1 0 0 1-1 1h-4.25a1 1 0 0 1-1-1V14h-1.5v4.25a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1v-7H5a1 1 0 0 1-.64-1.77l7-5.83A1 1 0 0 1 12 3.5Z"
-                />
-              </svg>
+              <HomeIcon className={styles["selection-header-home-icon"]} />
             </button>
           </div>
           <div
@@ -424,17 +415,7 @@ const PlaylistHeader = ({
               <span className={styles["song-list-button-label"]}>
                 {activeSongListName}
               </span>
-              <svg
-                className={styles["song-list-button-chevron"]}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  fill="currentColor"
-                  d="M7.22 9.47a.75.75 0 0 1 1.06 0L12 13.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06Z"
-                />
-              </svg>
+              <ChevronDownIcon className={styles["song-list-button-chevron"]} />
             </button>
           </div>
           <div

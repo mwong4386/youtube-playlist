@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AudioEqProfile, {
   AUDIO_EQ_PROFILE_LIMIT,
 } from "../../models/AudioEqProfile";
+import { BackIcon } from "../icons";
 import Modal from "../modal/Modal";
 import ModalChromeHeader from "../modal/ModalChromeHeader";
 import modalStyles from "../modal/Modal.module.css";
@@ -147,8 +148,88 @@ const SettingsModal = ({
   };
 
   return (
-    <>
-      <Modal active={active} close={close}>
+    <Modal active={active} close={isProfileEditorOpen ? closeProfileEditor : close}>
+      {isProfileEditorOpen ? (
+        <div className={`${modalStyles["chrome-panel"]} ${styles["editor-panel"]}`}>
+          <ModalChromeHeader
+            title={isEditing ? "Update profile" : "Create profile"}
+            subtitle={
+              isEditing
+                ? "Adjust the name and band levels"
+                : "Set a name and tune each band"
+            }
+            closeLabel="Close profile editor"
+            closeIcon={<BackIcon />}
+            onClose={closeProfileEditor}
+            action={
+              <button
+                type="button"
+                className={modalStyles["chrome-confirm-button"]}
+                onClick={saveProfile}
+              >
+                Save
+              </button>
+            }
+          />
+          <label className={styles["field"]}>
+            <span className={styles["field-label"]}>Profile name</span>
+            <input
+              type="text"
+              value={profileForm.name}
+              maxLength={40}
+              placeholder="New profile"
+              className={modalStyles["chrome-text-input"]}
+              onChange={(event) => {
+                const nextName = event.currentTarget.value;
+                setProfileForm((current) =>
+                  updateAudioEqProfileDraftName(current, nextName)
+                );
+              }}
+            />
+          </label>
+          <AudioEqSliderList
+            bands={AUDIO_EQ_BANDS}
+            settings={profileForm.audioEq}
+            classes={{
+              list: styles["slider-list"],
+              row: styles["slider-row"],
+              label: styles["slider-label"],
+              slider: styles["slider-input"],
+              value: styles["slider-value"],
+            }}
+            renderSlider={(band, sliderClassName) => (
+              <input
+                id={band.key}
+                type="range"
+                min={AUDIO_EQ_MIN}
+                max={AUDIO_EQ_MAX}
+                step="1"
+                value={profileForm.audioEq[band.key]}
+                className={sliderClassName}
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+                  setProfileForm((current) =>
+                    updateAudioEqProfileDraftBand(
+                      current,
+                      band.key,
+                      nextValue
+                    )
+                  );
+                }}
+              />
+            )}
+          />
+          <div className={styles["editor-actions"]}>
+            <button
+              type="button"
+              className={modalStyles["chrome-secondary-button"]}
+              onClick={resetProfileForm}
+            >
+              {isProfileFormDirty ? "Reset changes" : "Reset"}
+            </button>
+          </div>
+        </div>
+      ) : (
         <div className={`${modalStyles["chrome-panel"]} ${styles["panel"]}`}>
           <ModalChromeHeader
             title="EQ Profiles"
@@ -262,88 +343,8 @@ const SettingsModal = ({
             ) : null}
           </section>
         </div>
-      </Modal>
-      <Modal active={isProfileEditorOpen} close={closeProfileEditor}>
-        <div className={`${modalStyles["chrome-panel"]} ${styles["editor-panel"]}`}>
-          <ModalChromeHeader
-            title={isEditing ? "Update profile" : "Create profile"}
-            subtitle={
-              isEditing
-                ? "Adjust the name and band levels"
-                : "Set a name and tune each band"
-            }
-            closeLabel="Close profile editor"
-            onClose={closeProfileEditor}
-            action={
-              <button
-                type="button"
-                className={modalStyles["chrome-confirm-button"]}
-                onClick={saveProfile}
-              >
-                Save
-              </button>
-            }
-          />
-          <label className={styles["field"]}>
-            <span className={styles["field-label"]}>Profile name</span>
-            <input
-              type="text"
-              value={profileForm.name}
-              maxLength={40}
-              placeholder="New profile"
-              className={modalStyles["chrome-text-input"]}
-              onChange={(event) => {
-                const nextName = event.currentTarget.value;
-                setProfileForm((current) =>
-                  updateAudioEqProfileDraftName(current, nextName)
-                );
-              }}
-            />
-          </label>
-          <AudioEqSliderList
-            bands={AUDIO_EQ_BANDS}
-            settings={profileForm.audioEq}
-            classes={{
-              list: styles["slider-list"],
-              row: styles["slider-row"],
-              label: styles["slider-label"],
-              slider: styles["slider-input"],
-              value: styles["slider-value"],
-            }}
-            renderSlider={(band, sliderClassName) => (
-              <input
-                id={band.key}
-                type="range"
-                min={AUDIO_EQ_MIN}
-                max={AUDIO_EQ_MAX}
-                step="1"
-                value={profileForm.audioEq[band.key]}
-                className={sliderClassName}
-                onChange={(event) => {
-                  const nextValue = Number(event.currentTarget.value);
-                  setProfileForm((current) =>
-                    updateAudioEqProfileDraftBand(
-                      current,
-                      band.key,
-                      nextValue
-                    )
-                  );
-                }}
-              />
-            )}
-          />
-          <div className={styles["editor-actions"]}>
-            <button
-              type="button"
-              className={modalStyles["chrome-secondary-button"]}
-              onClick={resetProfileForm}
-            >
-              {isProfileFormDirty ? "Reset changes" : "Reset"}
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </>
+      )}
+    </Modal>
   );
 };
 

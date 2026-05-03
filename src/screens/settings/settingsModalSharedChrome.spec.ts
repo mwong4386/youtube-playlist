@@ -49,3 +49,24 @@ test("settings modal no longer owns duplicated modal chrome styles", () => {
   expectEqual(settingsStyles.includes(".danger-button {"), false);
   expectEqual(settingsStyles.includes(".text-input {"), false);
 });
+
+test("settings modal uses one modal shell for the profile list and editor", () => {
+  const modalShells = settingsSource.match(/<Modal active=/g) || [];
+
+  expectEqual(modalShells.length, 1);
+});
+
+test("profile editor header uses a back affordance instead of close chrome", () => {
+  expectEqual(settingsSource.includes("import { BackIcon } from \"../icons\";"), true);
+  expectEqual(settingsSource.includes("closeIcon={<BackIcon />}"), true);
+});
+
+test("shared modal header renders a close icon by default", () => {
+  const modalHeaderSource = readFileSync(
+    join(process.cwd(), "src/screens/modal/ModalChromeHeader.tsx"),
+    "utf8",
+  );
+
+  expectEqual(modalHeaderSource.includes("import { CloseIcon } from \"../icons\";"), true);
+  expectEqual(modalHeaderSource.includes("{closeIcon || <CloseIcon />}"), true);
+});
