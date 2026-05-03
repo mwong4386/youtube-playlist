@@ -28,19 +28,20 @@ const getCssBlock = (css: string, selector: string) => {
   return match?.[2] ?? "";
 };
 
-test("GeminiEqProfileBuilder exposes close and settings actions in modal chrome", () => {
+test("GeminiEqProfileBuilder exposes close action in modal chrome", () => {
   expectEqual(source.includes("onBack"), true);
   expectEqual(source.includes("onOpenSettings"), true);
   expectEqual(source.includes('import ModalChromeHeader from "../modal/ModalChromeHeader"'), true);
   expectEqual(source.includes('closeLabel="Close Gemini EQ"'), true);
   expectEqual(source.includes(">Back<"), false);
-  expectEqual(source.includes('aria-label="Open Gemini settings"'), true);
+  expectEqual(source.includes("action={"), false);
 });
 
-test("GeminiEqProfileBuilder uses a key icon for the Gemini settings entry", () => {
+test("GeminiEqProfileBuilder does not render a separate key icon action", () => {
   expectEqual(source.includes('src="./assets/menu30.svg"'), false);
-  expectEqual(source.includes('import GeminiKeyIcon from "../icons/GeminiKeyIcon"'), true);
-  expectEqual(source.includes("<GeminiKeyIcon className={styles.settingsIcon} />"), true);
+  expectEqual(source.includes('import GeminiKeyIcon from "../icons/GeminiKeyIcon"'), false);
+  expectEqual(source.includes("<GeminiKeyIcon className={styles.settingsIcon} />"), false);
+  expectEqual(source.includes('aria-label="Open Gemini settings"'), false);
   expectEqual(source.includes("<circle cx=\"8\" cy=\"12\" r=\"4\" />"), false);
   expectEqual(source.includes("<path d=\"M12 12h10\" />"), false);
   expectEqual(source.includes(">Gemini settings<"), false);
@@ -63,6 +64,32 @@ test("GeminiEqProfileBuilder allows optional prompt text", () => {
   expectEqual(source.includes("userRequest: normalizedRequest"), true);
 });
 
+test("GeminiEqProfileBuilder turns generation into a key action without a saved key", () => {
+  expectEqual(source.includes("geminiApiKey:"), true);
+  expectEqual(source.includes("const hasGeminiApiKey = geminiApiKey.trim().length > 0;"), true);
+  expectEqual(source.includes("disabled={!hasGeminiApiKey}"), true);
+  expectEqual(
+    source.includes("Add a Gemini API key first, then describe an optional EQ preference."),
+    true,
+  );
+  expectEqual(source.includes("onClick={hasGeminiApiKey ? onGenerate : onOpenSettings}"), true);
+  expectEqual(source.includes('hasGeminiApiKey ? "Generate" : "Key"'), true);
+});
+
+test("embedded Gemini action lives beside the Ask Gemini title", () => {
+  const embeddedHeaderBlock = getCssBlock(cssSource, ".embeddedHeader");
+  const embeddedActionBlock = getCssBlock(cssSource, ".embeddedActionButton");
+
+  expectEqual(source.includes("const primaryAction = ("), true);
+  expectEqual(source.includes('<h3 className={styles.embeddedTitle}>Ask Gemini</h3>\n          {primaryAction}'), true);
+  expectEqual(source.includes("{!embedded && <div className={styles.actions}>{primaryAction}</div>}"), true);
+  expectEqual(source.includes("styles.embeddedActionButton"), true);
+  expectEqual(embeddedHeaderBlock.includes("margin-bottom: 8px;"), true);
+  expectEqual(embeddedActionBlock.includes("border-radius: 999px;"), true);
+  expectEqual(embeddedActionBlock.includes("background:"), false);
+  expectEqual(embeddedActionBlock.includes("color: #ffffff;"), true);
+});
+
 test("GeminiEqProfileBuilder supports optional song context", () => {
   expectEqual(source.includes("songContext?"), true);
   expectEqual(source.includes("songContext,"), true);
@@ -80,18 +107,11 @@ test("GeminiEqProfileBuilder announces async status messages", () => {
   expectEqual(source.includes('aria-live="polite"'), true);
 });
 
-test("GeminiEqProfileBuilder header actions use stable icon button sizing", () => {
-  const settingsIconBlock = getCssBlock(cssSource, ".settingsIcon");
-
+test("GeminiEqProfileBuilder does not keep unused settings icon styles", () => {
   expectEqual(cssSource.includes(".backButton"), false);
   expectEqual(cssSource.includes("width: auto;"), false);
-  expectEqual(cssSource.includes("width: 42px;"), true);
-  expectEqual(cssSource.includes("padding: 0;"), true);
-  expectEqual(cssSource.includes("opacity: 0.86;"), true);
-  expectEqual(settingsIconBlock.includes("width: 30px;"), true);
-  expectEqual(settingsIconBlock.includes("height: 30px;"), true);
-  expectEqual(settingsIconBlock.includes("color: var(--text-secondary);"), true);
-  expectEqual(settingsIconBlock.includes("filter:"), false);
+  expectEqual(cssSource.includes(".settingsButton"), false);
+  expectEqual(cssSource.includes(".settingsIcon"), false);
 });
 
 test("GeminiEqProfileBuilder panel inherits the playlist surface", () => {

@@ -8,12 +8,12 @@ import type {
   GeminiSongContext,
 } from "../../models/GeminiActions";
 import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
-import GeminiKeyIcon from "../icons/GeminiKeyIcon";
 import ModalChromeHeader from "../modal/ModalChromeHeader";
 import styles from "./GeminiEqProfileBuilder.module.css";
 
 interface Props {
   existingProfiles: AudioEqProfile[];
+  geminiApiKey: string;
   songContext?: GeminiSongContext;
   onBack: () => void;
   onOpenSettings: () => void;
@@ -27,6 +27,7 @@ interface Props {
 
 const GeminiEqProfileBuilder = ({
   existingProfiles,
+  geminiApiKey,
   songContext,
   onBack,
   onOpenSettings,
@@ -40,8 +41,14 @@ const GeminiEqProfileBuilder = ({
   const [message, setMessage] = useState("");
   const [suggestion, setSuggestion] =
     useState<GeminiEqProfileSuggestion | null>(null);
+  const hasGeminiApiKey = geminiApiKey.trim().length > 0;
 
   const onGenerate = async () => {
+    if (!hasGeminiApiKey) {
+      onOpenSettings();
+      return;
+    }
+
     const normalizedRequest = userRequest.trim();
 
     setIsGenerating(true);
@@ -89,6 +96,19 @@ const GeminiEqProfileBuilder = ({
     setUserRequest("");
   };
 
+  const primaryAction = (
+    <button
+      type="button"
+      className={`${styles.primaryButton} ${
+        embedded ? styles.embeddedActionButton : ""
+      }`}
+      onClick={hasGeminiApiKey ? onGenerate : onOpenSettings}
+      disabled={isGenerating}
+    >
+      {isGenerating ? "Generating..." : hasGeminiApiKey ? "Generate" : "Key"}
+    </button>
+  );
+
   return (
     <section
       className={styles.panel}
@@ -103,29 +123,12 @@ const GeminiEqProfileBuilder = ({
           title="Gemini EQ"
           closeLabel="Close Gemini EQ"
           onClose={onBack}
-          action={
-            <button
-              type="button"
-              className={styles.settingsButton}
-              onClick={onOpenSettings}
-              aria-label="Open Gemini settings"
-            >
-              <GeminiKeyIcon className={styles.settingsIcon} />
-            </button>
-          }
         />
       )}
       {embedded && (
         <div className={styles.embeddedHeader}>
           <h3 className={styles.embeddedTitle}>Ask Gemini</h3>
-          <button
-            type="button"
-            className={styles.settingsButton}
-            onClick={onOpenSettings}
-            aria-label="Open Gemini settings"
-          >
-            <GeminiKeyIcon className={styles.settingsIcon} />
-          </button>
+          {primaryAction}
         </div>
       )}
       <div className={styles.body}>
@@ -137,19 +140,15 @@ const GeminiEqProfileBuilder = ({
             onChange={(event) => {
               setUserRequest(event.currentTarget.value);
             }}
-            placeholder="Describe an optional EQ preference, like make vocals warmer, add bass, or leave blank for Gemini to infer."
+            placeholder={
+              hasGeminiApiKey
+                ? "Describe an optional EQ preference, like make vocals warmer, add bass, or leave blank for Gemini to infer."
+                : "Add a Gemini API key first, then describe an optional EQ preference."
+            }
+            disabled={!hasGeminiApiKey}
           />
         </label>
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.primaryButton}
-            onClick={onGenerate}
-            disabled={isGenerating}
-          >
-            {isGenerating ? "Generating..." : "Generate"}
-          </button>
-        </div>
+        {!embedded && <div className={styles.actions}>{primaryAction}</div>}
         <p className={styles.message} role="status" aria-live="polite">
           {message}
         </p>

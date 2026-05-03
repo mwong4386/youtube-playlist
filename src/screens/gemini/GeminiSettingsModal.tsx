@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Modal from "../modal/Modal";
+import { BackIcon } from "../icons";
 import styles from "./GeminiSettingsModal.module.css";
 import {
   createRemoveGeminiApiKeyFeedback,
@@ -10,6 +11,7 @@ import {
 interface Props {
   active: boolean;
   close: () => void;
+  backToSettings: () => void;
   geminiApiKey: string;
   onSaveGeminiApiKey: (value: string) => Promise<void>;
   onRemoveGeminiApiKey: () => Promise<void>;
@@ -18,6 +20,7 @@ interface Props {
 const GeminiSettingsModal = ({
   active,
   close,
+  backToSettings,
   geminiApiKey,
   onSaveGeminiApiKey,
   onRemoveGeminiApiKey,
@@ -60,10 +63,11 @@ const GeminiSettingsModal = ({
           <button
             type="button"
             className={styles.closeButton}
-            onClick={close}
-            aria-label="Close Gemini settings"
+            onClick={backToSettings}
+            aria-label="Back to settings"
+            title="Back to settings"
           >
-            x
+            <BackIcon />
           </button>
         </div>
         <section className={styles.section} aria-labelledby="gemini-api-key-title">

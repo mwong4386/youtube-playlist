@@ -272,6 +272,29 @@ test("playlist menu groups Gemini EQ creation under EQ Profiles", () => {
   expectEqual(playlistHeaderSource.includes("onOpenGeminiEqBuilder"), false);
 });
 
+test("settings subpages replace the settings sheet instead of stacking", () => {
+  const eqProfilesItemIndex = playlistHeaderSource.indexOf('description: "EQ Profiles"');
+  const geminiItemIndex = playlistHeaderSource.indexOf('description: "Gemini"', eqProfilesItemIndex);
+  const importItemIndex = playlistHeaderSource.indexOf('description: "Import Playlist"', geminiItemIndex);
+  const volumeItemIndex = playlistHeaderSource.indexOf("Volume adjust", importItemIndex);
+  const eqProfilesItemSource = playlistHeaderSource.slice(eqProfilesItemIndex, geminiItemIndex);
+  const geminiItemSource = playlistHeaderSource.slice(geminiItemIndex, importItemIndex);
+  const importItemSource = playlistHeaderSource.slice(importItemIndex, volumeItemIndex);
+
+  expectEqual(eqProfilesItemSource.includes("shouldCloseOnClick: false"), false);
+  expectEqual(geminiItemSource.includes("shouldCloseOnClick: false"), false);
+  expectEqual(importItemSource.includes("shouldCloseOnClick: false"), false);
+  expectEqual(playlistSource.includes('import useActionSheet from "../actionSheet/useActionSheet";'), true);
+  expectEqual(playlistSource.includes("const actionSheet = useActionSheet();"), true);
+  expectEqual(playlistSource.includes("actionSheet.close();"), true);
+  expectEqual(playlistSource.includes("close={closeEqSettingsAndSettingsMenu}"), true);
+  expectEqual(playlistSource.includes("backToSettings={closeEqSettings}"), true);
+  expectEqual(playlistSource.includes("close={closeGeminiSettingsAndSettingsMenu}"), true);
+  expectEqual(playlistSource.includes("backToSettings={closeGeminiSettings}"), true);
+  expectEqual(playlistSource.includes("close={closePlaylistImportModalAndSettingsMenu}"), true);
+  expectEqual(playlistSource.includes("backToSettings={closePlaylistImportModal}"), true);
+});
+
 test("playlist passes Gemini EQ creation into settings", () => {
   expectEqual(playlistSource.includes("requestGeminiEqProfile={generateEqProfileWithGemini}"), true);
   expectEqual(playlistSource.includes("onOpenGeminiSettings={openGeminiSettings}"), true);
@@ -599,15 +622,9 @@ test("playlist styles include selection header and checkbox classes", () => {
   );
   expectEqual(playlistStyles.includes("margin-left: 10px;"), true);
   expectEqual(playlistStyles.includes("width: 28px;"), true);
-  expectEqual(playlistStyles.includes("padding: 0 0 16px;"), true);
-  expectEqual(
-    playlistStyles.includes("border-top: 1px solid var(--border-color);"),
-    true,
-  );
-  expectEqual(
-    playlistStyles.includes("background-color: var(--surface-secondary);"),
-    true,
-  );
+  expectEqual(playlistStyles.includes("min-height: 0;"), true);
+  expectEqual(playlistStyles.includes("gap: 8px;"), true);
+  expectEqual(playlistStyles.includes("background: transparent;"), true);
   expectEqual(playlistStyles.includes(".header-song-list-button"), false);
   expectEqual(playlistStyles.includes(".header-new-list-button"), false);
   expectEqual(playlistStyles.includes(".header-center-actions"), false);
@@ -762,6 +779,31 @@ test("Gemini settings modal stays above settings when opened from profile creati
       playlistSource.indexOf("<SettingsModal"),
     true,
   );
+});
+
+test("Gemini settings header uses back while backdrop uses stack close", () => {
+  const geminiSettingsSource = readFileSync(
+    join(process.cwd(), "src/screens/gemini/GeminiSettingsModal.tsx"),
+    "utf8",
+  );
+
+  expectEqual(geminiSettingsSource.includes('import { BackIcon } from "../icons";'), true);
+  expectEqual(geminiSettingsSource.includes("backToSettings: () => void;"), true);
+  expectEqual(geminiSettingsSource.includes("<Modal active={active} close={close}>"), true);
+  expectEqual(geminiSettingsSource.includes("onClick={backToSettings}"), true);
+  expectEqual(geminiSettingsSource.includes('aria-label="Back to settings"'), true);
+  expectEqual(geminiSettingsSource.includes("<BackIcon"), true);
+});
+
+test("playlist import header uses back while backdrop uses stack close", () => {
+  expectEqual(playlistImportModalSource.includes('import { BackIcon } from "../icons";'), true);
+  expectEqual(playlistImportModalSource.includes("backToSettings: () => void;"), true);
+  expectEqual(playlistImportModalSource.includes("<Modal active={active} close={guardedClose}>"), true);
+  expectEqual(playlistImportModalSource.includes("const onHeaderBack = () => {"), true);
+  expectEqual(playlistImportModalSource.includes("backToImportForm();"), true);
+  expectEqual(playlistImportModalSource.includes("backToSettings();"), true);
+  expectEqual(playlistImportModalSource.includes('aria-label={preview ? "Back to import form" : "Back to settings"}'), true);
+  expectEqual(playlistImportModalSource.includes("<BackIcon"), true);
 });
 
 test("playlist item play button routes through modal-opening playback wiring", () => {

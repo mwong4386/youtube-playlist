@@ -7,33 +7,12 @@
   color: var(--text-primary);
 }
 
-.settingsButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  color: var(--text-primary);
-  background: transparent;
-  line-height: 1;
-  box-shadow: none;
-  opacity: 0.86;
-}
-
-.settingsIcon {
-  width: 30px;
-  height: 30px;
-  color: var(--text-secondary);
-}
-
 .embeddedHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 8px;
 }
 
 .embeddedTitle {
@@ -69,6 +48,11 @@
   line-height: 1.4;
 }
 
+.textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .actions {
   display: flex;
   align-items: center;
@@ -88,6 +72,12 @@
   border: 0;
   background: var(--accent-color);
   color: var(--surface-primary);
+}
+
+.embeddedActionButton {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #ffffff;
 }
 
 .secondaryButton {

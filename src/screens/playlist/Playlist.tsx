@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { ThemePreference } from "../../utils/theme";
 import DeleteAllModal from "./DeleteAllModal";
+import useActionSheet from "../actionSheet/useActionSheet";
 import GeminiSettingsModal from "../gemini/GeminiSettingsModal";
 import InfoModal from "../modal/InfoModal";
 import SettingsModal from "../settings/SettingsModal";
@@ -35,6 +36,7 @@ interface Props {
 }
 
 const Playlist = ({ themePreference, setThemePreference }: Props) => {
+  const actionSheet = useActionSheet();
   const {
     songListsState,
     activeSongListName,
@@ -164,6 +166,21 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setIsShelfExpanded,
     dismissAnalyzeImportBanner,
   });
+
+  const closeEqSettingsAndSettingsMenu = () => {
+    closeEqSettings();
+    actionSheet.close();
+  };
+
+  const closeGeminiSettingsAndSettingsMenu = () => {
+    closeGeminiSettings();
+    actionSheet.close();
+  };
+
+  const closePlaylistImportModalAndSettingsMenu = () => {
+    closePlaylistImportModal();
+    actionSheet.close();
+  };
 
   useEffect(() => {
     setSelectedItemIds((currentSelectedItemIds) => {
@@ -308,8 +325,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       />
       <SettingsModal
         active={isEqSettingsOpen}
-        close={closeEqSettings}
+        close={closeEqSettingsAndSettingsMenu}
+        backToSettings={closeEqSettings}
         audioEqProfiles={audioEqProfiles}
+        geminiApiKey={geminiApiKey}
         onCreateProfile={onCreateProfile}
         onUpdateProfile={onUpdateProfile}
         onDeleteProfile={onDeleteProfile}
@@ -318,14 +337,16 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       />
       <GeminiSettingsModal
         active={isGeminiSettingsOpen}
-        close={closeGeminiSettings}
+        close={closeGeminiSettingsAndSettingsMenu}
+        backToSettings={closeGeminiSettings}
         geminiApiKey={geminiApiKey}
         onSaveGeminiApiKey={onSaveGeminiApiKey}
         onRemoveGeminiApiKey={onRemoveGeminiApiKey}
       />
       <PlaylistImportModal
         active={isPlaylistImportOpen}
-        close={closePlaylistImportModal}
+        close={closePlaylistImportModalAndSettingsMenu}
+        backToSettings={closePlaylistImportModal}
         onImportJson={onImportJson}
         onSubmit={previewYoutubePlaylistImport}
         onCommitPreview={onCommitPlaylistImportPreview}

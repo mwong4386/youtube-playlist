@@ -12,8 +12,10 @@ import {
   DEFAULT_AUDIO_EQ_SETTINGS,
   normalizeAudioEqSettings,
 } from "../../../utils/audioEq";
+import { CloseIcon } from "../../icons";
 import SongEditor, { type InfoModels } from "../../modal/SongEditor";
 import InfoModalTransport from "../../modal/InfoModalTransport";
+import modalStyles from "../../modal/Modal.module.css";
 import { hasValidManualTimestampRange } from "../../modal/manualTimestampValidation";
 import styles from "./PlaybackShelf.module.css";
 
@@ -111,13 +113,13 @@ const PlaybackShelf = ({
         >
           <div className={styles["header-row"]}>
             <button
-              className={styles["cross-button"]}
+              className={modalStyles["chrome-close-button"]}
               onClick={onToggleExpand}
               type="button"
               aria-label="Close editor"
               title="Close editor"
             >
-              x
+              <CloseIcon />
             </button>
             <button className={styles["save-button"]} type="submit">
               Save

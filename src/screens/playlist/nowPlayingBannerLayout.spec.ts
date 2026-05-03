@@ -24,6 +24,14 @@ const infoModalTransportSource = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModalTransport.tsx"),
   "utf8"
 );
+const playbackShelfSource = readFileSync(
+  join(process.cwd(), "src/screens/playlist/components/PlaybackShelf.tsx"),
+  "utf8"
+);
+const playbackShelfStyles = readFileSync(
+  join(process.cwd(), "src/screens/playlist/components/PlaybackShelf.module.css"),
+  "utf8"
+);
 const infoModalTransportStyles = readFileSync(
   join(process.cwd(), "src/screens/modal/InfoModalTransport.module.css"),
   "utf8"
@@ -97,4 +105,22 @@ test("modal transport source exposes a dedicated expand surface and transport bu
   expectEqual(infoModalTransportStyles.includes(".transportActions"), true);
   expectEqual(infoModalTransportStyles.includes(".marqueeViewport"), true);
   expectEqual(infoModalTransportStyles.includes(".marqueeContent"), true);
+});
+
+test("expanded song editor reuses the shared modal close button style", () => {
+  expectEqual(
+    playbackShelfSource.includes('import { CloseIcon } from "../../icons";'),
+    true
+  );
+  expectEqual(
+    playbackShelfSource.includes('import modalStyles from "../../modal/Modal.module.css";'),
+    true
+  );
+  expectEqual(
+    playbackShelfSource.includes('className={modalStyles["chrome-close-button"]}'),
+    true
+  );
+  expectEqual(playbackShelfSource.includes("<CloseIcon />"), true);
+  expectEqual(playbackShelfSource.includes('styles["cross-button"]'), false);
+  expectEqual(playbackShelfStyles.includes(".cross-button"), false);
 });

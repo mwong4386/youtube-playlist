@@ -7,7 +7,10 @@ import type {
 } from "../../models/GeminiActions";
 import type MPlaylistItem from "../../models/MPlaylistItem";
 import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
+import { BackIcon, CloseIcon } from "../icons";
 import Modal from "../modal/Modal";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
+import modalStyles from "../modal/Modal.module.css";
 import styles from "./Playlist.module.css";
 import {
   createGeminiEqSubmission,
@@ -128,39 +131,47 @@ const SelectionActionsModal = ({
     onApplyGeminiSongEqSuggestion(suggestionToApply);
   };
 
+  const isMenuView = view === "menu";
+  const title =
+    isMenuView
+      ? `${selectedCount} ${selectedCount === 1 ? "Song" : "Songs"} Selected`
+      : view === "timing"
+      ? "Analyze Timing"
+      : view === "volume"
+        ? "Adjust Volume"
+        : view === "geminiEq"
+          ? "Gemini EQ"
+          : "Selected Songs";
+
   return (
     <Modal active={active} close={close}>
-      <div className={styles["selection-actions-modal"]}>
-        <div className={styles["selection-actions-modal-header"]}>
-          {view !== "menu" ? (
-            <button
-              type="button"
-              className={styles["selection-actions-back-button"]}
-              onClick={() => setView("menu")}
-              aria-label="Back to actions menu"
-            >
-              ←
-            </button>
-          ) : (
-            <p className={styles["selection-actions-modal-text"]}>
-              Actions for {selectedCount} selected
-              {selectedCount === 1 ? " song" : " songs"}
-            </p>
-          )}
-          <p className={styles["selection-actions-modal-title"]}>
-            {view === "timing" ? "Analyze Timing" : ""}
-            {view === "volume" ? "Adjust Volume" : ""}
-            {view === "geminiEq" ? "Gemini EQ" : ""}
-          </p>
-          <button
-            type="button"
-            className={styles["selection-actions-close-button"]}
-            onClick={close}
-            aria-label="Close selected song actions"
-          >
-            x
-          </button>
-        </div>
+      <div
+        className={`${modalStyles["chrome-panel"]} ${styles["selection-actions-modal"]}`}
+      >
+        <ModalChromeHeader
+          title={title}
+          titleClassName={
+            isMenuView ? styles["selection-actions-menu-title"] : undefined
+          }
+          closeIcon={isMenuView ? undefined : <BackIcon />}
+          closeLabel={
+            isMenuView ? "Close selected song actions" : "Back to actions menu"
+          }
+          onClose={isMenuView ? close : () => setView("menu")}
+          action={
+            isMenuView ? undefined : (
+              <button
+                type="button"
+                className={modalStyles["chrome-close-button"]}
+                onClick={close}
+                aria-label="Close selected song actions"
+                title="Close selected song actions"
+              >
+                <CloseIcon />
+              </button>
+            )
+          }
+        />
 
         {view === "menu" ? (
           <div className={styles["selection-actions-modal-actions"]}>
@@ -192,13 +203,6 @@ const SelectionActionsModal = ({
               onClick={onDeleteSelected}
             >
               Delete Songs
-            </button>
-            <button
-              type="button"
-              className={styles["selection-actions-cancel-button"]}
-              onClick={close}
-            >
-              Cancel
             </button>
           </div>
         ) : view === "timing" ? (

@@ -466,59 +466,47 @@
 .selection-actions-modal {
   display: flex;
   flex-direction: column;
-  padding: 0 0 16px;
+  min-height: 0;
 }
 
-.selection-actions-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px 10px;
-}
-
-.selection-actions-modal-title {
-  margin: 0;
-  font-size: 20px;
-  line-height: 1.2;
-  color: var(--text-primary);
-}
-
-.selection-actions-modal-text {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
+.selection-actions-menu-title {
   color: var(--text-secondary);
-}
-
-.selection-actions-close-button {
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  width: 40px;
-  height: 40px;
-  font-size: 22px;
-  line-height: 1;
-  padding: 0;
+  font-weight: 700;
 }
 
 .selection-actions-modal-actions {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 8px;
 }
 
 .selection-actions-analyze-button,
-.selection-actions-delete-button,
-.selection-actions-cancel-button {
+.selection-actions-delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   border: 0;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--surface-secondary);
-  padding: 28px 16px;
-  font-size: 16px;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  min-height: 58px;
+  padding: 0 16px;
+  font-size: 18px;
   font-weight: 700;
   text-align: center;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.selection-actions-analyze-button:hover,
+.selection-actions-delete-button:hover {
+  background: color-mix(in srgb, var(--surface-tertiary) 62%, transparent);
+}
+
+.selection-actions-analyze-button:active,
+.selection-actions-delete-button:active {
+  transform: translateY(1px);
 }
 
 .selection-actions-analyze-button {
@@ -531,11 +519,6 @@
     var(--danger-color, #d04a4a) 88%,
     var(--text-primary)
   );
-}
-
-.selection-actions-cancel-button {
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
 }
 
 .delete-all-modal-header {
@@ -728,18 +711,4 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.selection-actions-back-button {
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-  line-height: 1;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }

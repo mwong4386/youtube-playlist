@@ -5,6 +5,7 @@ import type {
   PlaylistImportRequest,
 } from "../../models/PlaylistImport";
 import { parseImportedPlaylist } from "../../utils/playlistImport";
+import { BackIcon } from "../icons";
 import Modal from "../modal/Modal";
 import styles from "./PlaylistImportModal.module.css";
 import {
@@ -16,6 +17,7 @@ import {
 interface Props {
   active: boolean;
   close: () => void;
+  backToSettings: () => void;
   onImportJson: (playlist: MPlaylistItem[]) => void;
   onSubmit: (
     request: PlaylistImportRequest
@@ -30,6 +32,7 @@ interface Props {
 const PlaylistImportModal = ({
   active,
   close,
+  backToSettings,
   onImportJson,
   onSubmit,
   onCommitPreview,
@@ -178,6 +181,19 @@ const PlaylistImportModal = ({
     setErrorMessage("");
   };
 
+  const onHeaderBack = () => {
+    if (loading) {
+      return;
+    }
+
+    if (preview) {
+      backToImportForm();
+      return;
+    }
+
+    backToSettings();
+  };
+
   const commitPreview = () => {
     if (!preview || preview.selectedItemIds.length === 0) {
       return;
@@ -198,11 +214,12 @@ const PlaylistImportModal = ({
           <button
             type="button"
             className={styles.closeButton}
-            onClick={guardedClose}
-            aria-label="Close YouTube playlist import"
+            onClick={onHeaderBack}
+            aria-label={preview ? "Back to import form" : "Back to settings"}
+            title={preview ? "Back to import form" : "Back to settings"}
             disabled={loading}
           >
-            x
+            <BackIcon />
           </button>
         </div>
         {preview ? (

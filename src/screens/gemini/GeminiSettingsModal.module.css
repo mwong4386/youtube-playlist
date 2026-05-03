@@ -15,10 +15,13 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+  position: relative;
 }
 
 .headerMain {
+  flex: 1;
   min-width: 0;
+  text-align: center;
 }
 
 .title {
@@ -43,6 +46,10 @@
   border-radius: 999px;
   font-size: 20px;
   line-height: 1;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .section {

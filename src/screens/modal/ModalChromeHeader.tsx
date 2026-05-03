@@ -7,6 +7,7 @@ interface Props {
   subtitle?: string;
   badge?: ReactNode;
   action?: ReactNode;
+  titleClassName?: string;
   closeIcon?: ReactNode;
   closeLabel: string;
   onClose: () => void;
@@ -17,6 +18,7 @@ const ModalChromeHeader = ({
   subtitle,
   badge,
   action,
+  titleClassName,
   closeIcon,
   closeLabel,
   onClose,
@@ -33,7 +35,11 @@ const ModalChromeHeader = ({
         {closeIcon || <CloseIcon />}
       </button>
       <div className={styles["chrome-title-stack"]}>
-        <h2 className={styles["chrome-title"]}>{title}</h2>
+        <h2
+          className={`${styles["chrome-title"]} ${titleClassName || ""}`}
+        >
+          {title}
+        </h2>
         {subtitle ? (
           <p className={styles["chrome-subtitle"]}>{subtitle}</p>
         ) : null}

@@ -41,7 +41,9 @@ const getAudioEqSummary = (audioEq: AudioEqSettings) => {
 interface Props {
   active: boolean;
   close: () => void;
+  backToSettings: () => void;
   audioEqProfiles: AudioEqProfile[];
+  geminiApiKey: string;
   onCreateProfile: (name: string, audioEq: AudioEqSettings) => void;
   onUpdateProfile: (profile: AudioEqProfile) => void;
   onDeleteProfile: (id: string) => void;
@@ -54,7 +56,9 @@ interface Props {
 const SettingsModal = ({
   active,
   close,
+  backToSettings,
   audioEqProfiles,
+  geminiApiKey,
   onCreateProfile,
   onUpdateProfile,
   onDeleteProfile,
@@ -172,7 +176,7 @@ const SettingsModal = ({
   };
 
   return (
-    <Modal active={active} close={isProfileEditorOpen ? closeProfileEditor : close}>
+    <Modal active={active} close={close}>
       {isProfileEditorOpen ? (
         <div className={`${modalStyles["chrome-panel"]} ${styles["editor-panel"]}`}>
           <ModalChromeHeader
@@ -198,6 +202,7 @@ const SettingsModal = ({
           {!isEditing && (
             <GeminiEqProfileBuilder
               existingProfiles={audioEqProfiles}
+              geminiApiKey={geminiApiKey}
               onBack={closeProfileEditor}
               onOpenSettings={onOpenGeminiSettings}
               onCreateProfile={createGeminiProfile}
@@ -205,9 +210,6 @@ const SettingsModal = ({
               embedded={true}
               onPreviewProfile={previewGeminiProfile}
             />
-          )}
-          {!isEditing && (
-            <h3 className={styles["manual-title"]}>Manual tuning</h3>
           )}
           <label className={styles["field"]}>
             <span className={styles["field-label"]}>Profile name</span>
@@ -272,8 +274,9 @@ const SettingsModal = ({
           <ModalChromeHeader
             title="EQ Profiles"
             subtitle="Reusable curves for saved songs"
-            closeLabel="Close settings"
-            onClose={close}
+            closeIcon={<BackIcon />}
+            closeLabel="Back to settings"
+            onClose={backToSettings}
             action={
               canCreateProfile ? (
                 <button

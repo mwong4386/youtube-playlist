@@ -56,15 +56,31 @@ test("settings modal uses one modal shell for the profile list and editor", () =
   expectEqual(modalShells.length, 1);
 });
 
+test("settings modal backdrop always closes the full settings modal", () => {
+  expectEqual(settingsSource.includes("<Modal active={active} close={close}>"), true);
+});
+
 test("profile editor header uses a back affordance instead of close chrome", () => {
   expectEqual(settingsSource.includes("import { BackIcon } from \"../icons\";"), true);
   expectEqual(settingsSource.includes("closeIcon={<BackIcon />}"), true);
+  expectEqual(settingsSource.includes("onClose={closeProfileEditor}"), true);
 });
 
-test("create profile view groups Gemini chat with manual tuning", () => {
+test("profile list header uses a back affordance to return to settings", () => {
+  const profileListHeaderIndex = settingsSource.indexOf('title="EQ Profiles"');
+  const nextHeaderIndex = settingsSource.indexOf("<ModalChromeHeader", profileListHeaderIndex + 1);
+  const profileListHeaderSource = settingsSource.slice(profileListHeaderIndex, nextHeaderIndex);
+
+  expectEqual(profileListHeaderSource.includes("closeIcon={<BackIcon />}"), true);
+  expectEqual(profileListHeaderSource.includes('closeLabel="Back to settings"'), true);
+  expectEqual(profileListHeaderSource.includes("onClose={backToSettings}"), true);
+});
+
+test("create profile view keeps manual controls without a manual tuning heading", () => {
   expectEqual(settingsSource.includes("GeminiEqProfileBuilder"), true);
   expectEqual(settingsSource.includes("requestGeminiEqProfile"), true);
-  expectEqual(settingsSource.includes("Manual tuning"), true);
+  expectEqual(settingsSource.includes("Manual tuning"), false);
+  expectEqual(settingsStyles.includes(".manual-title"), false);
   expectEqual(settingsSource.includes('embedded={true}'), true);
 });
 
@@ -82,4 +98,14 @@ test("shared modal header renders a close icon by default", () => {
 
   expectEqual(modalHeaderSource.includes("import { CloseIcon } from \"../icons\";"), true);
   expectEqual(modalHeaderSource.includes("{closeIcon || <CloseIcon />}"), true);
+});
+
+test("shared modal header supports scoped title styling", () => {
+  const modalHeaderSource = readFileSync(
+    join(process.cwd(), "src/screens/modal/ModalChromeHeader.tsx"),
+    "utf8",
+  );
+
+  expectEqual(modalHeaderSource.includes("titleClassName?: string;"), true);
+  expectEqual(modalHeaderSource.includes('titleClassName || ""'), true);
 });
