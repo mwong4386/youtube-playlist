@@ -55,8 +55,7 @@ test("InfoModal source is a clean shell that hosts the SongEditor", () => {
   expectEqual(infoModalSource.includes("currentPlaybackItemId"), true);
   expectEqual(infoModalSource.includes("<SongEditor"), true);
   expectEqual(infoModalSource.includes("<InfoModalTransport"), true);
-  expectEqual(infoModalSource.includes('aria-label="Close editor"'), true);
-  expectEqual(infoModalSource.includes('title="Close editor"'), true);
+  expectEqual(infoModalSource.includes('closeLabel="Close editor"'), true);
 });
 
 test("SongEditor source preserves editor state across item changes", () => {
@@ -77,8 +76,7 @@ test("InfoModal source keeps transport below the editor", () => {
 test("InfoModal source uses a simple close control", () => {
   expectEqual(infoModalSource.includes("const onDismiss = () => {"), true);
   expectEqual(infoModalSource.includes("close();"), true);
-  expectEqual(infoModalSource.includes('aria-label="Close editor"'), true);
-  expectEqual(infoModalSource.includes('title="Close editor"'), true);
+  expectEqual(infoModalSource.includes('closeLabel="Close editor"'), true);
 });
 
 test("collapsed player-first modal classes are still present in CSS for now", () => {

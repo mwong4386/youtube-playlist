@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Modal from "../modal/Modal";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
 import { BackIcon } from "../icons";
 import styles from "./GeminiSettingsModal.module.css";
 import {
@@ -56,20 +57,12 @@ const GeminiSettingsModal = ({
   return (
     <Modal active={active} close={close}>
       <div className={styles.panel}>
-        <div className={styles.header}>
-          <div className={styles.headerMain}>
-            <h2 className={styles.title}>Gemini</h2>
-          </div>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={backToSettings}
-            aria-label="Back to settings"
-            title="Back to settings"
-          >
-            <BackIcon />
-          </button>
-        </div>
+        <ModalChromeHeader
+          title="Gemini"
+          closeIcon={<BackIcon />}
+          closeLabel="Back to settings"
+          onClose={backToSettings}
+        />
         <section className={styles.section} aria-labelledby="gemini-api-key-title">
           <p className={styles.note}>
             Save the API key used by song analysis. Stored locally in this

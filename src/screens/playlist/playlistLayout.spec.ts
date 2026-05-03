@@ -790,8 +790,8 @@ test("Gemini settings header uses back while backdrop uses stack close", () => {
   expectEqual(geminiSettingsSource.includes('import { BackIcon } from "../icons";'), true);
   expectEqual(geminiSettingsSource.includes("backToSettings: () => void;"), true);
   expectEqual(geminiSettingsSource.includes("<Modal active={active} close={close}>"), true);
-  expectEqual(geminiSettingsSource.includes("onClick={backToSettings}"), true);
-  expectEqual(geminiSettingsSource.includes('aria-label="Back to settings"'), true);
+  expectEqual(geminiSettingsSource.includes("onClose={backToSettings}"), true);
+  expectEqual(geminiSettingsSource.includes('closeLabel="Back to settings"'), true);
   expectEqual(geminiSettingsSource.includes("<BackIcon"), true);
 });
 
@@ -802,7 +802,7 @@ test("playlist import header uses back while backdrop uses stack close", () => {
   expectEqual(playlistImportModalSource.includes("const onHeaderBack = () => {"), true);
   expectEqual(playlistImportModalSource.includes("backToImportForm();"), true);
   expectEqual(playlistImportModalSource.includes("backToSettings();"), true);
-  expectEqual(playlistImportModalSource.includes('aria-label={preview ? "Back to import form" : "Back to settings"}'), true);
+  expectEqual(playlistImportModalSource.includes('closeLabel={preview ? "Back to import form" : "Back to settings"}'), true);
   expectEqual(playlistImportModalSource.includes("<BackIcon"), true);
 });
 

@@ -13,6 +13,7 @@ import {
   normalizeAudioEqSettings,
 } from "../../utils/audioEq";
 import Modal from "./Modal";
+import ModalChromeHeader from "./ModalChromeHeader";
 import InfoModalTransport from "./InfoModalTransport";
 import styles from "./Modal.module.css";
 import SongEditor, { type InfoModels } from "./SongEditor";
@@ -112,21 +113,17 @@ const InfoModal = ({
 
   return (
     <Modal active={active} close={close}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className={styles["header-row"]}>
-          <button
-            className={styles["cross-button"]}
-            onClick={onDismiss}
-            type="button"
-            aria-label="Close editor"
-            title="Close editor"
-          >
-            x
-          </button>
-          <button className={styles["save-button"]} type="submit">
-            Save
-          </button>
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className={styles["chrome-panel"]}>
+        <ModalChromeHeader
+          title="Edit Song"
+          closeLabel="Close editor"
+          onClose={onDismiss}
+          action={
+            <button className={styles["save-button"]} type="submit">
+              Save
+            </button>
+          }
+        />
         <div className={styles["content"]}>
           <SongEditor
             item={item}

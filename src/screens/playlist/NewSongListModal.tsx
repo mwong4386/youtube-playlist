@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Modal from "../modal/Modal";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
 import styles from "./NewSongListModal.module.css";
 
 interface Props {
@@ -31,22 +32,12 @@ const NewSongListModal = ({
   return (
     <Modal active={active} close={close}>
       <div className={styles.panel}>
-        <div className={styles.header}>
-          <div className={styles.headerMain}>
-            <h2 className={styles.title}>Create song list</h2>
-            <p className={styles.subtitle}>
-              Give your list a name so you can switch between saved song groups.
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={close}
-            aria-label="Close create song list"
-          >
-            x
-          </button>
-        </div>
+        <ModalChromeHeader
+          title="Create song list"
+          subtitle="Give your list a name so you can switch between saved song groups."
+          closeLabel="Close create song list"
+          onClose={close}
+        />
         <form className={styles.form} onSubmit={onCreateList}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Song list name</span>

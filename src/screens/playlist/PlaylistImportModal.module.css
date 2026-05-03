@@ -9,50 +9,6 @@
   background: transparent;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-  position: relative;
-}
-
-.headerMain {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-
-.title {
-  margin: 0;
-  font-size: 20px;
-  line-height: 1.2;
-  color: var(--text-primary);
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.closeButton {
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  font-size: 20px;
-  line-height: 1;
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
 .form {
   display: flex;
   flex-direction: column;

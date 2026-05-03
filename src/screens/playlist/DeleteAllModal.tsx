@@ -1,4 +1,6 @@
 import Modal from "../modal/Modal";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
+import modalStyles from "../modal/Modal.module.css";
 import styles from "./Playlist.module.css";
 
 interface Props {
@@ -10,23 +12,13 @@ interface Props {
 const DeleteAllModal = ({ active, close, confirmDeleteAll }: Props) => {
   return (
     <Modal active={active} close={close}>
-      <div className={styles["delete-all-modal"]}>
-        <div className={styles["delete-all-modal-header"]}>
-          <div>
-            <h2 className={styles["delete-all-modal-title"]}>Delete all songs</h2>
-            <p className={styles["delete-all-modal-text"]}>
-              This will remove every song from your playlist.
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles["delete-all-close-button"]}
-            onClick={close}
-            aria-label="Close delete all confirmation"
-          >
-            x
-          </button>
-        </div>
+      <div className={modalStyles["chrome-panel"]}>
+        <ModalChromeHeader
+          title="Delete all songs"
+          subtitle="This will remove every song from your playlist."
+          closeLabel="Close delete all confirmation"
+          onClose={close}
+        />
         <div className={styles["delete-all-modal-actions"]}>
           <button
             type="button"

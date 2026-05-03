@@ -7,6 +7,7 @@ import type {
 import { parseImportedPlaylist } from "../../utils/playlistImport";
 import { BackIcon } from "../icons";
 import Modal from "../modal/Modal";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
 import styles from "./PlaylistImportModal.module.css";
 import {
   DEFAULT_PLAYLIST_IMPORT_ERROR_MESSAGE,
@@ -205,23 +206,13 @@ const PlaylistImportModal = ({
   return (
     <Modal active={active} close={guardedClose}>
       <div className={styles.panel}>
-        <div className={styles.header}>
-          <div className={styles.headerMain}>
-            <h2 className={styles.title}>
-              {preview ? "Preview Import" : "Import Playlist"}
-            </h2>
-          </div>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={onHeaderBack}
-            aria-label={preview ? "Back to import form" : "Back to settings"}
-            title={preview ? "Back to import form" : "Back to settings"}
-            disabled={loading}
-          >
-            <BackIcon />
-          </button>
-        </div>
+        <ModalChromeHeader
+          title={preview ? "Preview Import" : "Import Playlist"}
+          closeIcon={<BackIcon />}
+          closeLabel={preview ? "Back to import form" : "Back to settings"}
+          onClose={onHeaderBack}
+          closeDisabled={loading}
+        />
         {preview ? (
           <div className={styles.form}>
             <section className={styles.importSection}>

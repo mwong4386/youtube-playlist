@@ -11,6 +11,7 @@ interface Props {
   closeIcon?: ReactNode;
   closeLabel: string;
   onClose: () => void;
+  closeDisabled?: boolean;
 }
 
 const ModalChromeHeader = ({
@@ -22,12 +23,14 @@ const ModalChromeHeader = ({
   closeIcon,
   closeLabel,
   onClose,
+  closeDisabled,
 }: Props) => {
   return (
     <div className={styles["chrome-header"]}>
       <button
         type="button"
         className={styles["chrome-close-button"]}
+        disabled={closeDisabled}
         onClick={onClose}
         aria-label={closeLabel}
         title={closeLabel}
