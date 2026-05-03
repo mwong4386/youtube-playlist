@@ -8,6 +8,7 @@ import { parseImportedPlaylist } from "../../utils/playlistImport";
 import { BackIcon } from "../icons";
 import Modal from "../modal/Modal";
 import ModalChromeHeader from "../modal/ModalChromeHeader";
+import modalStyles from "../modal/Modal.module.css";
 import styles from "./PlaylistImportModal.module.css";
 import {
   DEFAULT_PLAYLIST_IMPORT_ERROR_MESSAGE,
@@ -270,7 +271,7 @@ const PlaylistImportModal = ({
                 </button>
                 <button
                   type="button"
-                  className={styles.primaryButton}
+                  className={modalStyles["chrome-confirm-button"]}
                   onClick={commitPreview}
                   disabled={selectedCount === 0}
                 >
@@ -361,7 +362,7 @@ const PlaylistImportModal = ({
                 </button>
                 <button
                   type="submit"
-                  className={styles.primaryButton}
+                  className={modalStyles["chrome-confirm-button"]}
                   disabled={loading}
                 >
                   {loading ? "Loading preview..." : "Preview"}

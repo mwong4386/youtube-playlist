@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../modal/Modal";
 import ModalChromeHeader from "../modal/ModalChromeHeader";
+import modalStyles from "../modal/Modal.module.css";
 import { BackIcon } from "../icons";
 import styles from "./GeminiSettingsModal.module.css";
 import {
@@ -58,7 +59,7 @@ const GeminiSettingsModal = ({
     <Modal active={active} close={close}>
       <div className={styles.panel}>
         <ModalChromeHeader
-          title="Gemini"
+          title="Setup Gemini"
           closeIcon={<BackIcon />}
           closeLabel="Back to settings"
           onClose={backToSettings}
@@ -86,7 +87,7 @@ const GeminiSettingsModal = ({
           <div className={styles.actions}>
             <button
               type="button"
-              className={styles.primaryButton}
+              className={modalStyles["chrome-confirm-button"]}
               onClick={saveGeminiApiKey}
             >
               Save key

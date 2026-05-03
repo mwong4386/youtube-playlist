@@ -249,7 +249,7 @@ const PlaylistHeader = ({
       },
       {
         id: 5,
-        description: "Gemini",
+        description: "Setup Gemini",
         callback: onOpenGeminiSettings,
       },
       {

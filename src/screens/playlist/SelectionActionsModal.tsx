@@ -9,8 +9,8 @@ import type MPlaylistItem from "../../models/MPlaylistItem";
 import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
 import { BackIcon, CloseIcon } from "../icons";
 import Modal from "../modal/Modal";
-import ModalChromeHeader from "../modal/ModalChromeHeader";
 import modalStyles from "../modal/Modal.module.css";
+import ModalChromeHeader from "../modal/ModalChromeHeader";
 import styles from "./Playlist.module.css";
 import {
   createGeminiEqSubmission,
@@ -132,10 +132,9 @@ const SelectionActionsModal = ({
   };
 
   const isMenuView = view === "menu";
-  const title =
-    isMenuView
-      ? `${selectedCount} ${selectedCount === 1 ? "Song" : "Songs"} Selected`
-      : view === "timing"
+  const title = isMenuView
+    ? `${selectedCount} ${selectedCount === 1 ? "Song" : "Songs"} Selected`
+    : view === "timing"
       ? "Analyze Timing"
       : view === "volume"
         ? "Adjust Volume"
@@ -195,7 +194,7 @@ const SelectionActionsModal = ({
               onClick={() => setView("geminiEq")}
               disabled={isGeminiEqActionDisabled(selectedCount)}
             >
-              Gemini EQ
+              Adjust EQ by Gemini
             </button>
             <button
               type="button"

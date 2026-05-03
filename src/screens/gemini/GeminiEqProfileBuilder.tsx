@@ -9,6 +9,7 @@ import type {
 } from "../../models/GeminiActions";
 import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
 import ModalChromeHeader from "../modal/ModalChromeHeader";
+import modalStyles from "../modal/Modal.module.css";
 import styles from "./GeminiEqProfileBuilder.module.css";
 
 interface Props {
@@ -169,7 +170,7 @@ const GeminiEqProfileBuilder = ({
             <div className={styles.actions}>
               <button
                 type="button"
-                className={styles.primaryButton}
+                className={modalStyles["chrome-confirm-button"]}
                 onClick={onCreate}
               >
                 Create profile
