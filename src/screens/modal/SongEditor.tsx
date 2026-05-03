@@ -13,7 +13,11 @@ import {
   type GeminiAnalyzeSuccess,
 } from "../../models/GeminiSettings";
 import MPlaylistItem from "../../models/MPlaylistItem";
-import { DEFAULT_AUDIO_EQ_SETTINGS, normalizeAudioEqSettings } from "../../utils/audioEq";
+import {
+  AUDIO_EQ_BANDS,
+  DEFAULT_AUDIO_EQ_SETTINGS,
+  normalizeAudioEqSettings,
+} from "../../utils/audioEq";
 import { AudioEqVerticalBands } from "../audioEq/AudioEqVerticalBands";
 import {
   clearSelectedAudioEqProfileId,
@@ -545,6 +549,35 @@ export const SongEditor = ({
           </>
         ) : (
           <>
+            <div className={styles["gemini-eq-form"]}>
+              <textarea
+                value={geminiEqReview.request}
+                onChange={(event) =>
+                  setGeminiEqReview((currentState) => ({
+                    ...currentState,
+                    request: event.target.value,
+                  }))
+                }
+                className={styles["gemini-eq-textarea"]}
+                placeholder="Describe an optional EQ preference"
+                aria-label="Describe an optional EQ preference"
+              />
+              <div className={styles["gemini-eq-action-row"]}>
+                <button
+                  type="button"
+                  className={styles["gemini-eq-button"]}
+                  onClick={onGenerateGeminiEq}
+                  disabled={geminiEqReview.isLoading}
+                >
+                  {geminiEqReview.isLoading ? "Generating..." : "Ask Gemini"}
+                </button>
+              </div>
+              {geminiEqReview.status && (
+                <p className={styles["gemini-eq-status"]}>
+                  {geminiEqReview.status}
+                </p>
+              )}
+            </div>
             {profiles.length > 0 && (
               <div className={styles["eq-profile-container"]}>
                 <label
@@ -568,37 +601,7 @@ export const SongEditor = ({
                 </select>
               </div>
             )}
-            <div className={styles["gemini-eq-form"]}>
-              <textarea
-                value={geminiEqReview.request}
-                onChange={(event) =>
-                  setGeminiEqReview((currentState) => ({
-                    ...currentState,
-                    request: event.target.value,
-                  }))
-                }
-                className={styles["gemini-eq-textarea"]}
-                placeholder="Describe an optional EQ preference"
-                aria-label="Describe an optional EQ preference"
-              />
-              <div className={styles["gemini-eq-action-row"]}>
-                <button
-                  type="button"
-                  className={styles["gemini-eq-button"]}
-                  onClick={onGenerateGeminiEq}
-                  disabled={geminiEqReview.isLoading}
-                >
-                  {geminiEqReview.isLoading ? "Generating..." : "Generate"}
-                </button>
-              </div>
-              {geminiEqReview.status && (
-                <p className={styles["gemini-eq-status"]}>
-                  {geminiEqReview.status}
-                </p>
-              )}
-            </div>
             <div className={styles["eq-section"]}>
-              <p className={styles["eq-title"]}>Song EQ</p>
               <AudioEqVerticalBands
                 settings={currentAudioEq}
                 classes={{

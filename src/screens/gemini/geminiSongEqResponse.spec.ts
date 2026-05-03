@@ -115,6 +115,57 @@ test("normalizeGeminiSongEqResponse preserves valid successes", () => {
   );
 });
 
+test("normalizeGeminiSongEqResponse accepts native Gemini function calls", () => {
+  expectEqual(
+    normalizeGeminiSongEqResponse(
+      {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  functionCall: {
+                    name: "adjustSongEq",
+                    args: {
+                      audioEq: {
+                        band1k: 3,
+                        band400: 2,
+                        band6k3: 2,
+                        band2k5: 3,
+                        clearBass: 2,
+                        band16k: 1,
+                      },
+                      reason:
+                        "The boosts were moderated to reduce harshness.",
+                      songId: "song-1",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "song-1"
+    ),
+    {
+      ok: true,
+      suggestion: {
+        songId: "song-1",
+        audioEq: {
+          clearBass: 2,
+          band400: 2,
+          band1k: 3,
+          band2k5: 3,
+          band6k3: 2,
+          band16k: 1,
+        },
+        reason: "The boosts were moderated to reduce harshness.",
+      },
+    }
+  );
+});
+
 test("normalizeGeminiSongEqResponse preserves valid failures", () => {
   expectEqual(
     normalizeGeminiSongEqResponse(

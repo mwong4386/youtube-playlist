@@ -50,6 +50,30 @@ const hasCompleteFiniteAudioEq = (
   );
 };
 
+const readNativeAdjustSongEqArgs = (
+  response: unknown,
+): Record<string, unknown> | null => {
+  if (!isObject(response) || !Array.isArray(response.candidates)) {
+    return null;
+  }
+
+  const parts = response.candidates[0]?.content?.parts;
+  if (!Array.isArray(parts)) {
+    return null;
+  }
+
+  for (const part of parts) {
+    const functionCall = part?.functionCall;
+    if (!isObject(functionCall) || functionCall.name !== "adjustSongEq") {
+      continue;
+    }
+
+    return isObject(functionCall.args) ? functionCall.args : null;
+  }
+
+  return null;
+};
+
 const normalizeGeminiSongEqResponse = (
   response: unknown,
   expectedSongId: string,
@@ -59,6 +83,28 @@ const normalizeGeminiSongEqResponse = (
     return createGeminiSongEqFailure(
       runtimeError.message || SONG_EQ_FAILURE_MESSAGE,
     );
+  }
+
+  const nativeFunctionArgs = readNativeAdjustSongEqArgs(response);
+  if (nativeFunctionArgs) {
+    if (
+      nativeFunctionArgs.songId !== expectedSongId ||
+      !hasCompleteFiniteAudioEq(nativeFunctionArgs.audioEq)
+    ) {
+      return createGeminiSongEqFailure();
+    }
+
+    return {
+      ok: true,
+      suggestion: {
+        songId: nativeFunctionArgs.songId,
+        audioEq: normalizeAudioEqSettings(nativeFunctionArgs.audioEq),
+        reason:
+          typeof nativeFunctionArgs.reason === "string"
+            ? nativeFunctionArgs.reason
+            : "",
+      },
+    };
   }
 
   if (!isObject(response) || typeof response.ok !== "boolean") {

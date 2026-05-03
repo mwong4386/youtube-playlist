@@ -466,12 +466,6 @@
   line-height: 1.35;
   text-align: center;
 }
-.eq-title {
-  margin: 0 0 14px;
-  font-size: 16px;
-  font-weight: 800;
-  text-align: center;
-}
 .eq-bands {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

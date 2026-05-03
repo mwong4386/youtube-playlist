@@ -628,6 +628,17 @@ test("SongEditor reuses the shared Gemini song EQ review helper", () => {
   );
 });
 
+test("SongEditor places Gemini EQ before profile selection and omits the Song EQ heading", () => {
+  const geminiEqIndex = songEditorSource.indexOf('styles["gemini-eq-form"]');
+  const profileIndex = songEditorSource.indexOf('styles["eq-profile-container"]');
+
+  expectEqual(geminiEqIndex >= 0, true);
+  expectEqual(profileIndex >= 0, true);
+  expectEqual(geminiEqIndex < profileIndex, true);
+  expectEqual(songEditorSource.includes('styles["eq-title"]'), false);
+  expectEqual(songEditorSource.includes(">Song EQ<"), false);
+});
+
 test("playlist item source renders a checkbox for selection mode", () => {
   expectEqual(playlistItemSource.includes('type="checkbox"'), true);
   expectEqual(playlistItemSource.includes("checked={selected}"), true);
