@@ -1,24 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type AudioEqProfile from "../../models/AudioEqProfile";
-import type {
-  GeminiSongEqResponse,
-  GeminiSongEqSuggestion,
-  GeminiSongEqUserRequest,
-} from "../../models/GeminiActions";
 import type MPlaylistItem from "../../models/MPlaylistItem";
-import { AUDIO_EQ_BANDS } from "../../utils/audioEq";
 import { BackIcon, CloseIcon } from "../icons";
 import Modal from "../modal/Modal";
 import modalStyles from "../modal/Modal.module.css";
 import ModalChromeHeader from "../modal/ModalChromeHeader";
 import styles from "./Playlist.module.css";
 import {
-  createGeminiEqSubmission,
+  createGeminiEqBatchSubmission,
   createInitialGeminiEqReviewState,
-  getGeminiEqSuggestionToApply,
   isGeminiEqActionDisabled,
   resetGeminiEqReviewState,
-  resolveGeminiEqSubmission,
   type GeminiEqReviewState,
 } from "./selectionActionsGeminiEqReview";
 
@@ -27,17 +19,14 @@ interface Props {
   close: () => void;
   selectedCount: number;
   selectedUncalibratedCount: number;
-  selectedSong?: MPlaylistItem;
+  selectedSongs: MPlaylistItem[];
   audioEqProfiles: AudioEqProfile[];
   firstSelectedItemVolume?: number;
   onAnalyzeSelected: () => void;
   onAnalyzeUncalibratedSelected: () => void;
   onDeleteSelected: () => void;
   onAdjustVolumeSelected: (multiplier: number) => void;
-  onAdjustSongEqWithGemini: (
-    request: GeminiSongEqUserRequest,
-  ) => Promise<GeminiSongEqResponse>;
-  onApplyGeminiSongEqSuggestion: (suggestion: GeminiSongEqSuggestion) => void;
+  onAdjustSelectedSongEqWithGemini: (userRequest: string) => void;
 }
 
 const SelectionActionsModal = ({
@@ -45,15 +34,14 @@ const SelectionActionsModal = ({
   close,
   selectedCount,
   selectedUncalibratedCount,
-  selectedSong,
+  selectedSongs,
   audioEqProfiles,
   firstSelectedItemVolume,
   onAnalyzeSelected,
   onAnalyzeUncalibratedSelected,
   onDeleteSelected,
   onAdjustVolumeSelected,
-  onAdjustSongEqWithGemini,
-  onApplyGeminiSongEqSuggestion,
+  onAdjustSelectedSongEqWithGemini,
 }: Props) => {
   const [view, setView] = useState<"menu" | "timing" | "volume" | "geminiEq">(
     "menu",
@@ -62,13 +50,9 @@ const SelectionActionsModal = ({
   const [geminiEqReview, setGeminiEqReview] = useState<GeminiEqReviewState>(
     createInitialGeminiEqReviewState,
   );
-  const requestTokenRef = useRef(0);
-  const activeRef = useRef(active);
-  activeRef.current = active;
 
   useEffect(() => {
     if (!active) {
-      requestTokenRef.current += 1;
       setView("menu");
       setMultiplier(1);
       setGeminiEqReview(resetGeminiEqReviewState());
@@ -92,43 +76,20 @@ const SelectionActionsModal = ({
     onAdjustVolumeSelected(multiplier);
   };
 
-  const handleGenerateGeminiEq = async () => {
-    const requestToken = requestTokenRef.current + 1;
-    requestTokenRef.current = requestToken;
-    const submission = createGeminiEqSubmission({
+  const handleGenerateGeminiEq = () => {
+    const submission = createGeminiEqBatchSubmission({
       state: geminiEqReview,
-      selectedCount,
-      selectedSong,
+      selectedSongs,
       audioEqProfiles,
-      requestToken,
+      requestToken: 1,
     });
 
     setGeminiEqReview(submission.state);
-    if (!submission.runtimeRequest) {
+    if (submission.runtimeRequests.length === 0) {
       return;
     }
 
-    const response = await onAdjustSongEqWithGemini(submission.runtimeRequest);
-
-    setGeminiEqReview((currentState) =>
-      resolveGeminiEqSubmission({
-        state: currentState,
-        response,
-        responseToken: submission.requestToken,
-        latestRequestToken: requestTokenRef.current,
-        active: activeRef.current,
-      }),
-    );
-  };
-
-  const handleApplyGeminiEq = () => {
-    const suggestionToApply = getGeminiEqSuggestionToApply(geminiEqReview);
-
-    if (!suggestionToApply) {
-      return;
-    }
-
-    onApplyGeminiSongEqSuggestion(suggestionToApply);
+    onAdjustSelectedSongEqWithGemini(submission.state.request);
   };
 
   const isMenuView = view === "menu";
@@ -263,9 +224,9 @@ const SelectionActionsModal = ({
           </div>
         ) : (
           <div className={styles["selection-actions-gemini-eq-form"]}>
-            {selectedSong?.title && (
+            {selectedSongs.length === 1 && selectedSongs[0].title && (
               <p className={styles["selection-actions-gemini-eq-song-title"]}>
-                {selectedSong.title}
+                {selectedSongs[0].title}
               </p>
             )}
             <textarea
@@ -286,42 +247,14 @@ const SelectionActionsModal = ({
               onClick={handleGenerateGeminiEq}
               disabled={geminiEqReview.isLoading}
             >
-              Generate
+              Generate and apply
             </button>
 
-            {geminiEqReview.status && (
+            {geminiEqReview.status && selectedSongs.length === 0 ? (
               <p className={styles["selection-actions-volume-preview"]}>
                 {geminiEqReview.status}
               </p>
-            )}
-
-            {geminiEqReview.suggestion && (
-              <>
-                <div className={styles["selection-actions-gemini-eq-preview"]}>
-                  {AUDIO_EQ_BANDS.map((band) => (
-                    <div
-                      key={band.key}
-                      className={styles["selection-actions-gemini-eq-band"]}
-                    >
-                      <span>{band.label}</span>
-                      <span>
-                        {geminiEqReview.suggestion?.audioEq[band.key]} dB
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={styles["selection-actions-gemini-eq-actions"]}>
-                  <button
-                    type="button"
-                    className={styles["selection-actions-volume-submit-button"]}
-                    onClick={handleApplyGeminiEq}
-                  >
-                    Apply EQ
-                  </button>
-                </div>
-              </>
-            )}
+            ) : null}
           </div>
         )}
       </div>

@@ -602,14 +602,6 @@ const adjustSongEqWithGemini = async (request: GeminiSongEqUserRequest) => {
     const userRequest =
       typeof request.userRequest === "string" ? request.userRequest.trim() : "";
 
-    if (!userRequest) {
-      return {
-        ok: false,
-        code: GeminiAnalyzeErrorCode.InvalidResponse,
-        message: "Describe the song EQ adjustment you want before asking Gemini.",
-      };
-    }
-
     const songId =
       typeof request.songContext?.id === "string"
         ? request.songContext.id.trim()

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ThemePreference } from "../../utils/theme";
 import DeleteAllModal from "./DeleteAllModal";
 import useActionSheet from "../actionSheet/useActionSheet";
@@ -9,6 +9,11 @@ import {
   getAnalyzeImportBannerViewModel,
   getAnalyzeImportBannerVisibilityKey,
 } from "./analyzeImportBanner";
+import {
+  getGeminiEqBatchNotificationViewModel,
+  getGeminiEqBatchVisibilityKey,
+  type GeminiEqBatchNotificationState,
+} from "./geminiEqBatchNotification";
 import NewSongListModal from "./NewSongListModal";
 import styles from "./Playlist.module.css";
 import PlaybackShelf from "./components/PlaybackShelf";
@@ -37,6 +42,8 @@ interface Props {
 
 const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const actionSheet = useActionSheet();
+  const [geminiEqBatchNotification, setGeminiEqBatchNotification] =
+    useState<GeminiEqBatchNotificationState | null>(null);
   const {
     songListsState,
     activeSongListName,
@@ -124,7 +131,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onUpdateProfile,
     onvolumechange,
     onAdjustVolumeSelected,
-    onApplyGeminiSongEqSuggestion,
+    onApplyGeminiSongEqSuggestions,
     openEqSettings,
     openGeminiSettings,
     openInfoModal,
@@ -200,12 +207,20 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
     analyzeImportBatchState,
   );
+  const geminiEqBatchBanner = getGeminiEqBatchNotificationViewModel(
+    geminiEqBatchNotification,
+  );
   const analyzeImportBannerVisibilityKey = getAnalyzeImportBannerVisibilityKey(
     analyzeImportBatchState,
+  );
+  const geminiEqBatchBannerVisibilityKey = getGeminiEqBatchVisibilityKey(
+    geminiEqBatchNotification,
   );
   const showAnalyzeImportBatchState =
     !!analyzeImportBanner &&
     analyzeImportBannerVisibilityKey !== dismissedAnalyzeImportBannerKey;
+  const showGeminiEqBatchNotification =
+    !!geminiEqBatchBanner && !!geminiEqBatchBannerVisibilityKey;
   const headerMode = getPlaylistHeaderMode(selectedItemIds);
   const allSelected = areAllPlaylistItemsSelected(playlist, selectedItemIds);
   const someSelected = selectedItemIds.length > 0;
@@ -223,10 +238,73 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     selectedItemIds.length > 0
       ? playlist.find((item) => item.id === selectedItemIds[0])?.volume
       : undefined;
-  const selectedActionSong =
-    selectedItemIds.length === 1
-      ? playlist.find((item) => item.id === selectedItemIds[0])
-      : undefined;
+  const selectedActionSongs = playlist.filter((item) =>
+    selectedItemIds.includes(item.id),
+  );
+
+  const onDismissGeminiEqBatchBanner = () => {
+    setGeminiEqBatchNotification(null);
+  };
+
+  const onAdjustSelectedSongEqWithGemini = async (userRequest: string) => {
+    const selectedSongs = selectedActionSongs;
+
+    if (selectedSongs.length === 0) {
+      return;
+    }
+
+    closeSelectionActionsModal();
+    clearSelection();
+    setGeminiEqBatchNotification({
+      active: true,
+      totalCount: selectedSongs.length,
+      successCount: 0,
+      failCount: 0,
+    });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const selectedSong of selectedSongs) {
+      try {
+        const response = await adjustSongEqWithGemini({
+          userRequest,
+          existingProfiles: audioEqProfiles,
+          songContext: {
+            id: selectedSong.id,
+            title: selectedSong.title,
+            channelName: selectedSong.channelName,
+            videoId: selectedSong.videoId,
+            url: selectedSong.url,
+            audioEq: selectedSong.audioEq,
+          },
+        });
+
+        if (response.ok) {
+          successCount += 1;
+          onApplyGeminiSongEqSuggestions([response.suggestion]);
+        } else {
+          failCount += 1;
+        }
+      } catch {
+        failCount += 1;
+      }
+
+      setGeminiEqBatchNotification({
+        active: true,
+        totalCount: selectedSongs.length,
+        successCount,
+        failCount,
+      });
+    }
+
+    setGeminiEqBatchNotification({
+      active: false,
+      totalCount: selectedSongs.length,
+      successCount,
+      failCount,
+    });
+  };
 
   useEffect(() => {
     if (!selectedInfoItemId || currentPlaybackItemId) {
@@ -282,12 +360,17 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             playingId={playingId}
             selectedItemIds={selectedItemIds}
             showAnalyzeImportBanner={showAnalyzeImportBatchState}
+            showGeminiEqBatchBanner={showGeminiEqBatchNotification}
             analyzeImportBannerTitle={analyzeImportBanner?.title}
             analyzeImportBannerDetail={analyzeImportBanner?.detail}
             analyzeImportBannerActionLabel={analyzeImportBanner?.actionLabel}
             analyzeImportBannerDismissible={analyzeImportBanner?.dismissible}
+            geminiEqBatchBannerTitle={geminiEqBatchBanner?.title}
+            geminiEqBatchBannerDetail={geminiEqBatchBanner?.detail}
+            geminiEqBatchBannerDismissible={geminiEqBatchBanner?.dismissible}
             onStopAnalyzeImportBatch={onStopAnalyzeImportBatch}
             onDismissAnalyzeImportBanner={onDismissAnalyzeImportBanner}
+            onDismissGeminiEqBatchBanner={onDismissGeminiEqBatchBanner}
             onToggleSelected={toggleSelectedItem}
             onOpenInfoModal={openInfoModal}
             onOpenPlaybackModal={openPlaybackModal}
@@ -363,15 +446,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         close={closeSelectionActionsModal}
         selectedCount={selectedItemIds.length}
         selectedUncalibratedCount={selectedUncalibratedCount}
-        selectedSong={selectedActionSong}
+        selectedSongs={selectedActionSongs}
         audioEqProfiles={audioEqProfiles}
         firstSelectedItemVolume={firstSelectedItemVolume}
         onAnalyzeSelected={onAnalyzeSelected}
         onAnalyzeUncalibratedSelected={onAnalyzeUncalibratedSelected}
         onDeleteSelected={onDeleteSelected}
         onAdjustVolumeSelected={onAdjustVolumeSelected}
-        onAdjustSongEqWithGemini={adjustSongEqWithGemini}
-        onApplyGeminiSongEqSuggestion={onApplyGeminiSongEqSuggestion}
+        onAdjustSelectedSongEqWithGemini={onAdjustSelectedSongEqWithGemini}
       />
       <DeleteAllModal
         active={isDeleteAllOpen}

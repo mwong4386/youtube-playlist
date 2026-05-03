@@ -13,12 +13,17 @@ interface Props {
   playingId?: string;
   selectedItemIds: string[];
   showAnalyzeImportBanner: boolean;
+  showGeminiEqBatchBanner: boolean;
   analyzeImportBannerTitle?: string;
   analyzeImportBannerDetail?: string;
   analyzeImportBannerActionLabel?: string;
   analyzeImportBannerDismissible?: boolean;
+  geminiEqBatchBannerTitle?: string;
+  geminiEqBatchBannerDetail?: string;
+  geminiEqBatchBannerDismissible?: boolean;
   onStopAnalyzeImportBatch: () => void;
   onDismissAnalyzeImportBanner: () => void;
+  onDismissGeminiEqBatchBanner: () => void;
   onToggleSelected: (itemId: string) => void;
   onOpenInfoModal: (itemId: string) => void;
   onOpenPlaybackModal: (itemId: string) => void;
@@ -36,12 +41,17 @@ const PlaylistContent = ({
   playingId,
   selectedItemIds,
   showAnalyzeImportBanner,
+  showGeminiEqBatchBanner,
   analyzeImportBannerTitle,
   analyzeImportBannerDetail,
   analyzeImportBannerActionLabel,
   analyzeImportBannerDismissible,
+  geminiEqBatchBannerTitle,
+  geminiEqBatchBannerDetail,
+  geminiEqBatchBannerDismissible,
   onStopAnalyzeImportBatch,
   onDismissAnalyzeImportBanner,
+  onDismissGeminiEqBatchBanner,
   onToggleSelected,
   onOpenInfoModal,
   onOpenPlaybackModal,
@@ -72,6 +82,15 @@ const PlaylistContent = ({
           dismissible={analyzeImportBannerDismissible}
           onStop={onStopAnalyzeImportBatch}
           onDismiss={onDismissAnalyzeImportBanner}
+        />
+      ) : null}
+      {showGeminiEqBatchBanner ? (
+        <AnalyzeImportBannerPanel
+          title={geminiEqBatchBannerTitle}
+          detail={geminiEqBatchBannerDetail}
+          dismissible={geminiEqBatchBannerDismissible}
+          onStop={onStopAnalyzeImportBatch}
+          onDismiss={onDismissGeminiEqBatchBanner}
         />
       ) : null}
       {playlist.map((item) => {

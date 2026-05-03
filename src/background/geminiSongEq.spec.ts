@@ -206,6 +206,33 @@ test("buildGeminiSongEqRequestBody includes only approved song EQ context", () =
   expectEqual(text.includes("youtube_list"), false);
 });
 
+test("buildGeminiSongEqRequestBody explains empty requests as song-context EQ suggestions", () => {
+  const body = buildGeminiSongEqRequestBody({
+    userRequest: "",
+    existingProfiles: [],
+    songContext: {
+      id: "song-1",
+      title: "Song One",
+      channelName: "Artist",
+      videoId: "abc123",
+      url: "https://www.youtube.com/watch?v=abc123",
+      audioEq: {
+        clearBass: 0,
+        band400: 0,
+        band1k: 0,
+        band2k5: 0,
+        band6k3: 0,
+        band16k: 0,
+      },
+    },
+  });
+
+  const text = JSON.stringify(body);
+  expectEqual(text.includes("No specific user preference was provided"), true);
+  expectEqual(text.includes("infer a tasteful EQ from currentSong"), true);
+  expectEqual(text.includes("Song One"), true);
+});
+
 test("parseGeminiSongEqResponse accepts valid JSON text", () => {
   expectEqual(
     parseGeminiSongEqResponse(

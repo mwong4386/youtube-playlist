@@ -573,34 +573,44 @@ test("playlist source wires the Gemini song EQ adjustment message", () => {
     msgTypeSource.includes("AdjustSongEqWithGemini"),
     true,
   );
+  expectEqual(
+    backgroundSource.includes(
+      "Describe the song EQ adjustment you want before asking Gemini.",
+    ),
+    false,
+  );
 });
 
-test("selection actions modal exposes review-first Gemini song EQ adjustment", () => {
+test("selection actions modal exposes auto-applied batch Gemini song EQ adjustment", () => {
   expectEqual(selectionActionsModalSource.includes("Gemini EQ"), true);
   expectEqual(
     selectionActionsModalSource.includes("Describe an optional EQ preference"),
     true,
   );
-  expectEqual(selectionActionsModalSource.includes("selectedSong?.title"), true);
-  expectEqual(selectionActionsModalSource.includes("Apply EQ"), true);
+  expectEqual(selectionActionsModalSource.includes("selectedSongs.length === 1"), true);
+  expectEqual(selectionActionsModalSource.includes("Generate and apply"), true);
   expectEqual(
-    selectionActionsModalSource.includes("geminiEqReview.suggestion &&"),
+    selectionActionsModalSource.includes("createGeminiEqBatchSubmission"),
     true,
   );
   expectEqual(
-    selectionActionsModalSource.includes("disabled={!geminiEqReview.suggestion}"),
-    false,
+    selectionActionsModalSource.includes("onAdjustSelectedSongEqWithGemini"),
+    true,
   );
-  expectEqual(selectionActionsModalSource.includes("Dismiss"), false);
-  expectEqual(selectionActionsGeminiEqReviewSource.includes("select one song"), true);
-  expectEqual(selectionActionsModalSource.includes("suggestion"), true);
+  expectEqual(
+    playlistSource.includes("getGeminiEqBatchNotificationViewModel"),
+    true,
+  );
+  expectEqual(playlistContentSource.includes("showGeminiEqBatchBanner"), true);
+  expectEqual(selectionActionsGeminiEqReviewSource.includes("at least one song"), true);
+  expectEqual(selectionActionsModalSource.includes("Apply EQ"), false);
 });
 
 test("playlist actions request and apply Gemini song EQ through existing playlist updates", () => {
   expectEqual(playlistActionsSource.includes("adjustSongEqWithGemini"), true);
   expectEqual(playlistActionsSource.includes("normalizeGeminiSongEqResponse"), true);
   expectEqual(playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"), true);
-  expectEqual(playlistActionsSource.includes("onApplyGeminiSongEqSuggestion"), true);
+  expectEqual(playlistActionsSource.includes("onApplyGeminiSongEqSuggestions"), true);
   expectEqual(playlistActionsSource.includes("updateActiveSongListItems"), true);
 });
 

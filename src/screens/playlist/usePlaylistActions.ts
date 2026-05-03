@@ -596,27 +596,27 @@ const usePlaylistActions = ({
     );
   };
 
-  const onApplyGeminiSongEqSuggestion = (
-    suggestion: GeminiSongEqSuggestion,
+  const onApplyGeminiSongEqSuggestions = (
+    suggestions: GeminiSongEqSuggestion[],
   ) => {
+    if (suggestions.length === 0) {
+      return;
+    }
+
+    const suggestionsBySongId = new Map(
+      suggestions.map((suggestion) => [suggestion.songId, suggestion.audioEq]),
+    );
+
     updateActiveSongListItems(
       (currentPlaylist) =>
         currentPlaylist.map((playlistItem) =>
-          playlistItem.id === suggestion.songId
+          suggestionsBySongId.has(playlistItem.id)
             ? {
                 ...playlistItem,
-                audioEq: suggestion.audioEq,
+                audioEq: suggestionsBySongId.get(playlistItem.id)!,
               }
             : playlistItem,
         ),
-      () => {
-        if (chrome.runtime.lastError) {
-          return;
-        }
-
-        clearSelection();
-        closeSelectionActionsModal();
-      },
     );
   };
 
@@ -715,7 +715,7 @@ const usePlaylistActions = ({
     generateEqProfileWithGemini,
     importYoutubePlaylist,
     onAdjustVolumeSelected,
-    onApplyGeminiSongEqSuggestion,
+    onApplyGeminiSongEqSuggestions,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
