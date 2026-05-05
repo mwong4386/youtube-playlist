@@ -1,5 +1,16 @@
 import { ThemePreference } from "../utils/theme";
 
+type ActionSheetIconName =
+  | "plus"
+  | "back"
+  | "import"
+  | "export"
+  | "playlist-check"
+  | "chevron-down"
+  | "edit"
+  | "check"
+  | "x";
+
 interface MActionSheetItem {
   id: number | string;
   description?: string;
@@ -16,8 +27,14 @@ interface MActionSheetItem {
   themePreference?: ThemePreference;
   onThemeChange?: (preference: ThemePreference) => void;
   shouldCloseOnClick?: boolean;
-  leadingIcon?: "plus" | "back";
-  trailingIcon?: "chevron-down" | "edit";
+  leadingIcon?: ActionSheetIconName;
+  trailingIcon?: ActionSheetIconName;
+  iconActions?: Array<{
+    icon: ActionSheetIconName;
+    label: string;
+    callback: () => any;
+    disabled?: boolean;
+  }>;
   isActive?: boolean;
   onEdit?: () => void;
   songListName?: string;

@@ -1090,6 +1090,7 @@ test("playlist item play button routes through modal-opening playback wiring", (
 test("playlist screen wires playlist update detection actions", () => {
   expectEqual(playlistSource.includes("pendingPlaylistUpdateItems"), true);
   expectEqual(playlistSource.includes("refreshActivePlaylistSource"), true);
+  expectEqual(playlistSource.includes("refreshPlaylistSource"), true);
   expectEqual(playlistHeaderSource.includes("hasTrackedPlaylistSource"), true);
   expectEqual(playlistHeaderSource.includes("Check Playlist Updates"), true);
   expectEqual(
@@ -1097,12 +1098,12 @@ test("playlist screen wires playlist update detection actions", () => {
     true,
   );
   expectEqual(
-    playlistHeaderSource.includes("void onCheckPlaylistUpdates()"),
+    playlistHeaderSource.includes("void onCheckPlaylistUpdates(songListName)"),
     true,
   );
   expectEqual(
     playlistSource.includes(
-      "const result = await refreshActivePlaylistSource(true);",
+      "const result = await refreshPlaylistSource(songListName, true);",
     ),
     true,
   );
@@ -1136,10 +1137,11 @@ test("playlist screen wires playlist update detection actions", () => {
   );
   expectEqual(
     playlistActionsSource.includes(
-      "{ name: MsgType.RefreshActivePlaylistSource, force }",
+      "name: MsgType.RefreshActivePlaylistSource",
     ),
     true,
   );
+  expectEqual(playlistActionsSource.includes("targetSongListName"), true);
   expectEqual(
     playlistActionsSource.includes("hasActiveSource: Boolean(activeSource)"),
     true,

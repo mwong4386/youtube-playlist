@@ -84,6 +84,12 @@
     color: inherit;
     text-align: left;
     padding: 0;
+    overflow: hidden;
+}
+
+.row-main-button .row-label{
+    min-width: 0;
+    max-width: 100%;
 }
 
 .row-icon-button{
@@ -109,14 +115,6 @@
     padding: 0;
 }
 
-.row-current-dot{
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--accent-color);
-    flex-shrink: 0;
-}
-
 .row-active .row-label{
     color: var(--accent-color);
 }
@@ -127,6 +125,14 @@
     justify-content: space-between;
     gap: 12px;
     padding: 0 14px 0 14px;
+    overflow: hidden;
+}
+
+.song-list-row-actions{
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
 }
 
 .selector-row{
@@ -191,8 +197,68 @@
     transform: translateY(1px);
 }
 
+.song-list-toolbar-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.song-list-action-main-button{
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    padding: 0;
+}
+
+.song-list-toolbar-actions{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.song-list-toolbar-button{
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+
+.song-list-toolbar-button:hover:not(:disabled){
+    background: color-mix(in srgb, var(--surface-tertiary) 70%, transparent);
+    color: var(--text-primary);
+}
+
+.song-list-toolbar-button:active:not(:disabled){
+    transform: translateY(1px);
+}
+
+.song-list-toolbar-button:disabled{
+    color: color-mix(in srgb, var(--text-secondary) 38%, transparent);
+    cursor: not-allowed;
+}
+
 .row-danger{
     color: color-mix(in srgb, var(--danger-color, #d04a4a) 88%, var(--text-primary));
+}
+
+.row-danger .row-leading-icon,
+.row-danger .row-trailing-icon{
+    color: currentColor;
 }
 
 .control-row{

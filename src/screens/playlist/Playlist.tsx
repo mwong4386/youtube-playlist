@@ -118,6 +118,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     confirmDeleteAll,
     generateEqProfileWithGemini,
     refreshActivePlaylistSource,
+    refreshPlaylistSource,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
@@ -366,9 +367,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             onOpenGeminiSettings={openGeminiSettings}
             onOpenImportModal={openPlaylistImportModal}
             onOpenNewSongListModal={openNewSongListModal}
-            onCheckPlaylistUpdates={async () => {
+            onCheckPlaylistUpdates={async (songListName = activeSongListName) => {
               setPlaylistUpdateCheckNotice(null);
-              const result = await refreshActivePlaylistSource(true);
+              const result = await refreshPlaylistSource(songListName, true);
 
               if (!result.ok) {
                 setPlaylistUpdateCheckNotice({

@@ -112,6 +112,9 @@
   gap: 4px;
   margin-bottom: 16px;
 }
+.chrome-header-balanced {
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+}
 .chrome-title-stack {
   min-width: 0;
   text-align: center;

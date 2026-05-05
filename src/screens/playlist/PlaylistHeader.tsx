@@ -20,7 +20,7 @@ interface props {
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
   onOpenNewSongListModal: () => void;
-  onCheckPlaylistUpdates: () => Promise<string>;
+  onCheckPlaylistUpdates: (songListName?: string) => Promise<string>;
   onSelectSongList: (name: string) => void;
   onRenameSongList: (currentName: string, nextName: string) => string;
   onClearSelection: () => void;
@@ -101,8 +101,8 @@ const PlaylistHeader = ({
   const onToggleVolumeAdjust = () => {
     chrome.runtime.sendMessage({ name: MsgType.ToggleVolumeAdjust });
   };
-  const onCheckPlaylistUpdatesFromMenu = () => {
-    void onCheckPlaylistUpdates()
+  const onCheckPlaylistUpdatesFromMenu = (songListName?: string) => {
+    void onCheckPlaylistUpdates(songListName)
       .then((message) => {
         console.log(message);
       })
@@ -110,8 +110,8 @@ const PlaylistHeader = ({
         console.error("Could not check playlist updates.", error);
       });
   };
-  const onExportJson = () => {
-    var result = JSON.stringify(playlist);
+  const onExportJson = (items = playlist) => {
+    var result = JSON.stringify(items);
     var file = new Blob([result], { type: "application/json" });
     var url = URL.createObjectURL(file);
     let revoked = false;
@@ -217,6 +217,34 @@ const PlaylistHeader = ({
         songListName: row.songListName,
         isActive: row.isActive,
         trailingIcon: row.trailingIcon,
+        iconActions: [
+          {
+            icon: "import",
+            label: `Import Playlist into ${row.songListName}`,
+            callback: () => {
+              onSelectSongList(row.songListName);
+              onOpenImportModal();
+            },
+          },
+          {
+            icon: "export",
+            label: `Export ${row.songListName}`,
+            callback: () =>
+              onExportJson(songLists[row.songListName]?.items ?? []),
+          },
+          ...(songLists[row.songListName]?.playlistSources?.[0]
+            ? [
+                {
+                  icon: "playlist-check" as const,
+                  label: `Check ${row.songListName} for playlist updates`,
+                  callback: () => {
+                    onSelectSongList(row.songListName);
+                    onCheckPlaylistUpdatesFromMenu(row.songListName);
+                  },
+                },
+              ]
+            : []),
+        ],
         callback: () => {
           resetSongListRenameState();
           onSelectSongList(row.songListName);
@@ -295,7 +323,11 @@ const PlaylistHeader = ({
         description: "Import Playlist",
         callback: onOpenImportModal,
       },
-      { id: 8, description: "Export Playlist", callback: onExportJson },
+      {
+        id: 8,
+        description: "Export Playlist",
+        callback: onExportJson,
+      },
       ...(hasTrackedPlaylistSource
         ? [
             {

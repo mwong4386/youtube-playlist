@@ -909,7 +909,13 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         mode: message.mode,
       });
     case MsgType.RefreshActivePlaylistSource:
-      return refreshActivePlaylistSource({ force: message.force === true });
+      return refreshActivePlaylistSource({
+        force: message.force === true,
+        targetSongListName:
+          typeof message.targetSongListName === "string"
+            ? message.targetSongListName
+            : undefined,
+      });
     case MsgType.AnalyzeImportedPlaylist:
       return startAnalyzeImportBatch({
         itemIds: message.itemIds,

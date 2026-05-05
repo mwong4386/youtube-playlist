@@ -13,6 +13,7 @@ interface Props {
   closeLabel: string;
   onClose: () => void;
   closeDisabled?: boolean;
+  balanceActionSlot?: boolean;
 }
 
 const ModalChromeHeader = ({
@@ -26,9 +27,14 @@ const ModalChromeHeader = ({
   closeLabel,
   onClose,
   closeDisabled,
+  balanceActionSlot,
 }: Props) => {
   return (
-    <div className={styles["chrome-header"]}>
+    <div
+      className={`${styles["chrome-header"]} ${
+        balanceActionSlot ? styles["chrome-header-balanced"] : ""
+      }`}
+    >
       <button
         type="button"
         className={styles["chrome-close-button"]}

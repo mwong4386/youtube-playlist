@@ -9,6 +9,9 @@ import {
   ChevronDownIcon,
   CloseIcon,
   EditIcon,
+  ExportIcon,
+  ImportIcon,
+  PlaylistCheckIcon,
   PlusIcon,
 } from "../icons";
 import styles from "./ActionSheet.module.css";
@@ -18,9 +21,7 @@ interface props {
   close: () => void;
 }
 
-const renderIcon = (
-  icon: "plus" | "chevron-down" | "edit" | "check" | "x" | "back"
-) => {
+const renderIcon = (icon: NonNullable<MActionSheetItem["leadingIcon"]>) => {
   const iconClassName = styles["row-icon-svg"];
 
   switch (icon) {
@@ -36,8 +37,38 @@ const renderIcon = (
       return <CloseIcon className={iconClassName} />;
     case "back":
       return <BackIcon className={iconClassName} />;
+    case "import":
+      return <ImportIcon className={iconClassName} />;
+    case "export":
+      return <ExportIcon className={iconClassName} />;
+    case "playlist-check":
+      return <PlaylistCheckIcon className={iconClassName} />;
   }
 };
+
+const renderIconActions = (
+  item: MActionSheetItem,
+  close: () => void,
+  className: string,
+) =>
+  item.iconActions?.map((action) => (
+    <button
+      key={action.label}
+      type="button"
+      className={className}
+      onClick={() => {
+        action.callback();
+        if (item.shouldCloseOnClick !== false) {
+          close();
+        }
+      }}
+      aria-label={action.label}
+      title={action.label}
+      disabled={action.disabled}
+    >
+      {renderIcon(action.icon)}
+    </button>
+  ));
 
 const ActionSheetItem = ({ item, close }: props) => {
   if (item.kind === "theme-selector" && item.themePreference && item.onThemeChange) {
@@ -127,16 +158,22 @@ const ActionSheetItem = ({ item, close }: props) => {
           }
         }}>
           <span className={styles["row-label"]}>{item.description}</span>
-          {item.isActive ? <span className={styles["row-current-dot"]} /> : null}
         </button>
-        <button
-          type="button"
-          className={`${styles["row-icon-button"]} ${styles["row-icon-button-plain"]}`}
-          onClick={() => item.onEdit?.()}
-          aria-label={`Rename ${item.songListName || item.description || "song list"}`}
-        >
-          {renderIcon(item.trailingIcon || "edit")}
-        </button>
+        <span className={styles["song-list-row-actions"]}>
+          <button
+            type="button"
+            className={`${styles["row-icon-button"]} ${styles["row-icon-button-plain"]}`}
+            onClick={() => item.onEdit?.()}
+            aria-label={`Rename ${item.songListName || item.description || "song list"}`}
+          >
+            {renderIcon(item.trailingIcon || "edit")}
+          </button>
+          {renderIconActions(
+            item,
+            close,
+            `${styles["row-icon-button"]} ${styles["row-icon-button-plain"]}`,
+          )}
+        </span>
       </div>
     );
   }
@@ -170,6 +207,32 @@ const ActionSheetItem = ({ item, close }: props) => {
   };
 
   if (item.kind === "song-list-action") {
+    if (item.iconActions && item.iconActions.length > 0) {
+      return (
+        <div
+          className={`${styles["row"]} ${styles["song-list-action-row"]} ${styles["song-list-toolbar-row"]}`}
+        >
+          <button
+            type="button"
+            className={styles["song-list-action-main-button"]}
+            onClick={onClick}
+          >
+            <span className={styles["row-copy"]}>
+              {item.leadingIcon ? (
+                <span className={styles["row-leading-icon"]}>
+                  {renderIcon(item.leadingIcon)}
+                </span>
+              ) : null}
+              <span className={styles["row-label"]}>{item.description}</span>
+            </span>
+          </button>
+          <span className={styles["song-list-toolbar-actions"]}>
+            {renderIconActions(item, close, styles["song-list-toolbar-button"])}
+          </span>
+        </div>
+      );
+    }
+
     return (
       <button
         type="button"

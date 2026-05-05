@@ -32,6 +32,7 @@ interface RefreshResponse {
 
 interface RefreshDependencies {
   force?: boolean;
+  targetSongListName?: string;
   now?: Date;
   readSongListsState?: () => Promise<SongListsState>;
   writeSongListsState?: (state: SongListsState) => Promise<void>;
@@ -64,7 +65,9 @@ export const refreshActivePlaylistSource = async (
     dependencies.writeSongListsState ?? writeStoredSongListsState;
   const resolvePlaylist = dependencies.resolvePlaylist ?? resolveYoutubePlaylist;
   const state = (await readSongListsState()) ?? buildDefaultSongListsState();
-  const activeRecord = state.songLists[state.activeSongListName];
+  const targetSongListName =
+    dependencies.targetSongListName ?? state.activeSongListName;
+  const activeRecord = state.songLists[targetSongListName];
   const source = activeRecord?.playlistSources?.[0];
 
   if (!activeRecord || !source) {
@@ -86,7 +89,7 @@ export const refreshActivePlaylistSource = async (
       ...state,
       songLists: {
         ...state.songLists,
-        [state.activeSongListName]: {
+        [targetSongListName]: {
           ...activeRecord,
           playlistSources: [
             nextSource,

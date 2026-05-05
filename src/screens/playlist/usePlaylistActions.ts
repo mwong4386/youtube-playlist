@@ -428,11 +428,12 @@ const usePlaylistActions = ({
     );
   };
 
-  const refreshActivePlaylistSource = (
+  const refreshPlaylistSource = (
+    targetSongListName: string,
     force = false,
   ): Promise<PlaylistSourceRefreshResult> => {
     const activeSource =
-      songListsState.songLists[activeSongListName]?.playlistSources?.[0];
+      songListsState.songLists[targetSongListName]?.playlistSources?.[0];
 
     if (
       !force &&
@@ -452,11 +453,15 @@ const usePlaylistActions = ({
       console.log("[Playlist update detection] Requesting refresh", {
         force,
         hasActiveSource: Boolean(activeSource),
-        activeSongListName,
+        targetSongListName,
       });
 
       chrome.runtime.sendMessage(
-        { name: MsgType.RefreshActivePlaylistSource, force },
+        {
+          name: MsgType.RefreshActivePlaylistSource,
+          force,
+          targetSongListName,
+        },
         (response: PlaylistSourceRefreshResult | undefined) => {
           if (chrome.runtime.lastError) {
             console.warn(
@@ -487,6 +492,12 @@ const usePlaylistActions = ({
         },
       );
     });
+  };
+
+  const refreshActivePlaylistSource = (
+    force = false,
+  ): Promise<PlaylistSourceRefreshResult> => {
+    return refreshPlaylistSource(activeSongListName, force);
   };
 
   const updateActivePlaylistSource = (
@@ -904,6 +915,7 @@ const usePlaylistActions = ({
     generateEqProfileWithGemini,
     importYoutubePlaylist,
     refreshActivePlaylistSource,
+    refreshPlaylistSource,
     onAdjustVolumeSelected,
     onAddPendingPlaylistUpdateItem,
     onAddPendingPlaylistUpdates,
