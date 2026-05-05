@@ -313,6 +313,35 @@ test("playlist menu groups playlist actions under playlist management", () => {
   expectEqual(playlistHeaderSource.includes('description: "Delete All"'), true);
 });
 
+test("song list rows open playlist management from a gear button and return to the selector", () => {
+  expectEqual(actionSheetModelSource.includes('"gear"'), true);
+  expectEqual(actionSheetItemSource.includes("GearIcon"), true);
+  expectEqual(actionSheetItemSource.includes("overflowIcon"), true);
+  expectEqual(
+    playlistHeaderSource.includes(
+      'openPlaylistManagementMenu("song-list-sheet", row.songListName)',
+    ),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes(
+      'backTarget: "main-menu" | "song-list-sheet"',
+    ),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes("openSongListSheet(null, \"\", \"\", false)"),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes('overflowLabel: `Manage ${row.songListName}`'),
+    true,
+  );
+  expectEqual(playlistHeaderSource.includes('icon: "import"'), false);
+  expectEqual(playlistHeaderSource.includes('icon: "export"'), false);
+  expectEqual(playlistHeaderSource.includes('icon: "playlist-check"'), false);
+});
+
 test("settings subpages replace the settings sheet instead of stacking", () => {
   const eqProfilesItemIndex = playlistHeaderSource.indexOf(
     'description: "EQ Profiles"',
@@ -1091,7 +1120,10 @@ test("playlist screen wires playlist update detection actions", () => {
   expectEqual(playlistSource.includes("pendingPlaylistUpdateItems"), true);
   expectEqual(playlistSource.includes("refreshActivePlaylistSource"), true);
   expectEqual(playlistSource.includes("refreshPlaylistSource"), true);
-  expectEqual(playlistHeaderSource.includes("hasTrackedPlaylistSource"), true);
+  expectEqual(
+    playlistHeaderSource.includes("hasTargetTrackedPlaylistSource"),
+    true,
+  );
   expectEqual(playlistHeaderSource.includes("Check Playlist Updates"), true);
   expectEqual(
     playlistHeaderSource.includes("onCheckPlaylistUpdatesFromMenu"),

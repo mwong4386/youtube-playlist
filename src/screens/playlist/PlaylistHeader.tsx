@@ -75,10 +75,6 @@ const PlaylistHeader = ({
   const isPIP = playbackState.isPip;
   const playing = isPlaybackActive(playbackState.status);
   const enableAdjustVideoVolume = playbackState.enableAdjustVideoVolume;
-  const hasTrackedPlaylistSource = Boolean(
-    songLists[activeSongListName]?.playlistSources?.[0],
-  );
-
   const onPlayPauseButton = () => {
     if (isPlayAll) {
       console.log("sendPauseAll");
@@ -145,6 +141,7 @@ const PlaylistHeader = ({
     nextEditingSongListName: string | null = editingSongListName,
     nextSongListRenameValue = songListRenameValue,
     nextSongListRenameError = songListRenameError,
+    shouldOpen = true,
   ) => {
     setEditingSongListName(nextEditingSongListName);
     setSongListRenameValue(nextSongListRenameValue);
@@ -217,34 +214,8 @@ const PlaylistHeader = ({
         songListName: row.songListName,
         isActive: row.isActive,
         trailingIcon: row.trailingIcon,
-        iconActions: [
-          {
-            icon: "import",
-            label: `Import Playlist into ${row.songListName}`,
-            callback: () => {
-              onSelectSongList(row.songListName);
-              onOpenImportModal();
-            },
-          },
-          {
-            icon: "export",
-            label: `Export ${row.songListName}`,
-            callback: () =>
-              onExportJson(songLists[row.songListName]?.items ?? []),
-          },
-          ...(songLists[row.songListName]?.playlistSources?.[0]
-            ? [
-                {
-                  icon: "playlist-check" as const,
-                  label: `Check ${row.songListName} for playlist updates`,
-                  callback: () => {
-                    onSelectSongList(row.songListName);
-                    onCheckPlaylistUpdatesFromMenu(row.songListName);
-                  },
-                },
-              ]
-            : []),
-        ],
+        overflowIcon: "gear",
+        overflowLabel: `Manage ${row.songListName}`,
         callback: () => {
           resetSongListRenameState();
           onSelectSongList(row.songListName);
@@ -255,11 +226,18 @@ const PlaylistHeader = ({
           setSongListRenameError("");
           openSongListSheet(row.songListName, row.songListName, "");
         },
+        onOverflow: () => {
+          resetSongListRenameState();
+          onSelectSongList(row.songListName);
+          openPlaylistManagementMenu("song-list-sheet", row.songListName);
+        },
       };
     });
 
     ctx.setActionSheet(items);
-    ctx.open();
+    if (shouldOpen) {
+      ctx.open();
+    }
   };
 
   const buildMenuItems = (currentThemePreference: ThemePreference) => {
@@ -308,46 +286,78 @@ const PlaylistHeader = ({
     ];
   };
 
-  const buildPlaylistManagementItems = (): MActionSheetItem[] => {
+  const buildPlaylistManagementItems = ({
+    backTarget,
+    targetSongListName = activeSongListName,
+  }: {
+    backTarget: "main-menu" | "song-list-sheet";
+    targetSongListName?: string;
+  }): MActionSheetItem[] => {
+    const targetSongList = songLists[targetSongListName];
+    const hasTargetTrackedPlaylistSource = Boolean(
+      targetSongList?.playlistSources?.[0],
+    );
+
     return [
       {
         id: "playlist-management-header",
         kind: "sheet-header",
         description: "Manage Playlist",
         leadingIcon: "back",
-        callback: () => ctx.setActionSheet(buildMenuItems(themePreference)),
+        callback: () => {
+          if (backTarget === "song-list-sheet") {
+            openSongListSheet(null, "", "", false);
+            return;
+          }
+
+          ctx.setActionSheet(buildMenuItems(themePreference));
+        },
         shouldCloseOnClick: false,
       },
       {
         id: 7,
         description: "Import Playlist",
-        callback: onOpenImportModal,
+        callback: () => {
+          onSelectSongList(targetSongListName);
+          onOpenImportModal();
+        },
       },
       {
         id: 8,
         description: "Export Playlist",
-        callback: onExportJson,
+        callback: () => onExportJson(targetSongList?.items ?? []),
       },
-      ...(hasTrackedPlaylistSource
+      ...(hasTargetTrackedPlaylistSource
         ? [
             {
               id: 9,
               description: "Check Playlist Updates",
-              callback: onCheckPlaylistUpdatesFromMenu,
+              callback: () => {
+                onSelectSongList(targetSongListName);
+                onCheckPlaylistUpdatesFromMenu(targetSongListName);
+              },
             },
           ]
         : []),
       {
         id: 200,
         description: "Delete All",
-        callback: onDelete,
+        callback: () => {
+          onSelectSongList(targetSongListName);
+          onDelete();
+        },
         tone: "danger",
       },
     ];
   };
 
-  const openPlaylistManagementMenu = () => {
-    ctx.setActionSheet(buildPlaylistManagementItems());
+  const openPlaylistManagementMenu = (
+    backTarget: "main-menu" | "song-list-sheet" = "main-menu",
+    targetSongListName = activeSongListName,
+  ) => {
+    ctx.setActionSheet(
+      buildPlaylistManagementItems({ backTarget, targetSongListName }),
+    );
   };
 
   const openPlayMenu = () => {

@@ -4,6 +4,7 @@ export { default as CheckIcon } from "./CheckIcon";
 export { default as ChevronDownIcon } from "./ChevronDownIcon";
 export { default as CloseIcon } from "./CloseIcon";
 export { default as EditIcon } from "./EditIcon";
+export { default as GearIcon } from "./GearIcon";
 export { default as GeminiKeyIcon } from "./GeminiKeyIcon";
 export { default as HomeIcon } from "./HomeIcon";
 export { default as ImportIcon } from "./ImportIcon";

@@ -10,6 +10,7 @@ import {
   CloseIcon,
   EditIcon,
   ExportIcon,
+  GearIcon,
   ImportIcon,
   PlaylistCheckIcon,
   PlusIcon,
@@ -31,6 +32,8 @@ const renderIcon = (icon: NonNullable<MActionSheetItem["leadingIcon"]>) => {
       return <ChevronDownIcon className={iconClassName} />;
     case "edit":
       return <EditIcon className={iconClassName} />;
+    case "gear":
+      return <GearIcon className={iconClassName} />;
     case "check":
       return <CheckIcon className={iconClassName} />;
     case "x":
@@ -168,11 +171,23 @@ const ActionSheetItem = ({ item, close }: props) => {
           >
             {renderIcon(item.trailingIcon || "edit")}
           </button>
-          {renderIconActions(
-            item,
-            close,
-            `${styles["row-icon-button"]} ${styles["row-icon-button-plain"]}`,
-          )}
+          {item.overflowIcon ? (
+            <button
+              type="button"
+              className={`${styles["row-icon-button"]} ${styles["row-icon-button-plain"]}`}
+              onClick={() => item.onOverflow?.()}
+              aria-label={
+                item.overflowLabel ||
+                `Manage ${item.songListName || item.description || "song list"}`
+              }
+              title={
+                item.overflowLabel ||
+                `Manage ${item.songListName || item.description || "song list"}`
+              }
+            >
+              {renderIcon(item.overflowIcon)}
+            </button>
+          ) : null}
         </span>
       </div>
     );

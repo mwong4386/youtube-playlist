@@ -8,6 +8,7 @@ type ActionSheetIconName =
   | "playlist-check"
   | "chevron-down"
   | "edit"
+  | "gear"
   | "check"
   | "x";
 
@@ -37,6 +38,9 @@ interface MActionSheetItem {
   }>;
   isActive?: boolean;
   onEdit?: () => void;
+  onOverflow?: () => void;
+  overflowIcon?: "gear";
+  overflowLabel?: string;
   songListName?: string;
   editValue?: string;
   onEditValueChange?: (value: string) => void;
