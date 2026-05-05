@@ -71,6 +71,29 @@ test("selection action detail views keep back and close affordances", () => {
   expectEqual(selectionActionsSource.includes("<CloseIcon />"), true);
 });
 
+test("selection actions hide Gemini-backed menu rows without a Gemini key", () => {
+  expectEqual(
+    selectionActionsSource.includes("geminiApiKey: string;"),
+    true,
+  );
+  expectEqual(
+    selectionActionsSource.includes(
+      "const hasGeminiApiKey = geminiApiKey.trim().length > 0;",
+    ),
+    true,
+  );
+  expectEqual(
+    selectionActionsSource.includes("{hasGeminiApiKey ? ("),
+    true,
+  );
+  expectEqual(
+    selectionActionsSource.includes(
+      'if (!hasGeminiApiKey && (view === "timing" || view === "geminiEq")) {',
+    ),
+    true,
+  );
+});
+
 test("selection actions modal no longer owns duplicated header chrome", () => {
   expectEqual(playlistStyles.includes(".selection-actions-modal-header"), false);
   expectEqual(playlistStyles.includes(".selection-actions-modal-title"), false);

@@ -753,6 +753,7 @@ test("playlist source wires the Gemini song EQ adjustment message", () => {
 });
 
 test("selection actions modal exposes auto-applied batch Gemini song EQ adjustment", () => {
+  expectEqual(playlistSource.includes("geminiApiKey={geminiApiKey}"), true);
   expectEqual(selectionActionsModalSource.includes("Gemini EQ"), true);
   expectEqual(
     selectionActionsModalSource.includes("Describe an optional EQ preference"),

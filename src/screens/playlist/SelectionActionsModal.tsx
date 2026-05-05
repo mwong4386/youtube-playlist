@@ -21,6 +21,7 @@ interface Props {
   selectedUncalibratedCount: number;
   selectedSongs: MPlaylistItem[];
   audioEqProfiles: AudioEqProfile[];
+  geminiApiKey: string;
   firstSelectedItemVolume?: number;
   onAnalyzeSelected: () => void;
   onAnalyzeUncalibratedSelected: () => void;
@@ -36,6 +37,7 @@ const SelectionActionsModal = ({
   selectedUncalibratedCount,
   selectedSongs,
   audioEqProfiles,
+  geminiApiKey,
   firstSelectedItemVolume,
   onAnalyzeSelected,
   onAnalyzeUncalibratedSelected,
@@ -50,6 +52,7 @@ const SelectionActionsModal = ({
   const [geminiEqReview, setGeminiEqReview] = useState<GeminiEqReviewState>(
     createInitialGeminiEqReviewState,
   );
+  const hasGeminiApiKey = geminiApiKey.trim().length > 0;
 
   useEffect(() => {
     if (!active) {
@@ -58,6 +61,12 @@ const SelectionActionsModal = ({
       setGeminiEqReview(resetGeminiEqReviewState());
     }
   }, [active]);
+
+  useEffect(() => {
+    if (!hasGeminiApiKey && (view === "timing" || view === "geminiEq")) {
+      setView("menu");
+    }
+  }, [hasGeminiApiKey, view]);
 
   const previewNewVolume =
     firstSelectedItemVolume !== undefined
@@ -135,13 +144,15 @@ const SelectionActionsModal = ({
 
         {view === "menu" ? (
           <div className={styles["selection-actions-modal-actions"]}>
-            <button
-              type="button"
-              className={styles["selection-actions-analyze-button"]}
-              onClick={() => setView("timing")}
-            >
-              Detect Song Timing
-            </button>
+            {hasGeminiApiKey ? (
+              <button
+                type="button"
+                className={styles["selection-actions-analyze-button"]}
+                onClick={() => setView("timing")}
+              >
+                Detect Song Timing
+              </button>
+            ) : null}
             <button
               type="button"
               className={styles["selection-actions-analyze-button"]}
@@ -149,14 +160,16 @@ const SelectionActionsModal = ({
             >
               Adjust Volume Ratio
             </button>
-            <button
-              type="button"
-              className={styles["selection-actions-analyze-button"]}
-              onClick={() => setView("geminiEq")}
-              disabled={isGeminiEqActionDisabled(selectedCount)}
-            >
-              Adjust EQ by Gemini
-            </button>
+            {hasGeminiApiKey ? (
+              <button
+                type="button"
+                className={styles["selection-actions-analyze-button"]}
+                onClick={() => setView("geminiEq")}
+                disabled={isGeminiEqActionDisabled(selectedCount)}
+              >
+                Adjust EQ by Gemini
+              </button>
+            ) : null}
             <button
               type="button"
               className={styles["selection-actions-delete-button"]}

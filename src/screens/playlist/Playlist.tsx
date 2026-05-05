@@ -525,6 +525,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         selectedUncalibratedCount={selectedUncalibratedCount}
         selectedSongs={selectedActionSongs}
         audioEqProfiles={audioEqProfiles}
+        geminiApiKey={geminiApiKey}
         firstSelectedItemVolume={firstSelectedItemVolume}
         onAnalyzeSelected={onAnalyzeSelected}
         onAnalyzeUncalibratedSelected={onAnalyzeUncalibratedSelected}
