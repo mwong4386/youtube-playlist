@@ -7,6 +7,7 @@ interface MActionSheetItem {
   kind?:
     | "action"
     | "theme-selector"
+    | "sheet-header"
     | "song-list-selector"
     | "song-list-action"
     | "song-list-row"
@@ -15,7 +16,7 @@ interface MActionSheetItem {
   themePreference?: ThemePreference;
   onThemeChange?: (preference: ThemePreference) => void;
   shouldCloseOnClick?: boolean;
-  leadingIcon?: "plus";
+  leadingIcon?: "plus" | "back";
   trailingIcon?: "chevron-down" | "edit";
   isActive?: boolean;
   onEdit?: () => void;

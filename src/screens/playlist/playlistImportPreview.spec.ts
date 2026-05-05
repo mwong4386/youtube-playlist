@@ -5,6 +5,7 @@ import type MPlaylistItem from "../../models/MPlaylistItem";
 import {
   commitPlaylistImportPreview,
   createPlaylistImportPreview,
+  createPlaylistSourceFromImport,
 } from "./playlistImportPreview";
 
 const createPlaylistItem = (
@@ -34,6 +35,7 @@ test("createPlaylistImportPreview filters duplicates in append mode and selects 
 
   expectDeepEqual(createPlaylistImportPreview(existing, imported, "append"), {
     items: [imported[1], imported[2]],
+    sourceItems: imported,
     selectedItemIds: ["new-a", "new-b"],
     skippedDuplicates: 1,
   });
@@ -48,6 +50,7 @@ test("createPlaylistImportPreview keeps all imported items in replace mode", () 
 
   expectDeepEqual(createPlaylistImportPreview(existing, imported, "replace"), {
     items: imported,
+    sourceItems: imported,
     selectedItemIds: ["replacement-saved", "new-a"],
     skippedDuplicates: 0,
   });
@@ -70,5 +73,22 @@ test("commitPlaylistImportPreview replaces with only selected preview items", ()
   expectDeepEqual(
     commitPlaylistImportPreview(existing, imported, ["new-b"], "replace"),
     [imported[1]],
+  );
+});
+
+test("createPlaylistSourceFromImport stores the playlist url and imported video id snapshot", () => {
+  const imported = [createPlaylistItem("new-a"), createPlaylistItem("new-b")];
+
+  expectDeepEqual(
+    createPlaylistSourceFromImport(
+      " https://www.youtube.com/playlist?list=PL123 ",
+      imported,
+      new Date("2026-05-03T00:00:00.000Z"),
+    ),
+    {
+      url: "https://www.youtube.com/playlist?list=PL123",
+      lastCheckedAt: "2026-05-03T00:00:00.000Z",
+      lastSeenVideoIds: ["new-a", "new-b"],
+    },
   );
 });

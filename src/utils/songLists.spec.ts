@@ -9,6 +9,7 @@ import {
   readActiveSongListItems,
   readActiveSongListItemsFromStorageMap,
   renameSongList,
+  updateActiveSongListRecord,
   updateActiveSongListItems,
   writeActiveSongListItems,
 } from "./songLists";
@@ -211,6 +212,85 @@ test("normalizeSongListsState keeps valid stored items with an undefined end tim
   );
 });
 
+test("normalizeSongListsState preserves valid playlist source metadata", () => {
+  const pendingItem = createPlaylistItem("new-video");
+
+  expectEqual(
+    normalizeSongListsState({
+      songLists: {
+        default: {
+          items: [],
+          playlistSources: [
+            {
+              url: "https://www.youtube.com/playlist?list=PL123",
+              lastCheckedAt: "2026-05-02T12:00:00.000Z",
+              lastSeenVideoIds: ["old-video"],
+              pendingNewItems: [pendingItem],
+              pendingSnapshotVideoIds: ["new-video", "old-video"],
+            },
+          ],
+        },
+      },
+      activeSongListName: "default",
+    }),
+    {
+      songLists: {
+        default: {
+          items: [],
+          playlistSources: [
+            {
+              url: "https://www.youtube.com/playlist?list=PL123",
+              lastCheckedAt: "2026-05-02T12:00:00.000Z",
+              lastSeenVideoIds: ["old-video"],
+              pendingNewItems: [pendingItem],
+              pendingSnapshotVideoIds: ["new-video", "old-video"],
+            },
+          ],
+        },
+      },
+      activeSongListName: "default",
+    }
+  );
+});
+
+test("normalizeSongListsState drops malformed playlist sources", () => {
+  expectEqual(
+    normalizeSongListsState({
+      songLists: {
+        default: {
+          items: [],
+          playlistSources: [
+            { url: "", lastSeenVideoIds: ["old-video"] },
+            {
+              url: "https://www.youtube.com/playlist?list=PL123",
+              lastSeenVideoIds: ["old-video", 42],
+            },
+            {
+              url: "https://www.youtube.com/playlist?list=PL456",
+              lastSeenVideoIds: ["safe-video"],
+            },
+          ],
+        },
+      },
+      activeSongListName: "default",
+    }),
+    {
+      songLists: {
+        default: {
+          items: [],
+          playlistSources: [
+            {
+              url: "https://www.youtube.com/playlist?list=PL456",
+              lastSeenVideoIds: ["safe-video"],
+            },
+          ],
+        },
+      },
+      activeSongListName: "default",
+    }
+  );
+});
+
 test("normalizeSongListsState ignores prototype properties when validating the active list", () => {
   expectEqual(
     normalizeSongListsState({
@@ -390,13 +470,22 @@ test("renameSongList rejects reserved names like __proto__", () => {
 
 test("updateActiveSongListItems only replaces the active list items", () => {
   const nextItems = [{ id: "three" } as MPlaylistItem];
+  const playlistSources = [
+    {
+      url: "https://www.youtube.com/playlist?list=PL123",
+      lastSeenVideoIds: ["two"],
+    },
+  ];
 
   expectEqual(
     updateActiveSongListItems(
       {
         songLists: {
           default: { items: [{ id: "one" } as MPlaylistItem] },
-          aimer: { items: [{ id: "two" } as MPlaylistItem] },
+          aimer: {
+            items: [{ id: "two" } as MPlaylistItem],
+            playlistSources,
+          },
         },
         activeSongListName: "aimer",
       },
@@ -405,9 +494,47 @@ test("updateActiveSongListItems only replaces the active list items", () => {
     {
       songLists: {
         default: { items: [{ id: "one" } as MPlaylistItem] },
-        aimer: { items: nextItems },
+        aimer: { items: nextItems, playlistSources },
       },
       activeSongListName: "aimer",
+    }
+  );
+});
+
+test("updateActiveSongListRecord updates items and preserves source metadata", () => {
+  const state = {
+    songLists: {
+      default: {
+        items: [createPlaylistItem("old")],
+        playlistSources: [
+          {
+            url: "https://www.youtube.com/playlist?list=PL123",
+            lastSeenVideoIds: ["old"],
+          },
+        ],
+      },
+    },
+    activeSongListName: "default",
+  };
+
+  expectEqual(
+    updateActiveSongListRecord(state, (record) => ({
+      ...record,
+      items: [...record.items, createPlaylistItem("new")],
+    })),
+    {
+      songLists: {
+        default: {
+          items: [createPlaylistItem("old"), createPlaylistItem("new")],
+          playlistSources: [
+            {
+              url: "https://www.youtube.com/playlist?list=PL123",
+              lastSeenVideoIds: ["old"],
+            },
+          ],
+        },
+      },
+      activeSongListName: "default",
     }
   );
 });
@@ -432,13 +559,19 @@ test("buildActiveSongListStorageUpdate only replaces the active named song list 
   const defaultItem = createPlaylistItem("default-song");
   const aimerItem = createPlaylistItem("aimer-song");
   const newItem = createPlaylistItem("new-song");
+  const playlistSources = [
+    {
+      url: "https://www.youtube.com/playlist?list=PL123",
+      lastSeenVideoIds: [aimerItem.videoId],
+    },
+  ];
 
   expectEqual(
     buildActiveSongListStorageUpdate(
       {
         songLists: {
           default: { items: [defaultItem] },
-          aimer: { items: [aimerItem] },
+          aimer: { items: [aimerItem], playlistSources },
         },
         activeSongListName: "aimer",
       },
@@ -447,7 +580,7 @@ test("buildActiveSongListStorageUpdate only replaces the active named song list 
     {
       songLists: {
         default: { items: [defaultItem] },
-        aimer: { items: [newItem] },
+        aimer: { items: [newItem], playlistSources },
       },
     }
   );
@@ -531,6 +664,12 @@ test("writeActiveSongListItems updates the active named song list without rewrit
   const defaultItem = createPlaylistItem("default-song");
   const aimerItem = createPlaylistItem("aimer-song");
   const replacementItem = createPlaylistItem("replacement-song");
+  const playlistSources = [
+    {
+      url: "https://www.youtube.com/playlist?list=PL123",
+      lastSeenVideoIds: [aimerItem.videoId],
+    },
+  ];
   const writes: Record<string, unknown>[] = [];
 
   await writeActiveSongListItems(
@@ -538,7 +677,7 @@ test("writeActiveSongListItems updates the active named song list without rewrit
     async () => ({
       songLists: {
         default: { items: [defaultItem] },
-        aimer: { items: [aimerItem] },
+        aimer: { items: [aimerItem], playlistSources },
       },
       activeSongListName: "aimer",
     }),
@@ -551,7 +690,7 @@ test("writeActiveSongListItems updates the active named song list without rewrit
     {
       songLists: {
         default: { items: [defaultItem] },
-        aimer: { items: [replacementItem] },
+        aimer: { items: [replacementItem], playlistSources },
       },
     },
   ]);

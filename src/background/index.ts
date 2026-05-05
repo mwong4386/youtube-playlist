@@ -59,6 +59,7 @@ import {
   importYoutubePlaylist,
   previewYoutubePlaylistImport,
 } from "./youtubePlaylistImport";
+import { refreshActivePlaylistSource } from "./youtubePlaylistUpdateDetection";
 import type {
   AnalyzeImportBatchRequest,
   AnalyzeImportBatchState,
@@ -907,6 +908,8 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         playlistUrl: message.playlistUrl,
         mode: message.mode,
       });
+    case MsgType.RefreshActivePlaylistSource:
+      return refreshActivePlaylistSource({ force: message.force === true });
     case MsgType.AnalyzeImportedPlaylist:
       return startAnalyzeImportBatch({
         itemIds: message.itemIds,
@@ -1024,6 +1027,7 @@ const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
       message?.name === MsgType.AnalyzeSongBoundaries ||
       message?.name === MsgType.PreviewYoutubePlaylistImport ||
       message?.name === MsgType.ImportYoutubePlaylist ||
+      message?.name === MsgType.RefreshActivePlaylistSource ||
       message?.name === MsgType.AnalyzeImportedPlaylist ||
       message?.name === MsgType.StopAnalyzeImportedPlaylist ||
       message?.name === MsgType.GenerateEqProfileWithGemini ||

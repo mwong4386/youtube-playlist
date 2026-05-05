@@ -28,6 +28,11 @@ interface Props {
     previewItems: MPlaylistItem[],
     selectedPreviewItemIds: string[],
     mode: PlaylistImportMode,
+    options?: {
+      trackSource?: boolean;
+      playlistUrl?: string;
+      sourceItems?: MPlaylistItem[];
+    },
   ) => void;
 }
 
@@ -41,6 +46,7 @@ const PlaylistImportModal = ({
 }: Props) => {
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [mode, setMode] = useState<PlaylistImportMode>("append");
+  const [trackPlaylistSource, setTrackPlaylistSource] = useState(true);
   const [preview, setPreview] = useState<PlaylistImportPreviewState | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,6 +57,7 @@ const PlaylistImportModal = ({
     if (!active) {
       setPlaylistUrl("");
       setMode("append");
+      setTrackPlaylistSource(true);
       setPreview(null);
       setErrorMessage("");
       setLoading(false);
@@ -92,6 +99,7 @@ const PlaylistImportModal = ({
       });
 
       if (activeRequestIdRef.current === requestId && active && result.ok) {
+        setTrackPlaylistSource(true);
         setPreview(result.preview);
       } else if (
         activeRequestIdRef.current === requestId &&
@@ -201,7 +209,11 @@ const PlaylistImportModal = ({
       return;
     }
 
-    onCommitPreview(preview.items, preview.selectedItemIds, preview.mode);
+    onCommitPreview(preview.items, preview.selectedItemIds, preview.mode, {
+      trackSource: trackPlaylistSource,
+      playlistUrl,
+      sourceItems: preview.sourceItems,
+    });
   };
 
   return (
@@ -236,6 +248,24 @@ const PlaylistImportModal = ({
                   onChange={toggleAllPreviewItems}
                 />
                 <span>Select all songs</span>
+              </label>
+              <label className={styles.sourceTrackingOption}>
+                <input
+                  type="checkbox"
+                  checked={trackPlaylistSource}
+                  onChange={(event) => {
+                    setTrackPlaylistSource(event.currentTarget.checked);
+                  }}
+                />
+                <span className={styles.sourceTrackingContent}>
+                  <span className={styles.sourceTrackingTitle}>
+                    Track this playlist for new videos
+                  </span>
+                  <span className={styles.sourceTrackingDescription}>
+                    Save this YouTube link and check for new videos when this
+                    song list opens.
+                  </span>
+                </span>
               </label>
               <div className={styles.previewList}>
                 {preview.items.map((item) => (

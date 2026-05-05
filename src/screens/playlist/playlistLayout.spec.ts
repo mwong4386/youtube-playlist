@@ -176,14 +176,8 @@ test("playlist paper-dark chrome removes stale glass-era tokens from the header,
 
 test("drag placeholder uses themed glass styling instead of a hardcoded light surface", () => {
   expectEqual(draggableStyles.includes(".placeholder"), true);
-  expectEqual(
-    draggableStyles.includes("background-color: #edf2f7;"),
-    false,
-  );
-  expectEqual(
-    draggableStyles.includes("background: color-mix("),
-    true,
-  );
+  expectEqual(draggableStyles.includes("background-color: #edf2f7;"), false);
+  expectEqual(draggableStyles.includes("background: color-mix("), true);
   expectEqual(
     draggableStyles.includes("border: 1px dashed var(--border-color);"),
     true,
@@ -191,7 +185,10 @@ test("drag placeholder uses themed glass styling instead of a hardcoded light su
 });
 
 test("playlist source uses the list container as the end-of-list drop target", () => {
-  expectEqual(playlistActionsSource.includes("const onMoveToEnd = () =>"), true);
+  expectEqual(
+    playlistActionsSource.includes("const onMoveToEnd = () =>"),
+    true,
+  );
   expectEqual(
     playlistActionsSource.includes("event.target !== event.currentTarget"),
     true,
@@ -280,37 +277,140 @@ test("playlist menu groups Gemini EQ creation under EQ Profiles", () => {
   expectEqual(playlistHeaderSource.includes("onOpenGeminiEqBuilder"), false);
 });
 
-test("settings subpages replace the settings sheet instead of stacking", () => {
-  const eqProfilesItemIndex = playlistHeaderSource.indexOf('description: "EQ Profiles"');
-  const geminiItemIndex = playlistHeaderSource.indexOf('description: "Gemini"', eqProfilesItemIndex);
-  const importItemIndex = playlistHeaderSource.indexOf('description: "Import Playlist"', geminiItemIndex);
-  const volumeItemIndex = playlistHeaderSource.indexOf("Volume adjust", importItemIndex);
-  const eqProfilesItemSource = playlistHeaderSource.slice(eqProfilesItemIndex, geminiItemIndex);
-  const geminiItemSource = playlistHeaderSource.slice(geminiItemIndex, importItemIndex);
-  const importItemSource = playlistHeaderSource.slice(importItemIndex, volumeItemIndex);
+test("playlist menu groups playlist actions under playlist management", () => {
+  expectEqual(
+    playlistHeaderSource.includes('description: "Manage Playlist"'),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes("callback: openPlaylistManagementMenu"),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes("buildPlaylistManagementItems"),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes('id: "playlist-management-header"'),
+    true,
+  );
+  expectEqual(playlistHeaderSource.includes('kind: "sheet-header"'), true);
+  expectEqual(playlistHeaderSource.includes('leadingIcon: "back"'), true);
+  expectEqual(
+    playlistHeaderSource.includes(
+      "ctx.setActionSheet(buildMenuItems(themePreference))",
+    ),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes('description: "Import Playlist"'),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes('description: "Export Playlist"'),
+    true,
+  );
+  expectEqual(playlistHeaderSource.includes('description: "Delete All"'), true);
+});
 
-  expectEqual(eqProfilesItemSource.includes("shouldCloseOnClick: false"), false);
+test("settings subpages replace the settings sheet instead of stacking", () => {
+  const eqProfilesItemIndex = playlistHeaderSource.indexOf(
+    'description: "EQ Profiles"',
+  );
+  const geminiItemIndex = playlistHeaderSource.indexOf(
+    'description: "Setup Gemini"',
+    eqProfilesItemIndex,
+  );
+  const volumeItemIndex = playlistHeaderSource.indexOf(
+    "Volume adjust",
+    geminiItemIndex,
+  );
+  const importItemIndex = playlistHeaderSource.indexOf(
+    'description: "Import Playlist"',
+    volumeItemIndex,
+  );
+  const playlistUpdateItemIndex = playlistHeaderSource.indexOf(
+    "Check Playlist Updates",
+    importItemIndex,
+  );
+  const eqProfilesItemSource = playlistHeaderSource.slice(
+    eqProfilesItemIndex,
+    geminiItemIndex,
+  );
+  const geminiItemSource = playlistHeaderSource.slice(
+    geminiItemIndex,
+    volumeItemIndex,
+  );
+  const importItemSource = playlistHeaderSource.slice(
+    importItemIndex,
+    playlistUpdateItemIndex,
+  );
+
+  expectEqual(
+    eqProfilesItemSource.includes("shouldCloseOnClick: false"),
+    false,
+  );
   expectEqual(geminiItemSource.includes("shouldCloseOnClick: false"), false);
   expectEqual(importItemSource.includes("shouldCloseOnClick: false"), false);
-  expectEqual(playlistSource.includes('import useActionSheet from "../actionSheet/useActionSheet";'), true);
-  expectEqual(playlistSource.includes("const actionSheet = useActionSheet();"), true);
+  expectEqual(
+    playlistSource.includes(
+      'import useActionSheet from "../actionSheet/useActionSheet";',
+    ),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("const actionSheet = useActionSheet();"),
+    true,
+  );
   expectEqual(playlistSource.includes("actionSheet.close();"), true);
-  expectEqual(playlistSource.includes("close={closeEqSettingsAndSettingsMenu}"), true);
-  expectEqual(playlistSource.includes("backToSettings={closeEqSettings}"), true);
-  expectEqual(playlistSource.includes("close={closeGeminiSettingsAndSettingsMenu}"), true);
-  expectEqual(playlistSource.includes("backToSettings={closeGeminiSettings}"), true);
-  expectEqual(playlistSource.includes("close={closePlaylistImportModalAndSettingsMenu}"), true);
-  expectEqual(playlistSource.includes("backToSettings={closePlaylistImportModal}"), true);
+  expectEqual(
+    playlistSource.includes("close={closeEqSettingsAndSettingsMenu}"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("backToSettings={closeEqSettings}"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("close={closeGeminiSettingsAndSettingsMenu}"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("backToSettings={closeGeminiSettings}"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("close={closePlaylistImportModalAndSettingsMenu}"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("backToSettings={closePlaylistImportModal}"),
+    true,
+  );
 });
 
 test("playlist passes Gemini EQ creation into settings", () => {
-  expectEqual(playlistSource.includes("requestGeminiEqProfile={generateEqProfileWithGemini}"), true);
-  expectEqual(playlistSource.includes("onOpenGeminiSettings={openGeminiSettings}"), true);
+  expectEqual(
+    playlistSource.includes(
+      "requestGeminiEqProfile={generateEqProfileWithGemini}",
+    ),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes("onOpenGeminiSettings={openGeminiSettings}"),
+    true,
+  );
   expectEqual(playlistSource.includes("generateEqProfileWithGemini"), true);
-  expectEqual(playlistSource.includes("onCreateProfile={onCreateProfile}"), true);
+  expectEqual(
+    playlistSource.includes("onCreateProfile={onCreateProfile}"),
+    true,
+  );
 });
 
 test("action sheet source supports custom song list rows and inline rename icons", () => {
+  expectEqual(actionSheetSource.includes("sheet-header"), true);
+  expectEqual(actionSheetSource.includes("ModalChromeHeader"), true);
+  expectEqual(actionSheetSource.includes("closeIcon={<BackIcon />}"), true);
   expectEqual(actionSheetItemSource.includes("song-list-row"), true);
   expectEqual(actionSheetItemSource.includes("song-list-inline-edit"), true);
   expectEqual(actionSheetItemSource.includes("song-list-selector"), true);
@@ -319,8 +419,22 @@ test("action sheet source supports custom song list rows and inline rename icons
   expectEqual(actionSheetItemSource.includes("saveIcon"), true);
   expectEqual(actionSheetItemSource.includes("cancelIcon"), true);
   expectEqual(actionSheetModelSource.includes("song-list-selector"), true);
+  expectEqual(actionSheetModelSource.includes("sheet-header"), true);
   expectEqual(actionSheetModelSource.includes("song-list-inline-edit"), true);
   expectEqual(actionSheetModelSource.includes("shouldCloseOnClick"), true);
+});
+
+test("action sheet header uses shared modal chrome header", () => {
+  expectEqual(actionSheetSource.includes("const headerItem"), true);
+  expectEqual(actionSheetSource.includes('modalStyles["chrome-panel"]'), true);
+  expectEqual(
+    actionSheetSource.includes('title={headerItem.description || ""}'),
+    true,
+  );
+  expectEqual(
+    actionSheetSource.includes("onClose={() => headerItem.callback?.()}"),
+    true,
+  );
 });
 
 test("song list selector row uses centered label layout instead of generic left-aligned menu layout", () => {
@@ -401,7 +515,9 @@ test("playlist source initializes and syncs visible playlist from named song-lis
     true,
   );
   expectEqual(
-    playlistStorageSource.includes("chrome.storage.onChanged.addListener(listener)"),
+    playlistStorageSource.includes(
+      "chrome.storage.onChanged.addListener(listener)",
+    ),
     true,
   );
   expectEqual(
@@ -409,7 +525,9 @@ test("playlist source initializes and syncs visible playlist from named song-lis
     true,
   );
   expectEqual(
-    playlistStorageSource.includes("ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes"),
+    playlistStorageSource.includes(
+      "ACTIVE_SONG_LIST_NAME_STORAGE_KEY in changes",
+    ),
     true,
   );
 });
@@ -491,9 +609,17 @@ test("playlist import and delete-all source route through the active song list",
     ),
     true,
   );
-  expectEqual(playlistActionsSource.includes("updateActiveSongListItems(() => importedPlaylist);"), true);
+  expectEqual(
+    playlistActionsSource.includes(
+      "updateActiveSongListItems(() => importedPlaylist);",
+    ),
+    true,
+  );
   expectEqual(playlistSource.includes("onImportJson={onImportJson}"), true);
-  expectEqual(playlistActionsSource.includes("updateActiveSongListItems(() => []);"), true);
+  expectEqual(
+    playlistActionsSource.includes("updateActiveSongListItems(() => []);"),
+    true,
+  );
 });
 
 test("playlist header export source revokes object URLs after download", () => {
@@ -506,21 +632,31 @@ test("playlist header export source revokes object URLs after download", () => {
 
 test("playlist source manages new song list modal state and create flow", () => {
   expectEqual(
-    playlistScreenStateSource.includes("const [isNewSongListOpen, setIsNewSongListOpen]"),
+    playlistScreenStateSource.includes(
+      "const [isNewSongListOpen, setIsNewSongListOpen]",
+    ),
     true,
   );
   expectEqual(
-    playlistScreenStateSource.includes('const [newSongListError, setNewSongListError]'),
+    playlistScreenStateSource.includes(
+      "const [newSongListError, setNewSongListError]",
+    ),
     true,
   );
-  expectEqual(playlistActionsSource.includes("getSongListCreationError("), true);
-  expectEqual(playlistActionsSource.includes("createSongList(currentSongListsState"), true);
   expectEqual(
-    playlistActionsSource.includes("updateSongListsState("),
+    playlistActionsSource.includes("getSongListCreationError("),
     true,
   );
+  expectEqual(
+    playlistActionsSource.includes("createSongList(currentSongListsState"),
+    true,
+  );
+  expectEqual(playlistActionsSource.includes("updateSongListsState("), true);
   expectEqual(playlistActionsSource.includes('setNewSongListError("")'), true);
-  expectEqual(playlistActionsSource.includes("setIsNewSongListOpen(true)"), true);
+  expectEqual(
+    playlistActionsSource.includes("setIsNewSongListOpen(true)"),
+    true,
+  );
   expectEqual(
     playlistActionsSource.includes("setIsNewSongListOpen(false)"),
     true,
@@ -532,15 +668,24 @@ test("playlist source manages new song list modal state and create flow", () => 
     playlistSource.includes("activeSongListName={activeSongListName}"),
     true,
   );
-  expectEqual(playlistSource.includes("onSelectSongList={onSelectSongList}"), true);
+  expectEqual(
+    playlistSource.includes("onSelectSongList={onSelectSongList}"),
+    true,
+  );
 });
 
 test("playlist source guards reorder targets and preserves selection on analyze send failures", () => {
   expectEqual(playlistActionsSource.includes("if (targetIndex < 0) {"), true);
   expectEqual(playlistActionsSource.includes("(_response?: unknown) =>"), true);
-  expectEqual(playlistActionsSource.includes("if (chrome.runtime.lastError) {"), true);
+  expectEqual(
+    playlistActionsSource.includes("if (chrome.runtime.lastError) {"),
+    true,
+  );
   expectEqual(playlistActionsSource.includes("clearSelection();"), true);
-  expectEqual(playlistActionsSource.includes("closeSelectionActionsModal();"), true);
+  expectEqual(
+    playlistActionsSource.includes("closeSelectionActionsModal();"),
+    true,
+  );
   expectEqual(
     playlistActionsSource.includes("name: MsgType.AnalyzeImportedPlaylist"),
     true,
@@ -569,10 +714,7 @@ test("playlist source wires the Gemini song EQ adjustment message", () => {
     ),
     true,
   );
-  expectEqual(
-    msgTypeSource.includes("AdjustSongEqWithGemini"),
-    true,
-  );
+  expectEqual(msgTypeSource.includes("AdjustSongEqWithGemini"), true);
   expectEqual(
     backgroundSource.includes(
       "Describe the song EQ adjustment you want before asking Gemini.",
@@ -587,7 +729,10 @@ test("selection actions modal exposes auto-applied batch Gemini song EQ adjustme
     selectionActionsModalSource.includes("Describe an optional EQ preference"),
     true,
   );
-  expectEqual(selectionActionsModalSource.includes("selectedSongs.length === 1"), true);
+  expectEqual(
+    selectionActionsModalSource.includes("selectedSongs.length === 1"),
+    true,
+  );
   expectEqual(selectionActionsModalSource.includes("Generate and apply"), true);
   expectEqual(
     selectionActionsModalSource.includes("createGeminiEqBatchSubmission"),
@@ -602,29 +747,48 @@ test("selection actions modal exposes auto-applied batch Gemini song EQ adjustme
     true,
   );
   expectEqual(playlistContentSource.includes("showGeminiEqBatchBanner"), true);
-  expectEqual(selectionActionsGeminiEqReviewSource.includes("at least one song"), true);
+  expectEqual(
+    selectionActionsGeminiEqReviewSource.includes("at least one song"),
+    true,
+  );
   expectEqual(selectionActionsModalSource.includes("Apply EQ"), false);
 });
 
 test("playlist actions request and apply Gemini song EQ through existing playlist updates", () => {
   expectEqual(playlistActionsSource.includes("adjustSongEqWithGemini"), true);
-  expectEqual(playlistActionsSource.includes("normalizeGeminiSongEqResponse"), true);
-  expectEqual(playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"), true);
-  expectEqual(playlistActionsSource.includes("onApplyGeminiSongEqSuggestions"), true);
-  expectEqual(playlistActionsSource.includes("updateActiveSongListItems"), true);
+  expectEqual(
+    playlistActionsSource.includes("normalizeGeminiSongEqResponse"),
+    true,
+  );
+  expectEqual(
+    playlistActionsSource.includes("MsgType.AdjustSongEqWithGemini"),
+    true,
+  );
+  expectEqual(
+    playlistActionsSource.includes("onApplyGeminiSongEqSuggestions"),
+    true,
+  );
+  expectEqual(
+    playlistActionsSource.includes("updateActiveSongListItems"),
+    true,
+  );
 });
 
 test("InfoModal wires Gemini song EQ adjustment into SongEditor", () => {
   expectEqual(infoModalSource.includes("onAdjustSongEqWithGemini"), true);
   expectEqual(
-    infoModalSource.includes("onAdjustSongEqWithGemini={onAdjustSongEqWithGemini}"),
+    infoModalSource.includes(
+      "onAdjustSongEqWithGemini={onAdjustSongEqWithGemini}",
+    ),
     true,
   );
 });
 
 test("Playlist passes Gemini song EQ adjustment into the edit song modal", () => {
   expectEqual(
-    playlistSource.includes("onAdjustSongEqWithGemini={adjustSongEqWithGemini}"),
+    playlistSource.includes(
+      "onAdjustSongEqWithGemini={adjustSongEqWithGemini}",
+    ),
     true,
   );
 });
@@ -633,14 +797,18 @@ test("SongEditor reuses the shared Gemini song EQ review helper", () => {
   expectEqual(songEditorSource.includes("createGeminiEqSubmission"), true);
   expectEqual(songEditorSource.includes("resolveGeminiEqSubmission"), true);
   expectEqual(
-    songEditorSource.includes("setValue(band.key, suggestion.audioEq[band.key]"),
+    songEditorSource.includes(
+      "setValue(band.key, suggestion.audioEq[band.key]",
+    ),
     true,
   );
 });
 
 test("SongEditor places Gemini EQ before profile selection and omits the Song EQ heading", () => {
   const geminiEqIndex = songEditorSource.indexOf('styles["gemini-eq-form"]');
-  const profileIndex = songEditorSource.indexOf('styles["eq-profile-container"]');
+  const profileIndex = songEditorSource.indexOf(
+    'styles["eq-profile-container"]',
+  );
 
   expectEqual(geminiEqIndex >= 0, true);
   expectEqual(profileIndex >= 0, true);
@@ -807,12 +975,21 @@ test("new song list modal source uses shared modal pattern and inline error mess
 });
 
 test("settings action sheet reuses the shared modal shell", () => {
-  expectEqual(actionSheetSource.includes('import Modal from "../modal/Modal"'), true);
-  expectEqual(actionSheetSource.includes("<Modal active={isActive} close={close}>"), true);
+  expectEqual(
+    actionSheetSource.includes('import Modal from "../modal/Modal"'),
+    true,
+  );
+  expectEqual(
+    actionSheetSource.includes("<Modal active={isActive} close={close}>"),
+    true,
+  );
   expectEqual(actionSheetStyles.includes(".settings-panel"), true);
   expectEqual(getCssBlock(actionSheetStyles, ".container"), null);
   expectEqual(getCssBlock(actionSheetStyles, ".backdrop"), null);
-  expectEqual(actionSheetStyles.includes("border-radius: var(--glass-radius);"), true);
+  expectEqual(
+    actionSheetStyles.includes("border-radius: var(--glass-radius);"),
+    true,
+  );
 });
 
 test("Gemini EQ builder no longer opens in a separate shared modal shell", () => {
@@ -840,36 +1017,158 @@ test("Gemini settings header uses back while backdrop uses stack close", () => {
     "utf8",
   );
 
-  expectEqual(geminiSettingsSource.includes('import { BackIcon } from "../icons";'), true);
-  expectEqual(geminiSettingsSource.includes("backToSettings: () => void;"), true);
-  expectEqual(geminiSettingsSource.includes("<Modal active={active} close={close}>"), true);
+  expectEqual(
+    geminiSettingsSource.includes('import { BackIcon } from "../icons";'),
+    true,
+  );
+  expectEqual(
+    geminiSettingsSource.includes("backToSettings: () => void;"),
+    true,
+  );
+  expectEqual(
+    geminiSettingsSource.includes("<Modal active={active} close={close}>"),
+    true,
+  );
   expectEqual(geminiSettingsSource.includes("onClose={backToSettings}"), true);
-  expectEqual(geminiSettingsSource.includes('closeLabel="Back to settings"'), true);
+  expectEqual(
+    geminiSettingsSource.includes('closeLabel="Back to settings"'),
+    true,
+  );
   expectEqual(geminiSettingsSource.includes("<BackIcon"), true);
 });
 
 test("playlist import header uses back while backdrop uses stack close", () => {
-  expectEqual(playlistImportModalSource.includes('import { BackIcon } from "../icons";'), true);
-  expectEqual(playlistImportModalSource.includes("backToSettings: () => void;"), true);
-  expectEqual(playlistImportModalSource.includes("<Modal active={active} close={guardedClose}>"), true);
-  expectEqual(playlistImportModalSource.includes("const onHeaderBack = () => {"), true);
+  expectEqual(
+    playlistImportModalSource.includes('import { BackIcon } from "../icons";'),
+    true,
+  );
+  expectEqual(
+    playlistImportModalSource.includes("backToSettings: () => void;"),
+    true,
+  );
+  expectEqual(
+    playlistImportModalSource.includes(
+      "<Modal active={active} close={guardedClose}>",
+    ),
+    true,
+  );
+  expectEqual(
+    playlistImportModalSource.includes("const onHeaderBack = () => {"),
+    true,
+  );
   expectEqual(playlistImportModalSource.includes("backToImportForm();"), true);
   expectEqual(playlistImportModalSource.includes("backToSettings();"), true);
-  expectEqual(playlistImportModalSource.includes('closeLabel={preview ? "Back to import form" : "Back to settings"}'), true);
+  expectEqual(
+    playlistImportModalSource.includes(
+      'closeLabel={preview ? "Back to import form" : "Back to settings"}',
+    ),
+    true,
+  );
   expectEqual(playlistImportModalSource.includes("<BackIcon"), true);
 });
 
 test("playlist item play button routes through modal-opening playback wiring", () => {
   expectEqual(playlistItemSource.includes("onPlayItem"), true);
   expectEqual(playlistItemSource.includes("onPlayItem(item.id);"), true);
-  expectEqual(playlistScreenStateSource.includes("const [pendingPlaybackItemId"), true);
   expectEqual(
-    playlistActionsSource.includes("const openPlaybackModal = (itemId: string) =>"),
+    playlistScreenStateSource.includes("const [pendingPlaybackItemId"),
     true,
   );
   expectEqual(
-    playlistSource.includes("getEffectivePlaybackItemId("),
+    playlistActionsSource.includes(
+      "const openPlaybackModal = (itemId: string) =>",
+    ),
     true,
   );
-  expectEqual(playlistContentSource.includes("onPlayItem={onOpenPlaybackModal}"), true);
+  expectEqual(playlistSource.includes("getEffectivePlaybackItemId("), true);
+  expectEqual(
+    playlistContentSource.includes("onPlayItem={onOpenPlaybackModal}"),
+    true,
+  );
+});
+
+test("playlist screen wires playlist update detection actions", () => {
+  expectEqual(playlistSource.includes("pendingPlaylistUpdateItems"), true);
+  expectEqual(playlistSource.includes("refreshActivePlaylistSource"), true);
+  expectEqual(playlistHeaderSource.includes("hasTrackedPlaylistSource"), true);
+  expectEqual(playlistHeaderSource.includes("Check Playlist Updates"), true);
+  expectEqual(
+    playlistHeaderSource.includes("onCheckPlaylistUpdatesFromMenu"),
+    true,
+  );
+  expectEqual(
+    playlistHeaderSource.includes("void onCheckPlaylistUpdates()"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes(
+      "const result = await refreshActivePlaylistSource(true);",
+    ),
+    true,
+  );
+  expectEqual(playlistSource.includes("setPlaylistUpdateCheckNotice"), true);
+  expectEqual(playlistSource.includes("No new videos to add"), true);
+  expectEqual(
+    playlistContentSource.includes("showPlaylistUpdateCheckNotice"),
+    true,
+  );
+  expectEqual(
+    playlistContentSource.includes("playlistUpdateCheckNoticeTitle"),
+    true,
+  );
+  expectEqual(
+    playlistSource.includes(
+      "refreshActivePlaylistSourceWithDeletedItemsForTesting",
+    ),
+    false,
+  );
+  expectEqual(
+    playlistActionsSource.includes("TEST_PLAYLIST_UPDATE_DELETE_COUNT"),
+    false,
+  );
+  expectEqual(
+    playlistActionsSource.includes("deletePlaylistSourceItemsForUpdateTesting"),
+    false,
+  );
+  expectEqual(
+    playlistActionsSource.includes("dismissPendingPlaylistUpdateItem"),
+    true,
+  );
+  expectEqual(
+    playlistActionsSource.includes(
+      "{ name: MsgType.RefreshActivePlaylistSource, force }",
+    ),
+    true,
+  );
+  expectEqual(
+    playlistActionsSource.includes("hasActiveSource: Boolean(activeSource)"),
+    true,
+  );
+  expectEqual(
+    backgroundSource.includes(
+      "message?.name === MsgType.RefreshActivePlaylistSource",
+    ),
+    true,
+  );
+  expectEqual(playlistSource.includes("onAddPendingPlaylistUpdateItem"), true);
+  expectEqual(
+    playlistSource.includes("onDismissPendingPlaylistUpdateItem"),
+    true,
+  );
+});
+
+test("playlist import preview can subscribe to the imported playlist source", () => {
+  expectEqual(playlistImportModalSource.includes("trackPlaylistSource"), true);
+  expectEqual(
+    playlistImportModalSource.includes("Track this playlist for new videos"),
+    true,
+  );
+  expectEqual(
+    playlistImportModalSource.includes("sourceItems: preview.sourceItems"),
+    true,
+  );
+  expectEqual(
+    playlistActionsSource.includes("createPlaylistSourceFromImport"),
+    true,
+  );
 });

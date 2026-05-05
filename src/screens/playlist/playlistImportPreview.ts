@@ -1,8 +1,10 @@
 import type MPlaylistItem from "../../models/MPlaylistItem";
 import type { PlaylistImportMode } from "../../models/PlaylistImport";
+import type { PlaylistSourceRecord } from "../../models/SongList";
 
 interface PlaylistImportPreview {
   items: MPlaylistItem[];
+  sourceItems: MPlaylistItem[];
   selectedItemIds: string[];
   skippedDuplicates: number;
 }
@@ -15,6 +17,7 @@ const createPlaylistImportPreview = (
   if (mode === "replace") {
     return {
       items: imported,
+      sourceItems: imported,
       selectedItemIds: imported.map((item) => item.id),
       skippedDuplicates: 0,
     };
@@ -34,6 +37,7 @@ const createPlaylistImportPreview = (
 
   return {
     items: previewItems,
+    sourceItems: imported,
     selectedItemIds: previewItems.map((item) => item.id),
     skippedDuplicates: imported.length - previewItems.length,
   };
@@ -55,5 +59,21 @@ const commitPlaylistImportPreview = (
   return [...existing, ...selectedItems];
 };
 
-export { commitPlaylistImportPreview, createPlaylistImportPreview };
+const createPlaylistSourceFromImport = (
+  playlistUrl: string,
+  importedItems: MPlaylistItem[],
+  now: Date = new Date(),
+): PlaylistSourceRecord => {
+  return {
+    url: playlistUrl.trim(),
+    lastCheckedAt: now.toISOString(),
+    lastSeenVideoIds: importedItems.map((item) => item.videoId),
+  };
+};
+
+export {
+  commitPlaylistImportPreview,
+  createPlaylistImportPreview,
+  createPlaylistSourceFromImport,
+};
 export type { PlaylistImportPreview };

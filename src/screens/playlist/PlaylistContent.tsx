@@ -4,6 +4,7 @@ import Draggable from "../draggable/Draggable";
 import AnalyzeImportBannerPanel from "./AnalyzeImportBannerPanel";
 import styles from "./Playlist.module.css";
 import PlaylistItem from "./PlaylistItem";
+import PlaylistUpdateRow from "./PlaylistUpdateRow";
 
 interface Props {
   playlist: MPlaylistItem[];
@@ -14,6 +15,7 @@ interface Props {
   selectedItemIds: string[];
   showAnalyzeImportBanner: boolean;
   showGeminiEqBatchBanner: boolean;
+  showPlaylistUpdateCheckNotice: boolean;
   analyzeImportBannerTitle?: string;
   analyzeImportBannerDetail?: string;
   analyzeImportBannerActionLabel?: string;
@@ -21,9 +23,15 @@ interface Props {
   geminiEqBatchBannerTitle?: string;
   geminiEqBatchBannerDetail?: string;
   geminiEqBatchBannerDismissible?: boolean;
+  playlistUpdateCheckNoticeTitle?: string;
+  playlistUpdateCheckNoticeDetail?: string;
+  pendingPlaylistUpdateItems?: MPlaylistItem[];
   onStopAnalyzeImportBatch: () => void;
   onDismissAnalyzeImportBanner: () => void;
   onDismissGeminiEqBatchBanner: () => void;
+  onDismissPlaylistUpdateCheckNotice: () => void;
+  onAddPendingPlaylistUpdateItem: (itemId: string) => void;
+  onDismissPendingPlaylistUpdateItem: (itemId: string) => void;
   onToggleSelected: (itemId: string) => void;
   onOpenInfoModal: (itemId: string) => void;
   onOpenPlaybackModal: (itemId: string) => void;
@@ -42,6 +50,7 @@ const PlaylistContent = ({
   selectedItemIds,
   showAnalyzeImportBanner,
   showGeminiEqBatchBanner,
+  showPlaylistUpdateCheckNotice,
   analyzeImportBannerTitle,
   analyzeImportBannerDetail,
   analyzeImportBannerActionLabel,
@@ -49,9 +58,15 @@ const PlaylistContent = ({
   geminiEqBatchBannerTitle,
   geminiEqBatchBannerDetail,
   geminiEqBatchBannerDismissible,
+  playlistUpdateCheckNoticeTitle,
+  playlistUpdateCheckNoticeDetail,
+  pendingPlaylistUpdateItems,
   onStopAnalyzeImportBatch,
   onDismissAnalyzeImportBanner,
   onDismissGeminiEqBatchBanner,
+  onDismissPlaylistUpdateCheckNotice,
+  onAddPendingPlaylistUpdateItem,
+  onDismissPendingPlaylistUpdateItem,
   onToggleSelected,
   onOpenInfoModal,
   onOpenPlaybackModal,
@@ -60,7 +75,15 @@ const PlaylistContent = ({
   onPlaylistContainerDrop,
   setDraggingItemId,
 }: Props) => {
-  if (playlist.length === 0) {
+  const hasPendingPlaylistUpdates =
+    (pendingPlaylistUpdateItems?.length ?? 0) > 0;
+  const hasPlaylistUpdateCheckNotice = showPlaylistUpdateCheckNotice;
+
+  if (
+    playlist.length === 0 &&
+    !hasPendingPlaylistUpdates &&
+    !hasPlaylistUpdateCheckNotice
+  ) {
     return (
       <div className={styles["empty-container"]}>
         <p className={styles["empty-message"]}>The playlist is empty</p>
@@ -91,6 +114,22 @@ const PlaylistContent = ({
           dismissible={geminiEqBatchBannerDismissible}
           onStop={onStopAnalyzeImportBatch}
           onDismiss={onDismissGeminiEqBatchBanner}
+        />
+      ) : null}
+      {showPlaylistUpdateCheckNotice ? (
+        <AnalyzeImportBannerPanel
+          title={playlistUpdateCheckNoticeTitle}
+          detail={playlistUpdateCheckNoticeDetail}
+          dismissible
+          onStop={onStopAnalyzeImportBatch}
+          onDismiss={onDismissPlaylistUpdateCheckNotice}
+        />
+      ) : null}
+      {hasPendingPlaylistUpdates ? (
+        <PlaylistUpdateRow
+          items={pendingPlaylistUpdateItems ?? []}
+          onAdd={onAddPendingPlaylistUpdateItem}
+          onDismiss={onDismissPendingPlaylistUpdateItem}
         />
       ) : null}
       {playlist.map((item) => {

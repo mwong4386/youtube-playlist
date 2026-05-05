@@ -673,3 +673,64 @@ button:hover {
   flex-direction: column;
   gap: 8px;
 }
+
+.playlist-update-group {
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--accent-color) 10%, var(--surface-primary));
+}
+
+.playlist-update-summary,
+.playlist-update-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.playlist-update-summary {
+  background: color-mix(in srgb, var(--danger-color, #ff5b5b) 12%, var(--surface-primary));
+}
+
+.playlist-update-row {
+  border-top: 1px solid var(--border-color);
+}
+
+.playlist-update-copy {
+  min-width: 0;
+}
+
+.playlist-update-summary-title,
+.playlist-update-title,
+.playlist-update-detail {
+  margin: 0;
+}
+
+.playlist-update-summary-title,
+.playlist-update-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.playlist-update-detail {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.playlist-update-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.playlist-update-actions button {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 10px;
+}

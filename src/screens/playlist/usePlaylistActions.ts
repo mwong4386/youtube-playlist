@@ -22,14 +22,28 @@ import type {
   PlaylistImportRequest,
   PlaylistImportResponse,
 } from "../../models/PlaylistImport";
-import type { SongListsState } from "../../models/SongList";
+import type {
+  PlaylistSourceRecord,
+  SongListsState,
+} from "../../models/SongList";
 import {
   cancelDeleteAllConfirmation,
   confirmDeleteAllConfirmation,
   deleteSelectedPlaylistItems,
   updateSelectedVolumeMultiplier,
 } from "../../utils/playlistActions";
-import { createSongList, renameSongList } from "../../utils/songLists";
+import {
+  createSongList,
+  renameSongList,
+  updateActiveSongListRecord,
+} from "../../utils/songLists";
+import {
+  addPendingPlaylistUpdateItem,
+  addPendingPlaylistUpdates,
+  dismissPendingPlaylistUpdateItem,
+  dismissPendingPlaylistUpdates,
+  isPlaylistSourceDueForRefresh,
+} from "../../utils/playlistUpdateDetection";
 import {
   getAnalyzeImportBannerVisibilityKey,
   shouldClearAnalyzeImportBatchStateOnDismiss,
@@ -46,6 +60,7 @@ import {
 import {
   commitPlaylistImportPreview,
   createPlaylistImportPreview,
+  createPlaylistSourceFromImport,
 } from "./playlistImportPreview";
 import {
   clearSelectedItemIds,
@@ -92,6 +107,13 @@ interface UsePlaylistActionsArgs {
   setSelectedInfoItemId: Dispatch<SetStateAction<string | undefined>>;
   setIsShelfExpanded: Dispatch<SetStateAction<boolean>>;
   dismissAnalyzeImportBanner: (bannerKey: string) => void;
+}
+
+interface PlaylistSourceRefreshResult {
+  ok: boolean;
+  checked: boolean;
+  newItemCount: number;
+  message?: string;
 }
 
 const usePlaylistActions = ({
@@ -360,20 +382,187 @@ const usePlaylistActions = ({
     previewItems: MPlaylistItem[],
     selectedPreviewItemIds: string[],
     mode: PlaylistImportMode,
+    options?: {
+      trackSource?: boolean;
+      playlistUrl?: string;
+      sourceItems?: MPlaylistItem[];
+    },
   ) => {
     if (selectedPreviewItemIds.length === 0) {
       return;
     }
 
-    updateActiveSongListItems(
-      (currentPlaylist) =>
-        commitPlaylistImportPreview(
-          currentPlaylist,
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => {
+        const items = commitPlaylistImportPreview(
+          record.items,
           previewItems,
           selectedPreviewItemIds,
           mode,
-        ),
+        );
+
+        if (
+          !options?.trackSource ||
+          !options.playlistUrl ||
+          !options.sourceItems
+        ) {
+          return {
+            ...record,
+            items,
+          };
+        }
+
+        return {
+          ...record,
+          items,
+          playlistSources: [
+            createPlaylistSourceFromImport(
+              options.playlistUrl,
+              options.sourceItems,
+            ),
+            ...(record.playlistSources ?? []).slice(1),
+          ],
+        };
+      }),
       closePlaylistImportModal,
+    );
+  };
+
+  const refreshActivePlaylistSource = (
+    force = false,
+  ): Promise<PlaylistSourceRefreshResult> => {
+    const activeSource =
+      songListsState.songLists[activeSongListName]?.playlistSources?.[0];
+
+    if (
+      !force &&
+      (!activeSource || !isPlaylistSourceDueForRefresh(activeSource))
+    ) {
+      return Promise.resolve({
+        ok: true,
+        checked: false,
+        newItemCount: 0,
+        message: activeSource
+          ? "Tracked playlist was checked recently."
+          : "No tracked playlist source for this song list.",
+      });
+    }
+
+    return new Promise((resolve) => {
+      console.log("[Playlist update detection] Requesting refresh", {
+        force,
+        hasActiveSource: Boolean(activeSource),
+        activeSongListName,
+      });
+
+      chrome.runtime.sendMessage(
+        { name: MsgType.RefreshActivePlaylistSource, force },
+        (response: PlaylistSourceRefreshResult | undefined) => {
+          if (chrome.runtime.lastError) {
+            console.warn(
+              "[Playlist update detection] Refresh failed",
+              chrome.runtime.lastError,
+            );
+            resolve({
+              ok: false,
+              checked: false,
+              newItemCount: 0,
+              message:
+                chrome.runtime.lastError.message ||
+                "Could not check playlist updates.",
+            });
+            return;
+          }
+
+          console.log("[Playlist update detection] Refresh response", response);
+
+          resolve(
+            response ?? {
+              ok: false,
+              checked: false,
+              newItemCount: 0,
+              message: "Could not check playlist updates.",
+            },
+          );
+        },
+      );
+    });
+  };
+
+  const updateActivePlaylistSource = (
+    updater: (source: PlaylistSourceRecord) => PlaylistSourceRecord,
+  ) => {
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => {
+        const source = record.playlistSources?.[0];
+        if (!source) {
+          return record;
+        }
+
+        return {
+          ...record,
+          playlistSources: [
+            updater(source),
+            ...(record.playlistSources ?? []).slice(1),
+          ],
+        };
+      }),
+    );
+  };
+
+  const onAddPendingPlaylistUpdates = () => {
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => {
+        const source = record.playlistSources?.[0];
+        if (!source) {
+          return record;
+        }
+
+        const result = addPendingPlaylistUpdates(record.items, source);
+        return {
+          ...record,
+          items: result.items,
+          playlistSources: [
+            result.source,
+            ...(record.playlistSources ?? []).slice(1),
+          ],
+        };
+      }),
+    );
+  };
+
+  const onAddPendingPlaylistUpdateItem = (itemId: string) => {
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => {
+        const source = record.playlistSources?.[0];
+        if (!source) {
+          return record;
+        }
+
+        const result = addPendingPlaylistUpdateItem(
+          record.items,
+          source,
+          itemId,
+        );
+        return {
+          ...record,
+          items: result.items,
+          playlistSources: [
+            result.source,
+            ...(record.playlistSources ?? []).slice(1),
+          ],
+        };
+      }),
+    );
+  };
+
+  const onDismissPendingPlaylistUpdates = () => {
+    updateActivePlaylistSource(dismissPendingPlaylistUpdates);
+  };
+
+  const onDismissPendingPlaylistUpdateItem = (itemId: string) => {
+    updateActivePlaylistSource((source) =>
+      dismissPendingPlaylistUpdateItem(source, itemId),
     );
   };
 
@@ -714,7 +903,10 @@ const usePlaylistActions = ({
     confirmDeleteAll,
     generateEqProfileWithGemini,
     importYoutubePlaylist,
+    refreshActivePlaylistSource,
     onAdjustVolumeSelected,
+    onAddPendingPlaylistUpdateItem,
+    onAddPendingPlaylistUpdates,
     onApplyGeminiSongEqSuggestions,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
@@ -725,6 +917,8 @@ const usePlaylistActions = ({
     onDeleteProfile,
     onDeleteSelected,
     onDismissAnalyzeImportBanner,
+    onDismissPendingPlaylistUpdateItem,
+    onDismissPendingPlaylistUpdates,
     onCommitPlaylistImportPreview,
     onImportJson,
     onMoveTo,

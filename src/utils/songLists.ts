@@ -3,6 +3,7 @@ import {
   ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
   DEFAULT_SONG_LIST_NAME,
   SONG_LISTS_STORAGE_KEY,
+  type PlaylistSourceRecord,
   type SongListRecord,
   type SongListsState,
 } from "../models/SongList";
@@ -58,7 +59,8 @@ const replaceSongListItems = (
   items: MPlaylistItem[]
 ): SongListsState["songLists"] => {
   const nextSongLists = copySongLists(songLists);
-  nextSongLists[targetListName] = { items };
+  const currentRecord = nextSongLists[targetListName] ?? { items: [] };
+  nextSongLists[targetListName] = { ...currentRecord, items };
   return nextSongLists;
 };
 
@@ -99,8 +101,54 @@ const normalizeSongListRecord = (value: unknown): SongListRecord => {
     return { items: [] };
   }
 
+  const playlistSources = Array.isArray(value.playlistSources)
+    ? value.playlistSources
+        .map(normalizePlaylistSourceRecord)
+        .filter(
+          (source): source is PlaylistSourceRecord =>
+            typeof source !== "undefined"
+        )
+    : undefined;
+
   return {
     items: value.items.filter(isStoredSongListItem),
+    ...(playlistSources && playlistSources.length > 0
+      ? { playlistSources }
+      : {}),
+  };
+};
+
+const isStringArray = (value: unknown): value is string[] => {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+};
+
+const normalizePlaylistSourceRecord = (
+  value: unknown
+): PlaylistSourceRecord | undefined => {
+  if (!isRecord(value) || typeof value.url !== "string" || !value.url.trim()) {
+    return undefined;
+  }
+
+  if (!isStringArray(value.lastSeenVideoIds)) {
+    return undefined;
+  }
+
+  const pendingNewItems = Array.isArray(value.pendingNewItems)
+    ? value.pendingNewItems.filter(isStoredSongListItem)
+    : undefined;
+  const pendingSnapshotVideoIds = isStringArray(value.pendingSnapshotVideoIds)
+    ? value.pendingSnapshotVideoIds
+    : undefined;
+
+  return {
+    url: value.url.trim(),
+    lastCheckedAt:
+      typeof value.lastCheckedAt === "string" ? value.lastCheckedAt : undefined,
+    lastSeenVideoIds: value.lastSeenVideoIds,
+    ...(pendingNewItems && pendingNewItems.length > 0
+      ? { pendingNewItems }
+      : {}),
+    ...(pendingSnapshotVideoIds ? { pendingSnapshotVideoIds } : {}),
   };
 };
 
@@ -231,6 +279,24 @@ export const updateActiveSongListItems = (
   ),
   activeSongListName: state.activeSongListName,
 });
+
+export const updateActiveSongListRecord = (
+  state: SongListsState,
+  updater: (record: SongListRecord) => SongListRecord
+): SongListsState => {
+  const currentRecord =
+    state.songLists[state.activeSongListName] ??
+    state.songLists[DEFAULT_SONG_LIST_NAME] ??
+    { items: [] };
+
+  return {
+    songLists: {
+      ...state.songLists,
+      [state.activeSongListName]: updater(currentRecord),
+    },
+    activeSongListName: state.activeSongListName,
+  };
+};
 
 export const readActiveSongListItemsFromStorageMap = (
   result: Record<string, unknown>

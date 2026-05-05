@@ -21,6 +21,7 @@ const enum MsgType {
   PreviewYoutubePlaylistImport,
   ImportYoutubePlaylist,
   ImportYoutubePlaylistFallbackResult,
+  RefreshActivePlaylistSource,
   AnalyzeImportedPlaylist,
   StopAnalyzeImportedPlaylist,
   GenerateEqProfileWithGemini,

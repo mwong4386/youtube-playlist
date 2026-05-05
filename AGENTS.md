@@ -34,6 +34,7 @@ The codebase is built with React + TypeScript and packaged as a Manifest V3 exte
 - The popup uses a dark, layered sheet style with a fixed top header and a scrollable content region underneath.
 - The main playlist header is always fixed at the top of the popup. Content below it should usually live inside a flex column with `margin-top: 42px` and a scrollable body so banners or helper panels do not hide playlist rows.
 - Menu-style surfaces use flat full-width rows separated by subtle borders instead of isolated card buttons.
+- If an action-sheet menu opens a nested management view, use the shared modal chrome header/back affordance pattern, like EQ Profiles. Do not fake a submenu header as a normal action row or button.
 - Status callouts, such as import-analysis progress, can use softer tinted panels inside the scroll flow rather than fixed overlays above it.
 - Destructive actions use a softer red text treatment instead of bright alert blocks unless the flow is a real destructive confirmation.
 - Positive or forward actions can use the success green accent, but should still preserve the existing restrained sheet styling.
@@ -111,7 +112,7 @@ Current popup interaction patterns:
   - a selected-count label
   - a right-side green `Actions` trigger
 - The selection actions open in a bottom sheet and currently include analyze timing, delete songs, and cancel.
-- The main settings/menu also opens as a bottom sheet and includes the theme segmented control, playlist import/export actions, Gemini/EQ settings, and a danger-toned `Delete All` row.
+- The main settings/menu also opens as a bottom sheet and includes the theme segmented control, Gemini/EQ settings, and grouped playlist management. Nested management sheets should use `ModalChromeHeader` with a back icon rather than a fake row header.
 - Import-analysis progress is surfaced as a dismissible banner inside the playlist scroll area so it does not permanently reduce visible list height.
 
 ### 3. Playback orchestration

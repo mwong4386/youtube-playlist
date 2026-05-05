@@ -34,6 +34,7 @@ import { getVisiblePlaylistForActiveList } from "./songListsViewModel";
 import usePlaylistActions from "./usePlaylistActions";
 import usePlaylistScreenState from "./usePlaylistScreenState";
 import usePlaylistStorageSync from "./usePlaylistStorageSync";
+import { DEFAULT_SONG_LIST_NAME } from "../../models/SongList";
 
 interface Props {
   themePreference: ThemePreference;
@@ -44,6 +45,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const actionSheet = useActionSheet();
   const [geminiEqBatchNotification, setGeminiEqBatchNotification] =
     useState<GeminiEqBatchNotificationState | null>(null);
+  const [playlistUpdateCheckNotice, setPlaylistUpdateCheckNotice] = useState<{
+    title: string;
+    detail: string;
+  } | null>(null);
   const {
     songListsState,
     activeSongListName,
@@ -94,6 +99,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     songListsState.songLists,
     activeSongListName,
   );
+  const activeSongListRecord =
+    songListsState.songLists[activeSongListName] ??
+    songListsState.songLists[DEFAULT_SONG_LIST_NAME];
+  const activePlaylistSource = activeSongListRecord?.playlistSources?.[0];
+  const pendingPlaylistUpdateItems = activePlaylistSource?.pendingNewItems ?? [];
   const {
     adjustSongEqWithGemini,
     analyzeSongBoundaries,
@@ -107,9 +117,11 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     closeSelectionActionsModal,
     confirmDeleteAll,
     generateEqProfileWithGemini,
+    refreshActivePlaylistSource,
     onAnalyzeSelected,
     onAnalyzeUncalibratedSelected,
     onAudioEqChange,
+    onAddPendingPlaylistUpdateItem,
     onCommitPlaylistImportPreview,
     onCreateProfile,
     onCreateSongList,
@@ -117,6 +129,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onDeleteProfile,
     onDeleteSelected,
     onDismissAnalyzeImportBanner,
+    onDismissPendingPlaylistUpdateItem,
     onImportJson,
     onMoveTo,
     onPlaylistContainerDragOver,
@@ -204,6 +217,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     }
   }, [selectedItemIds, isSelectionActionsOpen, setIsSelectionActionsOpen]);
 
+  useEffect(() => {
+    void refreshActivePlaylistSource();
+  }, [
+    activeSongListName,
+    activePlaylistSource?.url,
+    activePlaylistSource?.lastCheckedAt,
+  ]);
+
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
     analyzeImportBatchState,
   );
@@ -244,6 +265,10 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   const onDismissGeminiEqBatchBanner = () => {
     setGeminiEqBatchNotification(null);
+  };
+
+  const onDismissPlaylistUpdateCheckNotice = () => {
+    setPlaylistUpdateCheckNotice(null);
   };
 
   const onAdjustSelectedSongEqWithGemini = async (userRequest: string) => {
@@ -341,6 +366,46 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             onOpenGeminiSettings={openGeminiSettings}
             onOpenImportModal={openPlaylistImportModal}
             onOpenNewSongListModal={openNewSongListModal}
+            onCheckPlaylistUpdates={async () => {
+              setPlaylistUpdateCheckNotice(null);
+              const result = await refreshActivePlaylistSource(true);
+
+              if (!result.ok) {
+                setPlaylistUpdateCheckNotice({
+                  title: "Could not check playlist updates",
+                  detail:
+                    result.message ||
+                    "The tracked playlist could not be checked right now.",
+                });
+                return result.message || "Could not check playlist updates.";
+              }
+
+              if (!result.checked) {
+                setPlaylistUpdateCheckNotice({
+                  title: "No playlist checked",
+                  detail:
+                    result.message ||
+                    "No tracked playlist source for this song list.",
+                });
+                return (
+                  result.message ||
+                  "No tracked playlist source for this song list."
+                );
+              }
+
+              if (result.newItemCount > 0) {
+                setPlaylistUpdateCheckNotice(null);
+                return `${result.newItemCount} new ${
+                  result.newItemCount === 1 ? "video" : "videos"
+                } found.`;
+              }
+
+              setPlaylistUpdateCheckNotice({
+                title: "No new videos to add",
+                detail: "The tracked playlist was checked just now.",
+              });
+              return "Checked tracked playlist. No new videos found.";
+            }}
             onSelectSongList={onSelectSongList}
             onRenameSongList={onRenameSongList}
             onClearSelection={clearSelection}
@@ -361,6 +426,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             selectedItemIds={selectedItemIds}
             showAnalyzeImportBanner={showAnalyzeImportBatchState}
             showGeminiEqBatchBanner={showGeminiEqBatchNotification}
+            showPlaylistUpdateCheckNotice={!!playlistUpdateCheckNotice}
             analyzeImportBannerTitle={analyzeImportBanner?.title}
             analyzeImportBannerDetail={analyzeImportBanner?.detail}
             analyzeImportBannerActionLabel={analyzeImportBanner?.actionLabel}
@@ -368,9 +434,19 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             geminiEqBatchBannerTitle={geminiEqBatchBanner?.title}
             geminiEqBatchBannerDetail={geminiEqBatchBanner?.detail}
             geminiEqBatchBannerDismissible={geminiEqBatchBanner?.dismissible}
+            playlistUpdateCheckNoticeTitle={playlistUpdateCheckNotice?.title}
+            playlistUpdateCheckNoticeDetail={playlistUpdateCheckNotice?.detail}
+            pendingPlaylistUpdateItems={pendingPlaylistUpdateItems}
             onStopAnalyzeImportBatch={onStopAnalyzeImportBatch}
             onDismissAnalyzeImportBanner={onDismissAnalyzeImportBanner}
             onDismissGeminiEqBatchBanner={onDismissGeminiEqBatchBanner}
+            onDismissPlaylistUpdateCheckNotice={
+              onDismissPlaylistUpdateCheckNotice
+            }
+            onAddPendingPlaylistUpdateItem={onAddPendingPlaylistUpdateItem}
+            onDismissPendingPlaylistUpdateItem={
+              onDismissPendingPlaylistUpdateItem
+            }
             onToggleSelected={toggleSelectedItem}
             onOpenInfoModal={openInfoModal}
             onOpenPlaybackModal={openPlaybackModal}

@@ -12,9 +12,7 @@ import { ThemePreference } from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
 import { ChevronDownIcon, HomeIcon } from "../icons";
 import styles from "./Playlist.module.css";
-import {
-  buildSongListSheetRows,
-} from "./songListsViewModel";
+import { buildSongListSheetRows } from "./songListsViewModel";
 
 interface props {
   onDelete: () => void;
@@ -22,6 +20,7 @@ interface props {
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
   onOpenNewSongListModal: () => void;
+  onCheckPlaylistUpdates: () => Promise<string>;
   onSelectSongList: (name: string) => void;
   onRenameSongList: (currentName: string, nextName: string) => string;
   onClearSelection: () => void;
@@ -43,6 +42,7 @@ const PlaylistHeader = ({
   onOpenGeminiSettings,
   onOpenImportModal,
   onOpenNewSongListModal,
+  onCheckPlaylistUpdates,
   onSelectSongList,
   onRenameSongList,
   onClearSelection,
@@ -75,6 +75,9 @@ const PlaylistHeader = ({
   const isPIP = playbackState.isPip;
   const playing = isPlaybackActive(playbackState.status);
   const enableAdjustVideoVolume = playbackState.enableAdjustVideoVolume;
+  const hasTrackedPlaylistSource = Boolean(
+    songLists[activeSongListName]?.playlistSources?.[0],
+  );
 
   const onPlayPauseButton = () => {
     if (isPlayAll) {
@@ -97,6 +100,15 @@ const PlaylistHeader = ({
   };
   const onToggleVolumeAdjust = () => {
     chrome.runtime.sendMessage({ name: MsgType.ToggleVolumeAdjust });
+  };
+  const onCheckPlaylistUpdatesFromMenu = () => {
+    void onCheckPlaylistUpdates()
+      .then((message) => {
+        console.log(message);
+      })
+      .catch((error) => {
+        console.error("Could not check playlist updates.", error);
+      });
   };
   const onExportJson = () => {
     var result = JSON.stringify(playlist);
@@ -260,11 +272,39 @@ const PlaylistHeader = ({
         callback: onToggleVolumeAdjust,
       },
       {
+        id: "playlist-management",
+        description: "Edit Playlist",
+        callback: openPlaylistManagementMenu,
+        shouldCloseOnClick: false,
+      },
+    ];
+  };
+
+  const buildPlaylistManagementItems = (): MActionSheetItem[] => {
+    return [
+      {
+        id: "playlist-management-header",
+        kind: "sheet-header",
+        description: "Manage Playlist",
+        leadingIcon: "back",
+        callback: () => ctx.setActionSheet(buildMenuItems(themePreference)),
+        shouldCloseOnClick: false,
+      },
+      {
         id: 7,
         description: "Import Playlist",
         callback: onOpenImportModal,
       },
       { id: 8, description: "Export Playlist", callback: onExportJson },
+      ...(hasTrackedPlaylistSource
+        ? [
+            {
+              id: 9,
+              description: "Check Playlist Updates",
+              callback: onCheckPlaylistUpdatesFromMenu,
+            },
+          ]
+        : []),
       {
         id: 200,
         description: "Delete All",
@@ -272,6 +312,10 @@ const PlaylistHeader = ({
         tone: "danger",
       },
     ];
+  };
+
+  const openPlaylistManagementMenu = () => {
+    ctx.setActionSheet(buildPlaylistManagementItems());
   };
 
   const openPlayMenu = () => {

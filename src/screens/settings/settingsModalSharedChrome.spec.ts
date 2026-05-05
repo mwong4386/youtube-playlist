@@ -90,6 +90,14 @@ test("create profile view injects Gemini previews into manual tuning", () => {
   expectEqual(settingsSource.includes("setProfileForm({"), true);
 });
 
+test("settings modal no longer owns playlist update testing controls", () => {
+  expectEqual(settingsSource.includes("onCheckPlaylistUpdates"), false);
+  expectEqual(settingsSource.includes("Check playlist updates"), false);
+  expectEqual(settingsSource.includes("playlistUpdateCheckMessage"), false);
+  expectEqual(settingsStyles.includes(".testing-actions"), false);
+  expectEqual(settingsStyles.includes(".testing-status"), false);
+});
+
 test("shared modal header renders a close icon by default", () => {
   const modalHeaderSource = readFileSync(
     join(process.cwd(), "src/screens/modal/ModalChromeHeader.tsx"),

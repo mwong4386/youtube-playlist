@@ -4,6 +4,7 @@ import {
   THEME_PREFERENCE_OPTIONS,
 } from "../../utils/theme";
 import {
+  BackIcon,
   CheckIcon,
   ChevronDownIcon,
   CloseIcon,
@@ -18,7 +19,7 @@ interface props {
 }
 
 const renderIcon = (
-  icon: "plus" | "chevron-down" | "edit" | "check" | "x"
+  icon: "plus" | "chevron-down" | "edit" | "check" | "x" | "back"
 ) => {
   const iconClassName = styles["row-icon-svg"];
 
@@ -33,6 +34,8 @@ const renderIcon = (
       return <CheckIcon className={iconClassName} />;
     case "x":
       return <CloseIcon className={iconClassName} />;
+    case "back":
+      return <BackIcon className={iconClassName} />;
   }
 };
 
