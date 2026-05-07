@@ -18,6 +18,7 @@
 .embeddedTitle {
   margin: 0;
   font-size: 15px;
+  font-weight: var(--app-heading-weight);
 }
 
 .body {
@@ -32,7 +33,7 @@
   display: grid;
   gap: 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
 }
 
 .textarea {
@@ -65,7 +66,7 @@
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-control-weight);
 }
 
 .primaryButton {
@@ -109,6 +110,7 @@
 .previewTitle {
   margin: 0;
   font-size: 15px;
+  font-weight: var(--app-heading-weight);
 }
 
 .reason {

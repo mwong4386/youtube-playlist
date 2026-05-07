@@ -23,7 +23,7 @@
 
 .fieldLabel {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
   color: var(--text-primary);
 }
 
@@ -65,7 +65,7 @@
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-control-weight);
 }
 
 .secondaryButton {

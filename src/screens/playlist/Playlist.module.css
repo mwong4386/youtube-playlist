@@ -46,7 +46,7 @@
 
 .title {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: var(--app-heading-weight);
   line-height: 1.25;
   text-align: left;
   margin: 0;
@@ -55,8 +55,8 @@
 
 .channel-name {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: var(--app-label-weight);
+  letter-spacing: var(--app-meta-letter-spacing);
   text-transform: uppercase;
   text-align: left;
   color: var(--text-secondary);
@@ -209,9 +209,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: var(--app-heading-weight);
   line-height: 1.1;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--app-control-letter-spacing);
   text-transform: uppercase;
   color: var(--text-primary);
 }
@@ -248,7 +248,7 @@
   min-height: 38px;
   padding: 0 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-control-weight);
   line-height: 1;
   color: var(--text-primary);
 }

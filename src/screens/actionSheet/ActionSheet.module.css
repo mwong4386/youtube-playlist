@@ -10,7 +10,7 @@
 
 .row{
     font-size: 18px;
-    font-weight: 700;
+    font-weight: var(--app-control-weight);
     padding: 0;
     color: var(--text-primary);
     border-bottom: 0;
@@ -273,13 +273,13 @@
 .control-label{
     margin: 0;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: var(--app-heading-weight);
 }
 
 .control-note{
     margin: 4px 0 0;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: var(--app-body-weight);
     color: var(--text-secondary);
 }
 
@@ -303,7 +303,7 @@
     color: var(--text-secondary);
     padding: 12px 8px;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: var(--app-control-weight);
     transition: color .22s ease, transform .22s ease;
 }
 
@@ -344,12 +344,12 @@
     color: var(--text-primary);
     padding: 10px 12px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: var(--app-label-weight);
 }
 
 .inline-edit-error{
     margin: 8px 0 0;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: var(--app-label-weight);
     color: var(--danger-color, #d04a4a);
 }

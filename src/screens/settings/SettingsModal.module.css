@@ -38,7 +38,7 @@
   color: var(--text-secondary);
   padding: 10px 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-control-weight);
   transition: color 0.22s ease, transform 0.22s ease;
 }
 
@@ -171,7 +171,7 @@
 
 .field-label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
 }
 
 .slider-list {

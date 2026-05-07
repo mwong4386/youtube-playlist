@@ -40,6 +40,7 @@
   margin: 0;
   font-size: 15px;
   line-height: 1.3;
+  font-weight: var(--app-heading-weight);
   color: var(--text-primary);
 }
 
@@ -62,7 +63,7 @@
 
 .fieldLabel {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
   color: var(--text-primary);
 }
 
@@ -104,7 +105,7 @@
 
 .modeTitle {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
   color: var(--text-primary);
 }
 
@@ -123,7 +124,7 @@
   background: var(--surface-primary);
   color: var(--text-primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-control-weight);
   padding: 11px 12px;
 }
 
@@ -149,7 +150,7 @@
 
 .sourceTrackingTitle {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
   color: var(--text-primary);
 }
 
@@ -190,7 +191,7 @@
 .previewItemTitle {
   color: var(--text-primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--app-label-weight);
   line-height: 1.35;
 }
 

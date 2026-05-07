@@ -71,9 +71,9 @@
   border: 1px solid color-mix(in srgb, var(--success-color) 30%, transparent);
   border-radius: 999px;
   padding: 0 18px;
-  font-weight: 800;
+  font-weight: var(--app-control-weight);
   font-size: 12px;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--app-control-letter-spacing);
   text-transform: uppercase;
   height: 32px;
   display: inline-flex;
