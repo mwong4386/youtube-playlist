@@ -34,6 +34,7 @@ interface props {
   selectedCount: number;
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
+  geminiApiKey: string;
 }
 const PlaylistHeader = ({
   playlist,
@@ -55,6 +56,7 @@ const PlaylistHeader = ({
   someSelected,
   themePreference,
   setThemePreference,
+  geminiApiKey,
 }: props) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState(),
@@ -267,7 +269,7 @@ const PlaylistHeader = ({
       },
       {
         id: 5,
-        description: "Setup Gemini",
+        description: geminiApiKey.trim() ? "Gemini Settings" : "Setup Gemini",
         callback: onOpenGeminiSettings,
       },
       {

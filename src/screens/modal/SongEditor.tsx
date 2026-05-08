@@ -66,6 +66,7 @@ interface SongEditorProps {
     suggestion: GeminiBoundarySuggestion | undefined,
   ) => void;
   active: boolean;
+  geminiApiKey: string | undefined;
 }
 
 const toNumber = (value: number) => Number(value) || 0;
@@ -81,6 +82,7 @@ export const SongEditor = ({
   latestGeminiSuggestion,
   setLatestGeminiSuggestion,
   active,
+  geminiApiKey,
 }: SongEditorProps) => {
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [activeView, setActiveView] = useState<InfoModalView>("info");
@@ -89,6 +91,8 @@ export const SongEditor = ({
   const [geminiEqReview, setGeminiEqReview] = useState<GeminiEqReviewState>(
     createInitialGeminiEqReviewState,
   );
+
+  const hasGeminiApiKey = !!geminiApiKey?.trim();
 
   const analyzeScopeRef = useRef<GeminiAnalyzeScope>({
     active: false,
@@ -444,14 +448,18 @@ export const SongEditor = ({
                   })}
                 />
               </span>
-              <button
-                type="button"
-                className={styles["analyze-button"]}
-                disabled={isAnalyzing}
-                onClick={onAnalyze}
-              >
-                {isAnalyzing ? "Analyzing..." : "Analyze"}
-              </button>
+              {hasGeminiApiKey ? (
+                <button
+                  type="button"
+                  className={styles["analyze-button"]}
+                  disabled={isAnalyzing}
+                  onClick={onAnalyze}
+                >
+                  {isAnalyzing ? "Analyzing..." : "Analyze"}
+                </button>
+              ) : (
+                <div />
+              )}
 
               <label className={styles["time-label"]}>End Time</label>
               <span className={styles["time"]}>
@@ -549,35 +557,37 @@ export const SongEditor = ({
           </>
         ) : (
           <>
-            <div className={styles["gemini-eq-form"]}>
-              <textarea
-                value={geminiEqReview.request}
-                onChange={(event) =>
-                  setGeminiEqReview((currentState) => ({
-                    ...currentState,
-                    request: event.target.value,
-                  }))
-                }
-                className={styles["gemini-eq-textarea"]}
-                placeholder="Describe an optional EQ preference"
-                aria-label="Describe an optional EQ preference"
-              />
-              <div className={styles["gemini-eq-action-row"]}>
-                <button
-                  type="button"
-                  className={styles["gemini-eq-button"]}
-                  onClick={onGenerateGeminiEq}
-                  disabled={geminiEqReview.isLoading}
-                >
-                  {geminiEqReview.isLoading ? "Generating..." : "Ask Gemini"}
-                </button>
+            {hasGeminiApiKey && (
+              <div className={styles["gemini-eq-form"]}>
+                <textarea
+                  value={geminiEqReview.request}
+                  onChange={(event) =>
+                    setGeminiEqReview((currentState) => ({
+                      ...currentState,
+                      request: event.target.value,
+                    }))
+                  }
+                  className={styles["gemini-eq-textarea"]}
+                  placeholder="Describe an optional EQ preference"
+                  aria-label="Describe an optional EQ preference"
+                />
+                <div className={styles["gemini-eq-action-row"]}>
+                  <button
+                    type="button"
+                    className={styles["gemini-eq-button"]}
+                    onClick={onGenerateGeminiEq}
+                    disabled={geminiEqReview.isLoading}
+                  >
+                    {geminiEqReview.isLoading ? "Generating..." : "Ask Gemini"}
+                  </button>
+                </div>
+                {geminiEqReview.status && (
+                  <p className={styles["gemini-eq-status"]}>
+                    {geminiEqReview.status}
+                  </p>
+                )}
               </div>
-              {geminiEqReview.status && (
-                <p className={styles["gemini-eq-status"]}>
-                  {geminiEqReview.status}
-                </p>
-              )}
-            </div>
+            )}
             {profiles.length > 0 && (
               <div className={styles["eq-profile-container"]}>
                 <label

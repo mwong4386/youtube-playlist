@@ -47,6 +47,7 @@ interface Props {
   onAdjustSongEqWithGemini: (
     request: GeminiSongEqUserRequest,
   ) => Promise<GeminiSongEqResponse>;
+  geminiApiKey: string | undefined;
 }
 
 const toNumber = (value: number) => Number(value) || 0;
@@ -63,6 +64,7 @@ const InfoModal = ({
   isPlaybackActive,
   onAnalyzeSongBoundaries,
   onAdjustSongEqWithGemini,
+  geminiApiKey,
 }: Props) => {
   const [latestGeminiSuggestion, setLatestGeminiSuggestion] = useState<
     GeminiBoundarySuggestion | undefined
@@ -151,6 +153,7 @@ const InfoModal = ({
             latestGeminiSuggestion={latestGeminiSuggestion}
             setLatestGeminiSuggestion={setLatestGeminiSuggestion}
             active={active}
+            geminiApiKey={geminiApiKey}
           />
           {showTransport ? (
             <div className={styles["transport-section"]}>

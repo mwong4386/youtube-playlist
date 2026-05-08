@@ -417,6 +417,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             selectedCount={selectedItemIds.length}
             themePreference={themePreference}
             setThemePreference={setThemePreference}
+            geminiApiKey={geminiApiKey}
           />
           <PlaylistContent
             playlist={playlist}
@@ -467,7 +468,9 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             onvolumechange={onvolumechange}
             onAudioEqChange={onAudioEqChange}
             onAnalyzeSongBoundaries={analyzeSongBoundaries}
+            onAdjustSongEqWithGemini={adjustSongEqWithGemini}
             save={onSave}
+            geminiApiKey={geminiApiKey}
           />
         )}
       </div>
@@ -483,6 +486,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         currentPlaybackItemId={effectivePlaybackItemId}
         isPlaybackActive={playing}
         item={selectedInfoItem}
+        geminiApiKey={geminiApiKey}
       />
       <SettingsModal
         active={isEqSettingsOpen}
