@@ -191,8 +191,13 @@
   color: var(--text-primary);
 }
 .chrome-danger-button {
-  border: 1px solid color-mix(in srgb, var(--danger-color, #d04a4a) 28%, var(--border-color));
-  background: color-mix(in srgb, var(--danger-color, #d04a4a) 8%, var(--surface-primary));
+  border: 1px solid
+    color-mix(in srgb, var(--danger-color, #d04a4a) 28%, var(--border-color));
+  background: color-mix(
+    in srgb,
+    var(--danger-color, #d04a4a) 8%,
+    var(--surface-primary)
+  );
   color: var(--danger-color, #d04a4a);
 }
 .chrome-badge {
@@ -320,7 +325,7 @@
 
 .time-grid {
   display: grid;
-  grid-template-columns: 80px auto auto;
+  grid-template-columns: 80px minmax(max-content, 1fr) auto;
   align-items: center;
   justify-content: center;
   column-gap: 10px;
@@ -342,18 +347,30 @@
   font-size: 16px;
 }
 .time {
-  display: inline-block;
+  display: inline-grid;
+  grid-template-columns: minmax(2ch, 1fr) auto minmax(2ch, 1fr) auto minmax(
+      2ch,
+      1fr
+    );
+  align-items: center;
+  column-gap: 2px;
+  width: 100%;
+  max-width: 180px;
+  min-width: max-content;
+  white-space: nowrap;
   border: 2px solid var(--border-color);
   background-color: var(--surface-primary);
   border-radius: 6px;
   padding: 4px;
-  height: 32;
+  min-height: 32px;
   margin-left: 6px;
 }
 .time input {
+  min-width: 2ch;
   border: 0;
   text-align: center;
   background-color: transparent;
+  box-sizing: content-box;
   outline: 0; /* remove if you want input highlight */
 }
 .checkbox-label {
