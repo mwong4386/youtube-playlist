@@ -219,8 +219,62 @@ export const removeSongFromPlaylistTool: AgentTool = {
   },
 };
 
+export const reorderPlaylistTool: AgentTool = {
+  name: "reorder_playlist",
+  description: "Changes the order of songs in the active playlist. Provide all song IDs in the new desired order.",
+  parameters: {
+    type: "object",
+    properties: {
+      songIds: {
+        type: "array",
+        items: { type: "string" },
+        description: "An array of all song IDs in the new desired order.",
+      },
+    },
+    required: ["songIds"],
+  },
+  execute: async ({ songIds }) => {
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return { ok: true, message: `Reordered ${songIds.length} songs in the playlist (mock).` };
+    }
+
+    const { getPlaylist, writeActiveSongListItems } = await import("./index.js");
+
+    const playlist = await getPlaylist();
+    const songMap = new Map(playlist.map((item) => [item.id, item]));
+
+    const nextPlaylist: MPlaylistItem[] = [];
+    const seenIds = new Set<string>();
+
+    for (const id of songIds) {
+      const item = songMap.get(id);
+      if (item && !seenIds.has(id)) {
+        nextPlaylist.push(item);
+        seenIds.add(id);
+      }
+    }
+
+    // Append any missing songs from the original playlist (safety measure)
+    for (const item of playlist) {
+      if (!seenIds.has(item.id)) {
+        nextPlaylist.push(item);
+        seenIds.add(item.id);
+      }
+    }
+
+    await writeActiveSongListItems(nextPlaylist);
+
+    return {
+      ok: true,
+      message: `Reordered ${nextPlaylist.length} songs in the playlist.`,
+    };
+  },
+};
+
 registerTool(getPlaylistInfoTool);
 registerTool(createEqProfileTool);
 registerTool(adjustSongEqTool);
 registerTool(addSongToPlaylistTool);
 registerTool(removeSongFromPlaylistTool);
+registerTool(reorderPlaylistTool);

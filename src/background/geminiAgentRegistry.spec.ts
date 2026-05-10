@@ -61,3 +61,28 @@ test("remove_song_from_playlist tool execute returns mock result in test environ
   expectEqual(result.ok, true);
   expectEqual(result.message, "Removed song with ID test-id from the playlist (mock).");
 });
+
+test("reorder_playlist tool is registered and has correct schema", async () => {
+  const tool = getTool("reorder_playlist");
+  if (!tool) {
+    throw new Error("Tool reorder_playlist not found in registry");
+  }
+
+  expectEqual(tool.name, "reorder_playlist");
+  expectEqual(tool.parameters.type, "object");
+  expectEqual(tool.parameters.required, ["songIds"]);
+});
+
+test("reorder_playlist tool execute returns mock result in test environment", async () => {
+  const tool = getTool("reorder_playlist");
+  if (!tool) {
+    throw new Error("Tool reorder_playlist not found in registry");
+  }
+
+  const result = await tool.execute({
+    songIds: ["a", "b", "c"],
+  });
+
+  expectEqual(result.ok, true);
+  expectEqual(result.message, "Reordered 3 songs in the playlist (mock).");
+});
