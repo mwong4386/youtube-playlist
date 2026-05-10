@@ -298,9 +298,8 @@ const PlaylistHeader = ({
     targetSongListName?: string;
   }): MActionSheetItem[] => {
     const targetSongList = songLists[targetSongListName];
-    const hasTargetTrackedPlaylistSource = Boolean(
-      targetSongList?.playlistSources?.[0],
-    );
+    const hasTargetTrackedPlaylistSource =
+      (targetSongList?.playlistSources?.length ?? 0) > 0;
 
     return [
       {
@@ -321,7 +320,6 @@ const PlaylistHeader = ({
       {
         id: "manage-sources",
         description: "Playlist Sources",
-        trailingIcon: "chevron-down",
         callback: () => openPlaylistSourcesMenu(targetSongListName),
         shouldCloseOnClick: false,
       },
@@ -389,27 +387,39 @@ const PlaylistHeader = ({
       },
       {
         id: "add-source",
+        kind: "song-list-action",
         description: "Add Playlist Source",
         leadingIcon: "plus",
         callback: () => {
           onOpenImportModal();
         },
       },
-      ...(targetSongList.playlistSources || []).map((source, index) => ({
-        id: `source-${index}`,
-        description: source.url,
-        shouldCloseOnClick: false,
-        iconActions: [
-          {
-            icon: "trash",
-            label: "Delete Source",
-            callback: () => {
-              onDeletePlaylistSource(source.url);
-              openPlaylistSourcesMenu(targetSongListName);
+      ...(targetSongList.playlistSources || []).map((source, index) => {
+        const listId = new URLSearchParams(source.url.split("?")[1] || "").get("list") || source.url;
+        return {
+          id: `source-${index}`,
+          kind: "song-list-action",
+          description: listId,
+          shouldCloseOnClick: false,
+          leadingIconActions: [
+            {
+              icon: "view",
+              label: "View Source",
+              callback: () => {
+                window.open(source.url, "_blank");
+              },
             },
-          },
-        ],
-      })),
+            {
+              icon: "trash",
+              label: "Delete Source",
+              callback: () => {
+                onDeletePlaylistSource(source.url);
+                openPlaylistSourcesMenu(targetSongListName);
+              },
+            },
+          ],
+        };
+      }),
     ];
 
     ctx.setActionSheet(items);

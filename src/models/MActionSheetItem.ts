@@ -10,8 +10,9 @@ type ActionSheetIconName =
   | "edit"
   | "gear"
   | "check"
-  | "x"
-  | "trash";
+  | "view"
+  | "trash"
+  | "x";
 
 interface MActionSheetItem {
   id: number | string;
@@ -31,6 +32,12 @@ interface MActionSheetItem {
   shouldCloseOnClick?: boolean;
   leadingIcon?: ActionSheetIconName;
   trailingIcon?: ActionSheetIconName;
+  leadingIconActions?: Array<{
+    icon: ActionSheetIconName;
+    label: string;
+    callback: () => any;
+    disabled?: boolean;
+  }>;
   iconActions?: Array<{
     icon: ActionSheetIconName;
     label: string;

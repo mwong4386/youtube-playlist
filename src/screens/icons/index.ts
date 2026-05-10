@@ -9,6 +9,7 @@ export { default as GeminiKeyIcon } from "./GeminiKeyIcon";
 export { default as HomeIcon } from "./HomeIcon";
 export { default as ImportIcon } from "./ImportIcon";
 export { default as ExportIcon } from "./ExportIcon";
+export { default as ExternalLinkIcon } from "./ExternalLinkIcon";
 export { default as NextIcon } from "./NextIcon";
 export { default as PauseIcon } from "./PauseIcon";
 export { default as PlayIcon } from "./PlayIcon";

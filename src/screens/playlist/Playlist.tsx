@@ -102,8 +102,13 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
   const activeSongListRecord =
     songListsState.songLists[activeSongListName] ??
     songListsState.songLists[DEFAULT_SONG_LIST_NAME];
-  const activePlaylistSource = activeSongListRecord?.playlistSources?.[0];
-  const pendingPlaylistUpdateItems = activePlaylistSource?.pendingNewItems ?? [];
+  const activePlaylistSources = activeSongListRecord?.playlistSources ?? [];
+  const pendingPlaylistUpdateItems = activePlaylistSources.flatMap(
+    (source) => source.pendingNewItems ?? [],
+  );
+  const sourceDependencyKey = activePlaylistSources
+    .map((s) => `${s.url}-${s.lastCheckedAt}`)
+    .join("|");
   const {
     adjustSongEqWithGemini,
     analyzeSongBoundaries,
@@ -145,6 +150,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onUpdateProfile,
     onvolumechange,
     onAdjustVolumeSelected,
+    onDeletePlaylistSource,
     onApplyGeminiSongEqSuggestions,
     openEqSettings,
     openGeminiSettings,
@@ -220,11 +226,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
 
   useEffect(() => {
     void refreshActivePlaylistSource();
-  }, [
-    activeSongListName,
-    activePlaylistSource?.url,
-    activePlaylistSource?.lastCheckedAt,
-  ]);
+  }, [activeSongListName, sourceDependencyKey]);
 
   const analyzeImportBanner = getAnalyzeImportBannerViewModel(
     analyzeImportBatchState,

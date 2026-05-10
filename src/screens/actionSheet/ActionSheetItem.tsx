@@ -15,6 +15,7 @@ import {
   PlaylistCheckIcon,
   PlusIcon,
   TrashIcon,
+  ExternalLinkIcon,
 } from "../icons";
 import styles from "./ActionSheet.module.css";
 
@@ -47,13 +48,15 @@ const renderIcon = (icon: NonNullable<MActionSheetItem["leadingIcon"]>) => {
       return <ExportIcon className={iconClassName} />;
     case "playlist-check":
       return <PlaylistCheckIcon className={iconClassName} />;
+    case "view":
+      return <ExternalLinkIcon className={iconClassName} />;
     case "trash":
       return <TrashIcon className={iconClassName} />;
   }
 };
 
 const renderIconActions = (
-  item: MActionSheetItem,
+  item: Pick<MActionSheetItem, "iconActions" | "shouldCloseOnClick">,
   close: () => void,
   className: string,
 ) =>
@@ -225,11 +228,22 @@ const ActionSheetItem = ({ item, close }: props) => {
   };
 
   if (item.kind === "song-list-action") {
-    if (item.iconActions && item.iconActions.length > 0) {
+    const hasToolbarActions = item.iconActions && item.iconActions.length > 0;
+    const hasLeadingActions = item.leadingIconActions && item.leadingIconActions.length > 0;
+
+    if (hasToolbarActions || hasLeadingActions) {
       return (
         <div
           className={`${styles["row"]} ${styles["song-list-action-row"]} ${styles["song-list-toolbar-row"]}`}
         >
+          <div className={styles["song-list-toolbar-actions"]}>
+            {hasLeadingActions && renderIconActions(
+              { iconActions: item.leadingIconActions, shouldCloseOnClick: item.shouldCloseOnClick },
+              close,
+              styles["song-list-toolbar-button"]
+            )}
+          </div>
+
           <button
             type="button"
             className={styles["song-list-action-main-button"]}
@@ -244,9 +258,10 @@ const ActionSheetItem = ({ item, close }: props) => {
               <span className={styles["row-label"]}>{item.description}</span>
             </span>
           </button>
-          <span className={styles["song-list-toolbar-actions"]}>
-            {renderIconActions(item, close, styles["song-list-toolbar-button"])}
-          </span>
+          
+          <div className={styles["song-list-toolbar-actions"]}>
+            {hasToolbarActions && renderIconActions(item, close, styles["song-list-toolbar-button"])}
+          </div>
         </div>
       );
     }
