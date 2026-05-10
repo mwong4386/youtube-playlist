@@ -500,43 +500,23 @@ const usePlaylistActions = ({
     return refreshPlaylistSource(activeSongListName, force);
   };
 
-  const updateActivePlaylistSource = (
-    updater: (source: PlaylistSourceRecord) => PlaylistSourceRecord,
-  ) => {
-    updateSongListsState((currentSongListsState) =>
-      updateActiveSongListRecord(currentSongListsState, (record) => {
-        const source = record.playlistSources?.[0];
-        if (!source) {
-          return record;
-        }
-
-        return {
-          ...record,
-          playlistSources: [
-            updater(source),
-            ...(record.playlistSources ?? []).slice(1),
-          ],
-        };
-      }),
-    );
-  };
-
   const onAddPendingPlaylistUpdates = () => {
     updateSongListsState((currentSongListsState) =>
       updateActiveSongListRecord(currentSongListsState, (record) => {
-        const source = record.playlistSources?.[0];
-        if (!source) {
-          return record;
-        }
+        const sources = record.playlistSources ?? [];
+        if (sources.length === 0) return record;
 
-        const result = addPendingPlaylistUpdates(record.items, source);
+        let currentItems = record.items;
+        const nextSources = sources.map((source) => {
+          const result = addPendingPlaylistUpdates(currentItems, source);
+          currentItems = result.items;
+          return result.source;
+        });
+
         return {
           ...record,
-          items: result.items,
-          playlistSources: [
-            result.source,
-            ...(record.playlistSources ?? []).slice(1),
-          ],
+          items: currentItems,
+          playlistSources: nextSources,
         };
       }),
     );
@@ -545,35 +525,67 @@ const usePlaylistActions = ({
   const onAddPendingPlaylistUpdateItem = (itemId: string) => {
     updateSongListsState((currentSongListsState) =>
       updateActiveSongListRecord(currentSongListsState, (record) => {
-        const source = record.playlistSources?.[0];
-        if (!source) {
-          return record;
-        }
+        const sources = record.playlistSources ?? [];
+        const sourceIndex = sources.findIndex((s) =>
+          s.pendingNewItems?.some((i) => i.id === itemId),
+        );
 
+        if (sourceIndex === -1) return record;
+
+        const source = sources[sourceIndex];
         const result = addPendingPlaylistUpdateItem(
           record.items,
           source,
           itemId,
         );
+
+        const nextSources = [...sources];
+        nextSources[sourceIndex] = result.source;
+
         return {
           ...record,
           items: result.items,
-          playlistSources: [
-            result.source,
-            ...(record.playlistSources ?? []).slice(1),
-          ],
+          playlistSources: nextSources,
         };
       }),
     );
   };
 
   const onDismissPendingPlaylistUpdates = () => {
-    updateActivePlaylistSource(dismissPendingPlaylistUpdates);
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => {
+        const sources = record.playlistSources ?? [];
+        if (sources.length === 0) return record;
+
+        return {
+          ...record,
+          playlistSources: sources.map(dismissPendingPlaylistUpdates),
+        };
+      }),
+    );
   };
 
   const onDismissPendingPlaylistUpdateItem = (itemId: string) => {
-    updateActivePlaylistSource((source) =>
-      dismissPendingPlaylistUpdateItem(source, itemId),
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => {
+        const sources = record.playlistSources ?? [];
+        const sourceIndex = sources.findIndex((s) =>
+          s.pendingNewItems?.some((i) => i.id === itemId),
+        );
+
+        if (sourceIndex === -1) return record;
+
+        const nextSources = [...sources];
+        nextSources[sourceIndex] = dismissPendingPlaylistUpdateItem(
+          sources[sourceIndex],
+          itemId,
+        );
+
+        return {
+          ...record,
+          playlistSources: nextSources,
+        };
+      }),
     );
   };
 
