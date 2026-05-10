@@ -171,3 +171,45 @@ test("refreshActivePlaylistSource aggregates results from multiple sources", asy
     item("new2"),
   ]);
 });
+
+test("refreshActivePlaylistSource reports partial failure when one source fails", async () => {
+  const state: SongListsState = {
+    activeSongListName: "default",
+    songLists: {
+      default: {
+        items: [],
+        playlistSources: [
+          {
+            url: "https://www.youtube.com/playlist?list=PL_OK",
+            lastCheckedAt: "2026-05-01T12:00:00.000Z",
+            lastSeenVideoIds: [],
+          },
+          {
+            url: "https://www.youtube.com/playlist?list=PL_FAIL",
+            lastCheckedAt: "2026-05-01T12:00:00.000Z",
+            lastSeenVideoIds: [],
+          },
+        ],
+      },
+    },
+  };
+
+  const response = await refreshActivePlaylistSource({
+    now: new Date("2026-05-03T12:00:00.000Z"),
+    readSongListsState: async () => state,
+    writeSongListsState: async () => {},
+    resolvePlaylist: async (url) => {
+      if (url.includes("PL_OK")) {
+        return [item("new")];
+      }
+      throw new Error("Network error");
+    },
+  });
+
+  expectEqual(response, {
+    ok: false,
+    checked: true,
+    newItemCount: 1,
+    message: "Partial failure: Network error",
+  });
+});

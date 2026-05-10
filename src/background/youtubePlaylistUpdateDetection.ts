@@ -125,7 +125,9 @@ export const refreshActivePlaylistSource = async (
     ok: !hasError,
     checked: checkedAny,
     newItemCount: totalNewItems,
-    message: firstErrorMessage,
+    message: firstErrorMessage
+      ? `Partial failure: ${firstErrorMessage}`
+      : undefined,
   };
 };
 
