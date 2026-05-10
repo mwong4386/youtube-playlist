@@ -8,9 +8,9 @@
 }
 
 .embeddedHeader {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(36px, 1fr) minmax(0, auto) minmax(36px, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
 }
@@ -19,6 +19,10 @@
   margin: 0;
   font-size: 15px;
   font-weight: var(--app-heading-weight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .body {
@@ -64,7 +68,7 @@
 .primaryButton,
 .secondaryButton {
   border-radius: 8px;
-  padding: 9px 12px;
+  padding: 9px 10px;
   font-size: 13px;
   font-weight: var(--app-control-weight);
 }
@@ -77,7 +81,7 @@
 
 .embeddedActionButton {
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 8px;
   color: #ffffff;
 }
 

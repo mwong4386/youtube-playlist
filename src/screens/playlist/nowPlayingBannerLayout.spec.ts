@@ -132,7 +132,12 @@ test("InfoModal replaces the Edit Song header with a wide shared marquee title",
     false,
   );
   expectEqual(infoModalStyles.includes(".song-heading"), true);
-  expectEqual(infoModalStyles.includes("grid-template-columns: 36px minmax(0, 1fr) auto;"), true);
+  expectEqual(
+    infoModalStyles.includes(
+      "grid-template-columns: minmax(36px, 1fr) minmax(0, auto) minmax(36px, 1fr);",
+    ),
+    true,
+  );
   expectEqual(infoModalStyles.includes("gap: 4px;"), true);
   expectEqual(infoModalStyles.includes("white-space: nowrap;"), true);
 });
