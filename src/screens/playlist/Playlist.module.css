@@ -152,6 +152,7 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
+  gap: 8px;
 }
 
 .header-side-pocket {
@@ -267,7 +268,6 @@
   align-items: center;
   justify-content: center;
   width: 28px;
-  margin-left: 10px;
   padding: 0;
 }
 
