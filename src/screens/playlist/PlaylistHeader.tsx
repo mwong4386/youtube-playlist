@@ -425,18 +425,6 @@ const PlaylistHeader = ({
           <div
             className={`${styles["header-left-container"]} ${styles["header-center-well"]}`}
           >
-            <button
-              type="button"
-              onClick={onClearSelection}
-              className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-home-button"]}`}
-              aria-label="Return to playlist"
-            >
-              <HomeIcon className={styles["selection-header-home-icon"]} />
-            </button>
-          </div>
-          <div
-            className={`${styles["header-center-container"]} ${styles["header-center-well"]}`}
-          >
             <label className={styles["selection-header-checkbox"]}>
               <input
                 ref={selectAllCheckboxRef}
@@ -449,8 +437,20 @@ const PlaylistHeader = ({
               />
             </label>
             <p className={styles["selection-count"]}>
-              {selectedCount} {selectedCount === 1 ? "Song" : "Songs"} Selected
+              {selectedCount} selected
             </p>
+          </div>
+          <div
+            className={`${styles["header-center-container"]} ${styles["header-side-pocket"]}`}
+          >
+            <button
+              type="button"
+              onClick={onClearSelection}
+              className={`${styles["header-button"]} ${styles["selection-header-button"]} ${styles["selection-header-home-button"]}`}
+              aria-label="Return to playlist"
+            >
+              <HomeIcon className={styles["selection-header-home-icon"]} />
+            </button>
           </div>
           <div
             className={`${styles["header-right-container"]} ${styles["header-center-well"]}`}
