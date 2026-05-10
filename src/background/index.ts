@@ -23,7 +23,11 @@ import {
   buildActiveSongListStorageUpdate,
   readActiveSongListItems,
   readActiveSongListItemsFromStorageMap,
+  writeActiveSongListItems,
 } from "../utils/songLists";
+
+export { writeActiveSongListItems };
+
 import reducePlaybackState from "./playbackMachine";
 import { getPlaybackNavigationTarget } from "./playbackNavigation";
 import {

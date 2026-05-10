@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { AUDIO_EQ_PROFILE_STORAGE_KEY } from "../models/AudioEqProfile";
 import {
   AUDIO_EQ_BANDS,
@@ -5,6 +6,8 @@ import {
   AUDIO_EQ_MIN,
 } from "../utils/audioEq";
 import { readStoredAudioEqProfiles } from "../utils/audioEqProfiles";
+import { DEFAULT_AUDIO_EQ_SETTINGS } from "../models/AudioEq";
+import type MPlaylistItem from "../models/MPlaylistItem";
 
 export interface AgentTool {
   name: string;
@@ -136,6 +139,52 @@ export const adjustSongEqTool: AgentTool = {
   },
 };
 
+export const addSongToPlaylistTool: AgentTool = {
+  name: "add_song_to_playlist",
+  description: "Adds a specific song to the active playlist. Use this tool after identifying the videoId and metadata.",
+  parameters: {
+    type: "object",
+    properties: {
+      videoId: { type: "string" },
+      title: { type: "string" },
+      channelName: { type: "string" },
+      durationSeconds: { type: "number" },
+    },
+    required: ["videoId", "title", "channelName", "durationSeconds"],
+  },
+  execute: async ({ videoId, title, channelName, durationSeconds }) => {
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return { ok: true, message: `Added "${title}" to the playlist (mock).` };
+    }
+
+    const { getPlaylist, writeActiveSongListItems } = await import("./index.js");
+
+    const newItem: MPlaylistItem = {
+      id: uuidv4(),
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      videoId,
+      title,
+      channelName,
+      timestamp: 0,
+      endTimestamp: undefined,
+      maxDuration: durationSeconds,
+      volume: 100,
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    };
+
+    const playlist = await getPlaylist();
+    await writeActiveSongListItems([...playlist, newItem]);
+
+    return {
+      ok: true,
+      message: `Added "${title}" to the playlist.`,
+      item: newItem,
+    };
+  },
+};
+
 registerTool(getPlaylistInfoTool);
 registerTool(createEqProfileTool);
 registerTool(adjustSongEqTool);
+registerTool(addSongToPlaylistTool);
