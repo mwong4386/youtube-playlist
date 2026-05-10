@@ -69,7 +69,7 @@ import type {
   GeminiSongEqUserRequest,
 } from "../models/GeminiActions";
 
-let playbackState: PlaybackState = createInitialPlaybackState();
+export let playbackState: PlaybackState = createInitialPlaybackState();
 let playingItem: MPlaylistItem | null = null;
 let analyzeImportBatchPromise: Promise<void> | null = null;
 let analyzeImportAbortController: AbortController | null = null;
@@ -92,7 +92,7 @@ const resetPlaybackState = () => {
   applyPlaybackEvent({ type: "RESET" });
 };
 
-const getPlaylist = async () => {
+export const getPlaylist = async () => {
   const items = await readActiveSongListItems();
   return items.map(normalizePlaylistItem);
 };
