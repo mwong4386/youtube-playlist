@@ -1,0 +1,87 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 350px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 16px;
+  padding-top: 16px;
+  overflow: hidden;
+}
+
+.chatHistory {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px 12px;
+}
+
+.message {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.user {
+  align-self: flex-end;
+  background: var(--accent-color);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.model {
+  align-self: flex-start;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-bottom-left-radius: 4px;
+}
+
+.inputArea {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding-top: 8px;
+}
+
+.textarea {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  font: inherit;
+  padding: 8px 12px;
+  resize: none;
+  min-height: 38px;
+  max-height: 100px;
+}
+
+.sendButton {
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent-color);
+  color: white;
+  border: 0;
+  font-size: 13px;
+  font-weight: var(--app-control-weight);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.loading {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding-left: 12px;
+  margin-bottom: 4px;
+}
