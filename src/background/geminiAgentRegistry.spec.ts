@@ -36,3 +36,28 @@ test("add_song_to_playlist tool execute returns mock result in test environment"
   expectEqual(result.ok, true);
   expectEqual(result.message, 'Added "Test Song" to the playlist (mock).');
 });
+
+test("remove_song_from_playlist tool is registered and has correct schema", async () => {
+  const tool = getTool("remove_song_from_playlist");
+  if (!tool) {
+    throw new Error("Tool remove_song_from_playlist not found in registry");
+  }
+
+  expectEqual(tool.name, "remove_song_from_playlist");
+  expectEqual(tool.parameters.type, "object");
+  expectEqual(tool.parameters.required, ["songId"]);
+});
+
+test("remove_song_from_playlist tool execute returns mock result in test environment", async () => {
+  const tool = getTool("remove_song_from_playlist");
+  if (!tool) {
+    throw new Error("Tool remove_song_from_playlist not found in registry");
+  }
+
+  const result = await tool.execute({
+    songId: "test-id",
+  });
+
+  expectEqual(result.ok, true);
+  expectEqual(result.message, "Removed song with ID test-id from the playlist (mock).");
+});

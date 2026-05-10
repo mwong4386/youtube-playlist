@@ -12,6 +12,7 @@ import PlaybackState, {
 import {
   GEMINI_API_KEY_STORAGE_KEY,
   GeminiAnalyzeErrorCode,
+  GeminiAnalyzeSuccess,
 } from "../models/GeminiSettings";
 import {
   ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
@@ -729,11 +730,12 @@ const runAnalyzeImportBatch = async (initialState: AnalyzeImportBatchState) => {
       }
 
       if (result.ok) {
+        const success = result as GeminiAnalyzeSuccess;
         await updatePlaylistItem(itemId, {
-          timestamp: result.suggestion.startTimestamp,
-          endTimestamp: result.suggestion.endTimestamp,
-          geminiSuggestedStartTimestamp: result.suggestion.startTimestamp,
-          geminiSuggestedEndTimestamp: result.suggestion.endTimestamp,
+          timestamp: success.suggestion.startTimestamp,
+          endTimestamp: success.suggestion.endTimestamp,
+          geminiSuggestedStartTimestamp: success.suggestion.startTimestamp,
+          geminiSuggestedEndTimestamp: success.suggestion.endTimestamp,
         });
         batchState = completeAnalyzeImportBatchItem(batchState, itemId);
       } else {
@@ -1060,7 +1062,7 @@ const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
       playbackState = result["playbackState"]
         ? normalizeStoredPlaybackState(result["playbackState"])
         : getLegacyPlaybackState(result);
-      playingItem = result["playingItem"] || null;
+      playingItem = (result["playingItem"] as MPlaylistItem | null) || null;
       if (!playbackState.currentTabId) {
         resetPlaybackState();
         updateStateToLocalStorage();

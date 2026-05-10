@@ -184,7 +184,43 @@ export const addSongToPlaylistTool: AgentTool = {
   },
 };
 
+export const removeSongFromPlaylistTool: AgentTool = {
+  name: "remove_song_from_playlist",
+  description: "Removes a specific song from the active playlist by its ID.",
+  parameters: {
+    type: "object",
+    properties: {
+      songId: { type: "string", description: "The unique ID of the song to remove." },
+    },
+    required: ["songId"],
+  },
+  execute: async ({ songId }) => {
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return { ok: true, message: `Removed song with ID ${songId} from the playlist (mock).` };
+    }
+
+    const { getPlaylist, writeActiveSongListItems } = await import("./index.js");
+
+    const playlist = await getPlaylist();
+    const songToRemove = playlist.find((i) => i.id === songId);
+
+    if (!songToRemove) {
+      return { ok: false, message: `Song with ID ${songId} not found in the playlist.` };
+    }
+
+    const nextPlaylist = playlist.filter((i) => i.id !== songId);
+    await writeActiveSongListItems(nextPlaylist);
+
+    return {
+      ok: true,
+      message: `Removed "${songToRemove.title}" from the playlist.`,
+    };
+  },
+};
+
 registerTool(getPlaylistInfoTool);
 registerTool(createEqProfileTool);
 registerTool(adjustSongEqTool);
 registerTool(addSongToPlaylistTool);
+registerTool(removeSongFromPlaylistTool);
