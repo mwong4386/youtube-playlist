@@ -86,3 +86,28 @@ test("reorder_playlist tool execute returns mock result in test environment", as
   expectEqual(result.ok, true);
   expectEqual(result.message, "Reordered 3 songs in the playlist (mock).");
 });
+
+test("adjust_volume tool is registered and has correct schema", async () => {
+  const tool = getTool("adjust_volume");
+  if (!tool) {
+    throw new Error("Tool adjust_volume not found in registry");
+  }
+
+  expectEqual(tool.name, "adjust_volume");
+  expectEqual(tool.parameters.type, "object");
+  expectEqual(tool.parameters.required, ["volume"]);
+});
+
+test("adjust_volume tool execute returns mock result in test environment", async () => {
+  const tool = getTool("adjust_volume");
+  if (!tool) {
+    throw new Error("Tool adjust_volume not found in registry");
+  }
+
+  const result = await tool.execute({
+    volume: 50,
+  });
+
+  expectEqual(result.ok, true);
+  expectEqual(result.message, "Volume set to 50% (mock).");
+});

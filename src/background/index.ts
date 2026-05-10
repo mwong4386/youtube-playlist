@@ -104,7 +104,7 @@ export const getPlaylist = async () => {
   return items.map(normalizePlaylistItem);
 };
 
-const updatePlaylistItem = async (
+export const updatePlaylistItem = async (
   id: string,
   partial: Partial<
     Pick<
@@ -810,7 +810,7 @@ const startAnalyzeImportBatch = async (
   return batchState;
 };
 
-const onVolumeChange = async (
+export const onVolumeChange = async (
   volume: number,
   persist: boolean | undefined,
 ) => {

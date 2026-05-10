@@ -272,9 +272,48 @@ export const reorderPlaylistTool: AgentTool = {
   },
 };
 
+export const adjustVolumeTool: AgentTool = {
+  name: "adjust_volume",
+  description: "Sets the volume (0-100) for a specific song or the current playback.",
+  parameters: {
+    type: "object",
+    properties: {
+      volume: { type: "number", description: "Volume level from 0 to 100." },
+      songId: { type: "string", description: "Optional ID of the song to update. If omitted, it updates the currently playing song." },
+      persist: { type: "boolean", description: "Whether to save the volume permanently. Defaults to true." },
+    },
+    required: ["volume"],
+  },
+  execute: async ({ volume, songId, persist = true }) => {
+    console.log("DEBUG: NODE_ENV =", process.env.NODE_ENV);
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return { ok: true, message: `Volume set to ${volume}% (mock).` };
+    }
+
+    const { onVolumeChange, updatePlaylistItem, playbackState } = await import("./index.js");
+
+    if (songId) {
+      // Target specific song
+      await updatePlaylistItem(songId, { volume });
+
+      // If it's the currently playing song, update the live player too
+      if (playbackState.currentItemId === songId) {
+        await onVolumeChange(volume, false); // Don't re-persist since we just updated storage
+      }
+      return { ok: true, message: `Volume for song ${songId} set to ${volume}%.` };
+    } else {
+      // Target current playback
+      await onVolumeChange(volume, persist);
+      return { ok: true, message: `Volume set to ${volume}%.` };
+    }
+  },
+};
+
 registerTool(getPlaylistInfoTool);
 registerTool(createEqProfileTool);
 registerTool(adjustSongEqTool);
 registerTool(addSongToPlaylistTool);
 registerTool(removeSongFromPlaylistTool);
 registerTool(reorderPlaylistTool);
+registerTool(adjustVolumeTool);
