@@ -16,6 +16,7 @@ import { buildSongListSheetRows } from "./songListsViewModel";
 
 interface props {
   onDelete: () => void;
+  onDeletePlaylistSource: (url: string) => void;
   onOpenEqSettings: () => void;
   onOpenGeminiSettings: () => void;
   onOpenImportModal: () => void;
@@ -39,6 +40,7 @@ interface props {
 const PlaylistHeader = ({
   playlist,
   onDelete,
+  onDeletePlaylistSource,
   onOpenEqSettings,
   onOpenGeminiSettings,
   onOpenImportModal,
@@ -317,6 +319,13 @@ const PlaylistHeader = ({
         shouldCloseOnClick: false,
       },
       {
+        id: "manage-sources",
+        description: "Playlist Sources",
+        trailingIcon: "chevron-down",
+        callback: () => openPlaylistSourcesMenu(targetSongListName),
+        shouldCloseOnClick: false,
+      },
+      {
         id: 7,
         description: "Import Playlist",
         callback: () => {
@@ -360,6 +369,50 @@ const PlaylistHeader = ({
     ctx.setActionSheet(
       buildPlaylistManagementItems({ backTarget, targetSongListName }),
     );
+  };
+
+  const openPlaylistSourcesMenu = (targetSongListName = activeSongListName) => {
+    const targetSongList = songLists[targetSongListName];
+    if (!targetSongList) {
+      return;
+    }
+
+    const items: MActionSheetItem[] = [
+      {
+        id: "playlist-sources-header",
+        kind: "sheet-header",
+        description: "Playlist Sources",
+        leadingIcon: "back",
+        callback: () =>
+          openPlaylistManagementMenu("main-menu", targetSongListName),
+        shouldCloseOnClick: false,
+      },
+      {
+        id: "add-source",
+        description: "Add Playlist Source",
+        leadingIcon: "plus",
+        callback: () => {
+          onOpenImportModal();
+        },
+      },
+      ...(targetSongList.playlistSources || []).map((source, index) => ({
+        id: `source-${index}`,
+        description: source.url,
+        shouldCloseOnClick: false,
+        iconActions: [
+          {
+            icon: "trash",
+            label: "Delete Source",
+            callback: () => {
+              onDeletePlaylistSource(source.url);
+              openPlaylistSourcesMenu(targetSongListName);
+            },
+          },
+        ],
+      })),
+    ];
+
+    ctx.setActionSheet(items);
   };
 
   const openPlayMenu = () => {

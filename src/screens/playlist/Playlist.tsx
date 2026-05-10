@@ -407,6 +407,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
               });
               return "Checked tracked playlist. No new videos found.";
             }}
+            onDeletePlaylistSource={onDeletePlaylistSource}
             onSelectSongList={onSelectSongList}
             onRenameSongList={onRenameSongList}
             onClearSelection={clearSelection}
