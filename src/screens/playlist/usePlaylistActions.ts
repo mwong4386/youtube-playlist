@@ -577,6 +577,17 @@ const usePlaylistActions = ({
     );
   };
 
+  const onDeletePlaylistSource = (url: string) => {
+    updateSongListsState((currentSongListsState) =>
+      updateActiveSongListRecord(currentSongListsState, (record) => ({
+        ...record,
+        playlistSources: (record.playlistSources ?? []).filter(
+          (source) => source.url !== url,
+        ),
+      })),
+    );
+  };
+
   const onSave = (
     id: string,
     timestamp: number,
@@ -932,6 +943,7 @@ const usePlaylistActions = ({
     onDismissPendingPlaylistUpdateItem,
     onDismissPendingPlaylistUpdates,
     onCommitPlaylistImportPreview,
+    onDeletePlaylistSource,
     onImportJson,
     onMoveTo,
     onMoveToEnd,
