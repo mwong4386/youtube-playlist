@@ -17,15 +17,16 @@ export async function runAgentLoop(
   apiKey: string,
   userPrompt: string,
   history: GeminiMessage[] = [],
-  signal?: AbortSignal
-): Promise<string> {
+  signal?: AbortSignal,
+): Promise<{ text: string; history: GeminiMessage[] }> {
   const contents: GeminiMessage[] = [
     ...history,
     { role: "user", parts: [{ text: userPrompt }] },
   ];
 
   const tools = getToolsForGemini();
-  const geminiTools = tools.length > 0 ? [{ function_declarations: tools }] : undefined;
+  const geminiTools =
+    tools.length > 0 ? [{ function_declarations: tools }] : undefined;
 
   let turnCount = 0;
   const maxTurns = 10;
@@ -64,7 +65,10 @@ export async function runAgentLoop(
     if (functionCalls.length === 0) {
       // Final response (assuming it has text)
       const textPart = message.parts.find((part: any) => part.text);
-      return textPart?.text || "I've completed the task.";
+      return {
+        text: textPart?.text || "I've completed the task.",
+        history: contents,
+      };
     }
 
     // Execute function calls
@@ -97,7 +101,7 @@ export async function runAgentLoop(
             },
           };
         }
-      })
+      }),
     );
 
     contents.push({

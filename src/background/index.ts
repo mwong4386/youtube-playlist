@@ -60,6 +60,7 @@ import {
   previewYoutubePlaylistImport,
 } from "./youtubePlaylistImport";
 import { refreshActivePlaylistSource } from "./youtubePlaylistUpdateDetection";
+import { runAgentLoop, GeminiMessage } from "./geminiAgentLoop";
 import type {
   AnalyzeImportBatchRequest,
   AnalyzeImportBatchState,
@@ -67,6 +68,7 @@ import type {
 import type {
   GeminiEqProfileUserRequest,
   GeminiSongEqUserRequest,
+  AgenticChatRequest,
 } from "../models/GeminiActions";
 
 export let playbackState: PlaybackState = createInitialPlaybackState();
@@ -527,7 +529,7 @@ const analyzeSongBoundaries = async (itemId: string) => {
   }
 };
 
-const generateEqProfileWithGemini = async (
+export const generateEqProfileWithGemini = async (
   request: GeminiEqProfileUserRequest,
 ) => {
   try {
@@ -586,7 +588,7 @@ const generateEqProfileWithGemini = async (
   }
 };
 
-const adjustSongEqWithGemini = async (request: GeminiSongEqUserRequest) => {
+export const adjustSongEqWithGemini = async (request: GeminiSongEqUserRequest) => {
   try {
     const apiKey = readStoredGeminiApiKey(
       await chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY]),
@@ -647,6 +649,54 @@ const adjustSongEqWithGemini = async (request: GeminiSongEqUserRequest) => {
       ok: false,
       code: GeminiAnalyzeErrorCode.RequestFailed,
       message: GEMINI_GENERIC_FAILURE_MESSAGE,
+    };
+  }
+};
+
+const onAgenticChatRequest = async (request: AgenticChatRequest) => {
+  try {
+    const apiKey = readStoredGeminiApiKey(
+      await chrome.storage.local.get([GEMINI_API_KEY_STORAGE_KEY]),
+    );
+
+    if (!apiKey) {
+      return {
+        ok: false,
+        message: "Add a Gemini API key in settings before chatting with the agent.",
+      };
+    }
+
+    const history: GeminiMessage[] = (request.history || []).map((m) => ({
+      role: m.role as "user" | "model" | "tool",
+      parts: [{ text: m.content }],
+    }));
+
+    const { text, history: updatedHistory } = await runAgentLoop(
+      apiKey,
+      request.userRequest,
+      history,
+    );
+
+    return {
+      ok: true,
+      message: text,
+      history: updatedHistory.map((m) => ({
+        role: m.role,
+        content: m.parts
+          .map((p) => {
+            if ("text" in p) return p.text;
+            if ("functionCall" in p) return JSON.stringify(p.functionCall);
+            if ("functionResponse" in p)
+              return JSON.stringify(p.functionResponse);
+            return "";
+          })
+          .join("\n"),
+      })),
+    };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: error.message || GEMINI_GENERIC_FAILURE_MESSAGE,
     };
   }
 };
@@ -935,6 +985,8 @@ const onMessageHandler = async (message: any, sender?: chrome.runtime.MessageSen
         existingProfiles: message.existingProfiles,
         songContext: message.songContext,
       });
+    case MsgType.AgenticChatRequest:
+      return onAgenticChatRequest(message);
     default:
   }
 };
@@ -1037,7 +1089,8 @@ const normalizeStoredPlaybackState = (value: unknown): PlaybackState => {
       message?.name === MsgType.AnalyzeImportedPlaylist ||
       message?.name === MsgType.StopAnalyzeImportedPlaylist ||
       message?.name === MsgType.GenerateEqProfileWithGemini ||
-      message?.name === MsgType.AdjustSongEqWithGemini
+      message?.name === MsgType.AdjustSongEqWithGemini ||
+      message?.name === MsgType.AgenticChatRequest
     ) {
       void onMessageHandler(message, sender).then(sendResponse);
       return true;

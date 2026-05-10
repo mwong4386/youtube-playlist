@@ -66,8 +66,8 @@ test("runAgentLoop executes tools and returns final response", async () => {
   (global as any).fetch = async () => responses.shift()!;
 
   try {
-    const result = await runAgentLoop("test-key", "Call the test tool");
-    expectEqual(result, "The tool said Hello World");
+    const { text } = await runAgentLoop("test-key", "Call the test tool");
+    expectEqual(text, "The tool said Hello World");
   } finally {
     global.fetch = originalFetch;
   }
@@ -119,8 +119,8 @@ test("runAgentLoop handles multiple function calls in one turn", async () => {
   (global as any).fetch = async () => responses.shift()!;
 
   try {
-    const result = await runAgentLoop("test-key", "Run both tools");
-    expectEqual(result, "Done both");
+    const { text } = await runAgentLoop("test-key", "Run both tools");
+    expectEqual(text, "Done both");
   } finally {
     global.fetch = originalFetch;
   }

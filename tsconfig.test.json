@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "jsx": "react",
-    "types": ["node", "jest"]
+    "types": ["node", "jest", "chrome"]
   },
   "include": [
     "src/**/*.spec.ts",
