@@ -68,55 +68,65 @@ export const refreshActivePlaylistSource = async (
   const targetSongListName =
     dependencies.targetSongListName ?? state.activeSongListName;
   const activeRecord = state.songLists[targetSongListName];
-  const source = activeRecord?.playlistSources?.[0];
+  const sources = activeRecord?.playlistSources ?? [];
 
-  if (!activeRecord || !source) {
+  if (!activeRecord || sources.length === 0) {
     return { ok: true, checked: false, newItemCount: 0 };
   }
 
-  if (!dependencies.force && !isPlaylistSourceDueForRefresh(source, now)) {
-    return { ok: true, checked: false, newItemCount: 0 };
+  let totalNewItems = 0;
+  let hasError = false;
+  let firstErrorMessage: string | undefined;
+  let checkedAny = false;
+
+  const nextSources = [...sources];
+
+  for (let i = 0; i < nextSources.length; i++) {
+    const source = nextSources[i];
+    if (!dependencies.force && !isPlaylistSourceDueForRefresh(source, now)) {
+      continue;
+    }
+
+    checkedAny = true;
+    try {
+      const fetchedItems = await resolvePlaylist(source.url);
+      const nextSource = updatePlaylistSourceAfterRefresh(
+        source,
+        fetchedItems,
+        now
+      );
+      nextSources[i] = nextSource;
+      totalNewItems += nextSource.pendingNewItems?.length ?? 0;
+    } catch (error) {
+      hasError = true;
+      if (!firstErrorMessage) {
+        firstErrorMessage =
+          error instanceof Error ? error.message : "Update check failed.";
+      }
+    }
   }
 
-  try {
-    const fetchedItems = await resolvePlaylist(source.url);
-    const nextSource = updatePlaylistSourceAfterRefresh(
-      source,
-      fetchedItems,
-      now
-    );
+  if (checkedAny) {
     const nextState: SongListsState = {
       ...state,
       songLists: {
         ...state.songLists,
         [targetSongListName]: {
           ...activeRecord,
-          playlistSources: [
-            nextSource,
-            ...(activeRecord.playlistSources ?? []).slice(1),
-          ],
+          playlistSources: nextSources,
         },
       },
     };
 
     await writeSongListsState(nextState);
-
-    return {
-      ok: true,
-      checked: true,
-      newItemCount: nextSource.pendingNewItems?.length ?? 0,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      checked: true,
-      newItemCount: 0,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Could not check playlist updates.",
-    };
   }
+
+  return {
+    ok: !hasError,
+    checked: checkedAny,
+    newItemCount: totalNewItems,
+    message: firstErrorMessage,
+  };
 };
 
 export type { RefreshResponse };
