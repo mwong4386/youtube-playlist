@@ -102,6 +102,28 @@ const ADJUST_SONG_EQ_CAPABILITY: GeminiCapability = {
   allowedFunctions: [ADJUST_SONG_EQ_FUNCTION_NAME],
 };
 
+type AgenticChatMessage = {
+  role: "user" | "model" | "tool";
+  content: string;
+  toolCallId?: string;
+};
+
+type AgenticChatRequest = {
+  history: AgenticChatMessage[];
+  userRequest: string;
+};
+
+type AgenticChatResponse =
+  | {
+      ok: true;
+      message: string;
+      history: AgenticChatMessage[];
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
 export { ADJUST_SONG_EQ_CAPABILITY, CREATE_EQ_PROFILE_CAPABILITY };
 export type {
   GeminiAdjustSongEqFunctionCall,
@@ -121,4 +143,7 @@ export type {
   GeminiSongEqSuggestionFailure,
   GeminiSongEqSuccess,
   GeminiSongEqUserRequest,
+  AgenticChatMessage,
+  AgenticChatRequest,
+  AgenticChatResponse,
 };

@@ -26,6 +26,7 @@ const enum MsgType {
   StopAnalyzeImportedPlaylist,
   GenerateEqProfileWithGemini,
   AdjustSongEqWithGemini,
+  AgenticChatRequest,
 }
 
 export default MsgType;
