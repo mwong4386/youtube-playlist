@@ -14,6 +14,7 @@ import {
   ImportIcon,
   PlaylistCheckIcon,
   PlusIcon,
+  TrashIcon,
 } from "../icons";
 import styles from "./ActionSheet.module.css";
 
@@ -46,6 +47,8 @@ const renderIcon = (icon: NonNullable<MActionSheetItem["leadingIcon"]>) => {
       return <ExportIcon className={iconClassName} />;
     case "playlist-check":
       return <PlaylistCheckIcon className={iconClassName} />;
+    case "trash":
+      return <TrashIcon className={iconClassName} />;
   }
 };
 

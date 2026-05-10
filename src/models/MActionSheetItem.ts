@@ -10,7 +10,8 @@ type ActionSheetIconName =
   | "edit"
   | "gear"
   | "check"
-  | "x";
+  | "x"
+  | "trash";
 
 interface MActionSheetItem {
   id: number | string;

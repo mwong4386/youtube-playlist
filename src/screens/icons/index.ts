@@ -16,3 +16,4 @@ export { default as PlaylistCheckIcon } from "./PlaylistCheckIcon";
 export { default as PlusIcon } from "./PlusIcon";
 export { default as PreviousIcon } from "./PreviousIcon";
 export { default as ResetTimeIcon } from "./ResetTimeIcon";
+export { default as TrashIcon } from "./TrashIcon";
