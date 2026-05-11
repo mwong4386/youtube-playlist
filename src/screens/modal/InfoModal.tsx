@@ -126,6 +126,7 @@ const InfoModal = ({
       <form onSubmit={handleSubmit(onSubmit)} className={styles["chrome-panel"]}>
         <ModalChromeHeader
           title={item?.title || "Song"}
+          variant="roomy"
           titleContent={
             <div
               className={`${styles["song-heading"]} ${styles["chrome-song-heading"]}`}

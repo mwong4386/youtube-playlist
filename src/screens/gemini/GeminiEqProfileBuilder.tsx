@@ -122,6 +122,7 @@ const GeminiEqProfileBuilder = ({
       {!embedded && (
         <ModalChromeHeader
           title="Gemini EQ"
+          variant="centered"
           closeLabel="Close Gemini EQ"
           onClose={onBack}
         />

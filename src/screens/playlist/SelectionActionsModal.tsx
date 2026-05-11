@@ -119,7 +119,6 @@ const SelectionActionsModal = ({
       >
         <ModalChromeHeader
           title={title}
-          balanceActionSlot
           titleClassName={
             isMenuView ? styles["selection-actions-menu-title"] : undefined
           }

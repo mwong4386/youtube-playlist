@@ -63,6 +63,7 @@ const GeminiSettingsModal = ({
       <div className={styles.panel}>
         <ModalChromeHeader
           title={showChat ? "Gemini Agent Chat" : "Setup Gemini"}
+          variant="centered"
           closeIcon={<BackIcon />}
           closeLabel={showChat ? "Back to Setup" : "Back to settings"}
           onClose={showChat ? () => setShowChat(false) : backToSettings}

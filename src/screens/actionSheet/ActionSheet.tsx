@@ -25,7 +25,6 @@ const ActionSheet = ({ items, active, close }: props) => {
             closeIcon={<BackIcon />}
             closeLabel={`Back from ${headerItem.description || "menu"}`}
             onClose={() => headerItem.callback?.()}
-            balanceActionSlot
           />
           <div id="rows" className={styles["settings-panel"]}>
             {rowItems.map((item) => {
