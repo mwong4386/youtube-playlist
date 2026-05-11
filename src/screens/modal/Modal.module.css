@@ -107,13 +107,10 @@
 }
 .chrome-header {
   display: grid;
-  grid-template-columns: minmax(36px, 1fr) minmax(0, auto) minmax(36px, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-}
-.chrome-header-balanced {
-  grid-template-columns: minmax(36px, 1fr) minmax(0, auto) minmax(36px, 1fr);
 }
 .chrome-title-stack {
   min-width: 0;
@@ -139,10 +136,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.chrome-header-left,
 .chrome-header-action {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-areas: "stack";
+  align-items: center;
   min-width: 0;
+}
+.chrome-header-left {
+  justify-content: flex-start;
+}
+.chrome-header-action {
+  justify-content: flex-end;
+}
+.chrome-header-left > *,
+.chrome-header-action > * {
+  grid-area: stack;
+}
+.chrome-header-left .chrome-close-button {
+  justify-self: flex-start;
+}
+.chrome-header-action > *:not(.chrome-ghost) {
+  justify-self: flex-end;
+}
+.chrome-ghost {
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  min-width: 0;
+  justify-content: center;
 }
 .chrome-close-button {
   padding: 0;
