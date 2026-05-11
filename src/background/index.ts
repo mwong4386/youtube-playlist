@@ -305,11 +305,27 @@ const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") =>
     isCurrentItem &&
     (playbackState.status === "playing" || playbackState.status === "paused")
   ) {
-    await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
-      applyPlaybackEvent({ type: "PLAY_ITEM", item, queueMode });
-      await openTab(urlToLoad);
-    });
-    return;
+    const tabId = playbackState.currentTabId;
+    let shouldResume = false;
+    if (tabId) {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        const videoIdInTab = getVideoIdFromUrl(tab.url);
+        if (videoIdInTab === item.videoId) {
+          shouldResume = true;
+        }
+      } catch {
+        // Tab no longer exists or is inaccessible
+      }
+    }
+
+    if (shouldResume) {
+      await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
+        applyPlaybackEvent({ type: "PLAY_ITEM", item, queueMode });
+        await openTab(urlToLoad);
+      });
+      return;
+    }
   }
 
   await openTab(urlToLoad);
