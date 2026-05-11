@@ -165,7 +165,11 @@ const getCurrentItem = async () => {
 const getUrlForItem = (item: MPlaylistItem) => {
   const url = new URL(item.url);
   url.searchParams.set("v", item.videoId);
-  url.searchParams.set("t", (item.timestamp || 0).toString());
+  if (item.timestamp) {
+    url.searchParams.set("t", item.timestamp.toString());
+  } else {
+    url.searchParams.delete("t");
+  }
   return url.toString();
 };
 
@@ -285,6 +289,12 @@ const sendSignalAsync = async (
 
 const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") => {
   const url = getUrlForItem(item);
+  const urlWithEnforcedTimestamp = new URL(url);
+  if (!urlWithEnforcedTimestamp.searchParams.has("t")) {
+    urlWithEnforcedTimestamp.searchParams.set("t", "0");
+  }
+  const urlToLoad = urlWithEnforcedTimestamp.toString();
+
   const isCurrentItem = item.id === playbackState.currentItemId;
 
   playingItem = item;
@@ -297,12 +307,12 @@ const onPlayVideo = async (item: MPlaylistItem, queueMode: QueueMode = "off") =>
   ) {
     await sendSignalAsync(csMsgType.PlayYoutubeVideo, async () => {
       applyPlaybackEvent({ type: "PLAY_ITEM", item, queueMode });
-      await openTab(url);
+      await openTab(urlToLoad);
     });
     return;
   }
 
-  await openTab(url);
+  await openTab(urlToLoad);
   updateStateToLocalStorage();
 };
 
