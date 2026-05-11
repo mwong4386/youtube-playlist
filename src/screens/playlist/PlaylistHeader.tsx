@@ -63,7 +63,6 @@ const PlaylistHeader = ({
   const [playbackState, setPlaybackState] = useState<PlaybackState>(
     createInitialPlaybackState(),
   );
-  const [isPlayAll, setIsPlayAll] = useState<boolean>(false);
   const [editingSongListName, setEditingSongListName] = useState<string | null>(
     null,
   );
@@ -80,9 +79,17 @@ const PlaylistHeader = ({
   const playing = isPlaybackActive(playbackState.status);
   const enableAdjustVideoVolume = playbackState.enableAdjustVideoVolume;
   const onPlayPauseButton = () => {
-    if (isPlayAll) {
+    if (playing && isQueueModeActive(playbackState.queueMode)) {
       console.log("sendPauseAll");
       chrome.runtime.sendMessage({ name: MsgType.PauseAll });
+    } else if (isQueueModeActive(playbackState.queueMode)) {
+      console.log("resumePlayAll");
+      chrome.runtime.sendMessage({
+        name:
+          playbackState.queueMode === "random"
+            ? MsgType.PlayAllRandom
+            : MsgType.PlayAll,
+      });
     } else {
       openPlayMenu();
     }
@@ -440,16 +447,8 @@ const PlaylistHeader = ({
   };
 
   useEffect(() => {
-    chrome.storage.local.get(["playbackState", "isPlayAll"], (result) => {
+    chrome.storage.local.get(["playbackState"], (result) => {
       syncPlaybackState(result["playbackState"]);
-      setIsPlayAll(
-        result["isPlayAll"] === undefined
-          ? isQueueModeActive(
-              (result["playbackState"] || createInitialPlaybackState())
-                .queueMode || "off",
-            )
-          : !!result["isPlayAll"],
-      );
     });
   }, []);
 
@@ -460,9 +459,6 @@ const PlaylistHeader = ({
     ) => {
       if ("playbackState" in changes) {
         syncPlaybackState(changes["playbackState"].newValue);
-      }
-      if ("isPlayAll" in changes) {
-        setIsPlayAll(!!changes["isPlayAll"].newValue);
       }
     };
     chrome.storage.onChanged.addListener(listener);
@@ -539,8 +535,16 @@ const PlaylistHeader = ({
             >
               <img
                 className={styles["header-button-icon"]}
-                src={isPlayAll ? "./assets/pause30.png" : "./assets/play30.png"}
-                alt={isPlayAll ? "pause" : "play all"}
+                src={
+                  playing && isQueueModeActive(playbackState.queueMode)
+                    ? "./assets/pause30.png"
+                    : "./assets/play30.png"
+                }
+                alt={
+                  playing && isQueueModeActive(playbackState.queueMode)
+                    ? "pause"
+                    : "play all"
+                }
               />
             </button>
           </div>

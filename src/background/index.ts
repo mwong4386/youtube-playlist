@@ -379,12 +379,12 @@ const onPauseVideo = async () => {
 };
 
 const onPauseAll = async () => {
+  applyPlaybackEvent({ type: "PAUSE" });
+  updateStateToLocalStorage();
   await sendSignalAsync(csMsgType.PauseYoutubeVideo, async () => {
     resetPlaybackState();
     updateStateToLocalStorage();
   });
-  resetPlaybackState();
-  updateStateToLocalStorage();
 };
 
 const onVideoEnd = async (videoId?: string) => {
