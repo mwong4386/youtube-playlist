@@ -22,6 +22,7 @@ const ActionSheet = ({ items, active, close }: props) => {
         <div className={modalStyles["chrome-panel"]}>
           <ModalChromeHeader
             title={headerItem.description || ""}
+            variant="centered"
             closeIcon={<BackIcon />}
             closeLabel={`Back from ${headerItem.description || "menu"}`}
             onClose={() => headerItem.callback?.()}

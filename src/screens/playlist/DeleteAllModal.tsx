@@ -15,6 +15,7 @@ const DeleteAllModal = ({ active, close, confirmDeletePlaylist }: Props) => {
       <div className={modalStyles["chrome-panel"]}>
         <ModalChromeHeader
           title="Delete playlist"
+          variant="centered"
           subtitle="This will permanently delete this playlist and all its songs."
           closeLabel="Close delete playlist confirmation"
           onClose={close}

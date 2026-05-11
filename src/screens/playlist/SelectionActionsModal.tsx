@@ -119,6 +119,7 @@ const SelectionActionsModal = ({
       >
         <ModalChromeHeader
           title={title}
+          variant="centered"
           titleClassName={
             isMenuView ? styles["selection-actions-menu-title"] : undefined
           }

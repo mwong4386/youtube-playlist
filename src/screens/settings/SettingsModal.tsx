@@ -181,6 +181,7 @@ const SettingsModal = ({
         <div className={`${modalStyles["chrome-panel"]} ${styles["editor-panel"]}`}>
           <ModalChromeHeader
             title={isEditing ? "Update profile" : "Create profile"}
+            variant="centered"
             subtitle={
               isEditing
                 ? "Adjust the name and band levels"
@@ -273,6 +274,7 @@ const SettingsModal = ({
         <div className={`${modalStyles["chrome-panel"]} ${styles["panel"]}`}>
           <ModalChromeHeader
             title="EQ Profiles"
+            variant="centered"
             subtitle="Reusable curves for saved songs"
             closeIcon={<BackIcon />}
             closeLabel="Back to settings"

@@ -34,6 +34,7 @@ const NewSongListModal = ({
       <div className={styles.panel}>
         <ModalChromeHeader
           title="Create song list"
+          variant="centered"
           subtitle="Give your list a name so you can switch between saved song groups."
           closeLabel="Close create song list"
           onClose={close}

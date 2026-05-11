@@ -221,6 +221,7 @@ const PlaylistImportModal = ({
       <div className={styles.panel}>
         <ModalChromeHeader
           title={preview ? "Preview Import" : "Import Playlist"}
+          variant="centered"
           closeIcon={<BackIcon />}
           closeLabel={preview ? "Back to import form" : "Back to settings"}
           onClose={onHeaderBack}
