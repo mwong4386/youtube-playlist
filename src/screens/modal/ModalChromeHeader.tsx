@@ -13,7 +13,6 @@ interface Props {
   closeLabel: string;
   onClose: () => void;
   closeDisabled?: boolean;
-  // Replace balanceActionSlot with variant
   variant?: "centered" | "roomy";
 }
 
