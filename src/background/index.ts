@@ -165,11 +165,7 @@ const getCurrentItem = async () => {
 const getUrlForItem = (item: MPlaylistItem) => {
   const url = new URL(item.url);
   url.searchParams.set("v", item.videoId);
-  if (item.timestamp) {
-    url.searchParams.set("t", item.timestamp.toString());
-  } else {
-    url.searchParams.delete("t");
-  }
+  url.searchParams.set("t", (item.timestamp || 0).toString());
   return url.toString();
 };
 
