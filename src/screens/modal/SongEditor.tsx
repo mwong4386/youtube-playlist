@@ -15,6 +15,8 @@ import {
 import MPlaylistItem from "../../models/MPlaylistItem";
 import {
   AUDIO_EQ_BANDS,
+  AUDIO_EQ_MAX,
+  AUDIO_EQ_MIN,
   DEFAULT_AUDIO_EQ_SETTINGS,
   normalizeAudioEqSettings,
 } from "../../utils/audioEq";
@@ -627,16 +629,15 @@ export const SongEditor = ({
                     id={band.key}
                     className={sliderClassName}
                     type="range"
-                    min="-10"
-                    max="10"
+                    min={AUDIO_EQ_MIN}
+                    max={AUDIO_EQ_MAX}
                     step="1"
                     {...register(band.key, {
                       valueAsNumber: true,
                       onChange: onSongAudioEqChange,
                     })}
                   />
-                )}
-              />
+                )}              />
             </div>
           </>
         )}

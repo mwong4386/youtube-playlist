@@ -72,7 +72,7 @@ const buildGeminiEqProfileRequestBody = ({
               "Return JSON only as a function call object.",
               `functionName must be "${getCreateEqProfileFunctionName()}".`,
               "arguments.name must be a concise profile name.",
-              "arguments.audioEq must include clearBass, band400, band1k, band2k5, band6k3, and band16k values from -10 to 10.",
+              `arguments.audioEq must include clearBass, band400, band1k, band2k5, band6k3, and band16k values from ${AUDIO_EQ_MIN} to ${AUDIO_EQ_MAX}.`,
               "arguments.reason should briefly explain the EQ choice.",
               requestInstruction,
               JSON.stringify(approvedContext),

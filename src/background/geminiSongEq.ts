@@ -69,7 +69,7 @@ const buildGeminiSongEqRequestBody = ({
               "Return JSON only as a function call object.",
               `functionName must be "${getAdjustSongEqFunctionName()}".`,
               "arguments.songId must exactly match currentSong.id.",
-              "arguments.audioEq must include clearBass, band400, band1k, band2k5, band6k3, and band16k values from -10 to 10.",
+              `arguments.audioEq must include clearBass, band400, band1k, band2k5, band6k3, and band16k values from ${AUDIO_EQ_MIN} to ${AUDIO_EQ_MAX}.`,
               "arguments.reason should briefly explain the EQ choice.",
               requestInstruction,
               JSON.stringify(approvedContext),

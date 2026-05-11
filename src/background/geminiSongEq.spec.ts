@@ -453,8 +453,8 @@ test("parseGeminiSongEqResponse clamps and rounds band values", () => {
       suggestion: {
         songId: "song-1",
         audioEq: {
-          clearBass: 10,
-          band400: -10,
+          clearBass: 15,
+          band400: -12,
           band1k: 2,
           band2k5: -1,
           band6k3: 0,

@@ -66,7 +66,7 @@ test("normalizeAudioEqProfiles ignores malformed entries, clamps EQ, and caps pr
         id: "flat-1",
         name: " Flat One ",
         audioEq: {
-          clearBass: -11,
+          clearBass: -20,
           band400: 2.2,
           band1k: 0,
           band2k5: 1,
@@ -203,7 +203,7 @@ test("normalizeAudioEqProfiles ignores malformed entries, clamps EQ, and caps pr
     id: "flat-1",
     name: "Flat One",
     audioEq: {
-      clearBass: -10,
+      clearBass: -15,
       band400: 2,
       band1k: 0,
       band2k5: 1,
@@ -383,12 +383,12 @@ test("createAudioEqProfile trims the name and falls back for blanks", () => {
 
   expectEqual(result.name, "New profile");
   expectEqual(result.audioEq, {
-    clearBass: 10,
+    clearBass: 12,
     band400: 1,
     band1k: 0,
     band2k5: -1,
     band6k3: 9,
-    band16k: -10,
+    band16k: -12,
   });
 });
 
@@ -409,12 +409,12 @@ test("createAudioEqProfileDraft builds a normalized editable draft", () => {
   expectEqual(result, {
     name: "Voice",
     audioEq: {
-      clearBass: 10,
+      clearBass: 12,
       band400: 1,
       band1k: 0,
       band2k5: -1,
       band6k3: 9,
-      band16k: -10,
+      band16k: -12,
     },
   });
 });
@@ -595,11 +595,11 @@ test("updateAudioEqProfileList normalizes existing entries and repairs blank nex
       id: "keep",
       name: "Updated",
       audioEq: {
-        clearBass: -10,
+        clearBass: -12,
         band400: 2,
         band1k: 0,
         band2k5: 1,
-        band6k3: 10,
+        band6k3: 11,
         band16k: 3,
       },
     },

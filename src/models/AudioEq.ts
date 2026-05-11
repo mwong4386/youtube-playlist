@@ -8,8 +8,8 @@ type AudioEqBandKey =
 
 type AudioEqSettings = Record<AudioEqBandKey, number>;
 
-const AUDIO_EQ_MIN = -10;
-const AUDIO_EQ_MAX = 10;
+const AUDIO_EQ_MIN = -15;
+const AUDIO_EQ_MAX = 15;
 
 const DEFAULT_AUDIO_EQ_SETTINGS: AudioEqSettings = {
   clearBass: 0,

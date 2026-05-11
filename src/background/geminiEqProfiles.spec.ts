@@ -353,8 +353,8 @@ test("parseGeminiEqProfileResponse clamps out-of-range bands", () => {
       suggestion: {
         name: "Extreme",
         audioEq: {
-          clearBass: 10,
-          band400: -10,
+          clearBass: 15,
+          band400: -15,
           band1k: 3,
           band2k5: 2,
           band6k3: 1,
