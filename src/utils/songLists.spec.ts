@@ -5,6 +5,7 @@ import {
   buildActiveSongListStorageUpdate,
   buildDefaultSongListsState,
   createSongList,
+  deleteSongList,
   normalizeSongListsState,
   readActiveSongListItems,
   readActiveSongListItemsFromStorageMap,
@@ -454,6 +455,50 @@ test("renameSongList allows a trimmed no-op rename for the current name", () => 
   };
 
   expectEqual(renameSongList(state, "aimer", "  aimer  "), state);
+});
+
+test("deleteSongList removes the named list and switches to default when active", () => {
+  const state = {
+    songLists: {
+      default: { items: [] },
+      aimer: { items: [createPlaylistItem("song-1")] },
+    },
+    activeSongListName: "aimer",
+  };
+
+  const nextState = deleteSongList(state, "aimer");
+
+  expectEqual(nextState, {
+    songLists: {
+      default: { items: [] },
+    },
+    activeSongListName: "default",
+  });
+});
+
+test("deleteSongList only clears the default list items", () => {
+  const state = {
+    songLists: {
+      default: { items: [createPlaylistItem("song-1")] },
+      aimer: { items: [] },
+    },
+    activeSongListName: "default",
+  };
+
+  const nextState = deleteSongList(state, "default");
+
+  expectEqual(nextState, {
+    songLists: {
+      default: { items: [] },
+      aimer: { items: [] },
+    },
+    activeSongListName: "default",
+  });
+});
+
+test("deleteSongList does nothing if the list name is missing", () => {
+  const state = buildDefaultSongListsState();
+  expectEqual(deleteSongList(state, "missing"), state);
 });
 
 test("renameSongList rejects reserved names like __proto__", () => {

@@ -310,7 +310,7 @@ test("playlist menu groups playlist actions under playlist management", () => {
     playlistHeaderSource.includes('description: "Export Playlist"'),
     true,
   );
-  expectEqual(playlistHeaderSource.includes('description: "Delete All"'), true);
+  expectEqual(playlistHeaderSource.includes('description: "Delete Playlist"'), true);
 });
 
 test("song list rows open playlist management from a gear button and return to the selector", () => {
@@ -646,7 +646,7 @@ test("playlist import and delete-all source route through the active song list",
   );
   expectEqual(playlistSource.includes("onImportJson={onImportJson}"), true);
   expectEqual(
-    playlistActionsSource.includes("updateActiveSongListItems(() => []);"),
+    playlistActionsSource.includes("deleteSongList(currentSongListsState, activeSongListName)"),
     true,
   );
 });

@@ -268,6 +268,53 @@ export const renameSongList = (
   };
 };
 
+export const deleteSongList = (
+  state: SongListsState,
+  nameToDelete: string
+): SongListsState => {
+  if (nameToDelete === DEFAULT_SONG_LIST_NAME) {
+    // If it's the default list, we just clear it instead of deleting it
+    const nextSongLists = createSongListsMap();
+    for (const [name, value] of Object.entries(state.songLists)) {
+      if (name === DEFAULT_SONG_LIST_NAME) {
+        nextSongLists[name] = { items: [] };
+      } else {
+        nextSongLists[name] = value;
+      }
+    }
+    return {
+      songLists: nextSongLists,
+      activeSongListName: state.activeSongListName,
+    };
+  }
+
+  if (!hasOwn(state.songLists, nameToDelete)) {
+    return state;
+  }
+
+  const nextSongLists = createSongListsMap();
+  for (const [name, value] of Object.entries(state.songLists)) {
+    if (name !== nameToDelete) {
+      nextSongLists[name] = value;
+    }
+  }
+
+  // Ensure default list exists
+  if (!hasOwn(nextSongLists, DEFAULT_SONG_LIST_NAME)) {
+    nextSongLists[DEFAULT_SONG_LIST_NAME] = { items: [] };
+  }
+
+  let nextActiveName = state.activeSongListName;
+  if (nextActiveName === nameToDelete) {
+    nextActiveName = DEFAULT_SONG_LIST_NAME;
+  }
+
+  return {
+    songLists: nextSongLists,
+    activeSongListName: nextActiveName,
+  };
+};
+
 export const updateActiveSongListItems = (
   state: SongListsState,
   items: MPlaylistItem[]

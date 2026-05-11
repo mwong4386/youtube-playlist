@@ -34,6 +34,7 @@ import {
 } from "../../utils/playlistActions";
 import {
   createSongList,
+  deleteSongList,
   renameSongList,
   updateActiveSongListRecord,
 } from "../../utils/songLists";
@@ -215,14 +216,16 @@ const usePlaylistActions = ({
     );
   };
 
-  const onDeleteAll = () => {
+  const onDeletePlaylist = () => {
     setIsDeleteAllOpen(true);
   };
 
-  const confirmDeleteAll = () => {
+  const confirmDeletePlaylist = () => {
     confirmDeleteAllConfirmation(
       () => {
-        updateActiveSongListItems(() => []);
+        updateSongListsState((currentSongListsState) =>
+          deleteSongList(currentSongListsState, activeSongListName),
+        );
       },
       () => {
         setIsDeleteAllOpen(false);
@@ -934,7 +937,7 @@ const usePlaylistActions = ({
     closeNewSongListModal,
     closePlaylistImportModal,
     closeSelectionActionsModal,
-    confirmDeleteAll,
+    confirmDeletePlaylist,
     generateEqProfileWithGemini,
     importYoutubePlaylist,
     refreshActivePlaylistSource,
@@ -948,7 +951,7 @@ const usePlaylistActions = ({
     onAudioEqChange,
     onCreateProfile,
     onCreateSongList,
-    onDeleteAll,
+    onDeletePlaylist,
     onDeleteProfile,
     onDeleteSelected,
     onDismissAnalyzeImportBanner,

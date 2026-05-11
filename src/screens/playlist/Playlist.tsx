@@ -120,7 +120,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     closeNewSongListModal,
     closePlaylistImportModal,
     closeSelectionActionsModal,
-    confirmDeleteAll,
+    confirmDeletePlaylist,
     generateEqProfileWithGemini,
     refreshActivePlaylistSource,
     refreshPlaylistSource,
@@ -131,7 +131,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     onCommitPlaylistImportPreview,
     onCreateProfile,
     onCreateSongList,
-    onDeleteAll,
+    onDeletePlaylist,
     onDeleteProfile,
     onDeleteSelected,
     onDismissAnalyzeImportBanner,
@@ -364,7 +364,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
             playlist={playlist}
             songLists={songListsState.songLists}
             activeSongListName={activeSongListName}
-            onDelete={onDeleteAll}
+            onDelete={onDeletePlaylist}
             onOpenEqSettings={openEqSettings}
             onOpenGeminiSettings={openGeminiSettings}
             onOpenImportModal={openPlaylistImportModal}
@@ -543,7 +543,7 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
       <DeleteAllModal
         active={isDeleteAllOpen}
         close={closeDeleteAllModal}
-        confirmDeleteAll={confirmDeleteAll}
+        confirmDeletePlaylist={confirmDeletePlaylist}
       />
     </>
   );

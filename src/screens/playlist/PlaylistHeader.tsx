@@ -350,7 +350,7 @@ const PlaylistHeader = ({
         : []),
       {
         id: 200,
-        description: "Delete All",
+        description: "Delete Playlist",
         callback: () => {
           onSelectSongList(targetSongListName);
           onDelete();
