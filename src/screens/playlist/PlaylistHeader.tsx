@@ -330,6 +330,18 @@ const PlaylistHeader = ({
         callback: () => openPlaylistSourcesMenu(targetSongListName),
         shouldCloseOnClick: false,
       },
+      ...(hasTargetTrackedPlaylistSource
+        ? [
+            {
+              id: 9,
+              description: "Check Playlist Updates",
+              callback: () => {
+                onSelectSongList(targetSongListName);
+                onCheckPlaylistUpdatesFromMenu(targetSongListName);
+              },
+            },
+          ]
+        : []),
       {
         id: 7,
         description: "Import Playlist",
@@ -343,18 +355,6 @@ const PlaylistHeader = ({
         description: "Export Playlist",
         callback: () => onExportJson(targetSongList?.items ?? []),
       },
-      ...(hasTargetTrackedPlaylistSource
-        ? [
-            {
-              id: 9,
-              description: "Check Playlist Updates",
-              callback: () => {
-                onSelectSongList(targetSongListName);
-                onCheckPlaylistUpdatesFromMenu(targetSongListName);
-              },
-            },
-          ]
-        : []),
       {
         id: 200,
         description: "Delete Playlist",

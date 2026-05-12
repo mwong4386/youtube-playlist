@@ -347,19 +347,27 @@ test("settings subpages replace the settings sheet instead of stacking", () => {
     'description: "EQ Profiles"',
   );
   const geminiItemIndex = playlistHeaderSource.indexOf(
-    'description: "Setup Gemini"',
+    'description: geminiApiKey.trim() ? "Gemini Settings" : "Setup Gemini"',
     eqProfilesItemIndex,
   );
   const volumeItemIndex = playlistHeaderSource.indexOf(
     "Volume adjust",
     geminiItemIndex,
   );
-  const importItemIndex = playlistHeaderSource.indexOf(
-    'description: "Import Playlist"',
+  const manageSourcesItemIndex = playlistHeaderSource.indexOf(
+    'description: "Playlist Sources"',
     volumeItemIndex,
   );
   const playlistUpdateItemIndex = playlistHeaderSource.indexOf(
     "Check Playlist Updates",
+    manageSourcesItemIndex,
+  );
+  const importItemIndex = playlistHeaderSource.indexOf(
+    'description: "Import Playlist"',
+    playlistUpdateItemIndex,
+  );
+  const exportItemIndex = playlistHeaderSource.indexOf(
+    'description: "Export Playlist"',
     importItemIndex,
   );
   const eqProfilesItemSource = playlistHeaderSource.slice(
@@ -372,7 +380,7 @@ test("settings subpages replace the settings sheet instead of stacking", () => {
   );
   const importItemSource = playlistHeaderSource.slice(
     importItemIndex,
-    playlistUpdateItemIndex,
+    exportItemIndex,
   );
 
   expectEqual(
@@ -1059,12 +1067,19 @@ test("Gemini settings header uses back while backdrop uses stack close", () => {
     geminiSettingsSource.includes("<Modal active={active} close={close}>"),
     true,
   );
-  expectEqual(geminiSettingsSource.includes("onClose={backToSettings}"), true);
   expectEqual(
-    geminiSettingsSource.includes('closeLabel="Back to settings"'),
+    geminiSettingsSource.includes(
+      "onClose={showChat ? () => setShowChat(false) : backToSettings}",
+    ),
     true,
   );
-  expectEqual(geminiSettingsSource.includes("<BackIcon"), true);
+  expectEqual(
+    geminiSettingsSource.includes(
+      'closeLabel={showChat ? "Back to Setup" : "Back to settings"}',
+    ),
+    true,
+  );
+  expectEqual(geminiSettingsSource.includes("<BackIcon />"), true);
 });
 
 test("playlist import header uses back while backdrop uses stack close", () => {
