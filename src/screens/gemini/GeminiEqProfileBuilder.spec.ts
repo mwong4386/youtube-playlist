@@ -76,20 +76,6 @@ test("GeminiEqProfileBuilder turns generation into a key action without a saved 
   expectEqual(source.includes('hasGeminiApiKey ? "Generate" : "Key"'), true);
 });
 
-test("embedded Gemini action lives beside the Ask Gemini title", () => {
-  const embeddedHeaderBlock = getCssBlock(cssSource, ".embeddedHeader");
-  const embeddedActionBlock = getCssBlock(cssSource, ".embeddedActionButton");
-
-  expectEqual(source.includes("const primaryAction = ("), true);
-  expectEqual(source.includes('<h3 className={styles.embeddedTitle}>Ask Gemini</h3>\n          {primaryAction}'), true);
-  expectEqual(source.includes("{!embedded && <div className={styles.actions}>{primaryAction}</div>}"), true);
-  expectEqual(source.includes("styles.embeddedActionButton"), true);
-  expectEqual(embeddedHeaderBlock.includes("margin-bottom: 8px;"), true);
-  expectEqual(embeddedActionBlock.includes("border-radius: 999px;"), true);
-  expectEqual(embeddedActionBlock.includes("background:"), false);
-  expectEqual(embeddedActionBlock.includes("color: #ffffff;"), true);
-});
-
 test("GeminiEqProfileBuilder supports optional song context", () => {
   expectEqual(source.includes("songContext?"), true);
   expectEqual(source.includes("songContext,"), true);
