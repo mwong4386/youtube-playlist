@@ -103,8 +103,13 @@ const ADJUST_SONG_EQ_CAPABILITY: GeminiCapability = {
 };
 
 type AgenticChatMessage = {
-  role: "user" | "model" | "tool";
+  role: "USER" | "MODEL" | "ASSISTANT";
   content: string;
+  parts?: Array<
+    | { text: string }
+    | { functionCall: { name: string; args: any; id?: string } }
+    | { functionResponse: { name: string; response: any; id?: string } }
+  >;
   toolCallId?: string;
 };
 

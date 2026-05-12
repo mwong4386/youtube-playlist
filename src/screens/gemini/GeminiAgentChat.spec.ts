@@ -32,7 +32,7 @@ test("GeminiAgentChat manages loading state", () => {
 });
 
 test("GeminiAgentChat renders message bubbles with correct roles", () => {
-  expectEqual(source.includes("msg.role === \"user\" ? styles.user : styles.model"), true);
+  expectEqual(source.includes("msg.role.toUpperCase() === \"USER\" ? styles.user : styles.model"), true);
 });
 
 test("GeminiAgentChat scrolls to bottom on history change", () => {

@@ -694,8 +694,8 @@ const onAgenticChatRequest = async (request: AgenticChatRequest) => {
     }
 
     const history: GeminiMessage[] = (request.history || []).map((m) => ({
-      role: m.role as "user" | "model" | "tool",
-      parts: [{ text: m.content }],
+      role: ((m.role as string).toUpperCase() === "USER" ? "USER" : "MODEL") as "USER" | "MODEL" | "ASSISTANT",
+      parts: m.parts || [{ text: m.content }],
     }));
 
     const { text, history: updatedHistory } = await runAgentLoop(
@@ -709,12 +709,13 @@ const onAgenticChatRequest = async (request: AgenticChatRequest) => {
       message: text,
       history: updatedHistory.map((m) => ({
         role: m.role,
+        parts: m.parts,
         content: m.parts
           .map((p) => {
             if ("text" in p) return p.text;
-            if ("functionCall" in p) return JSON.stringify(p.functionCall);
+            if ("functionCall" in p) return `Function Call: ${p.functionCall.name}`;
             if ("functionResponse" in p)
-              return JSON.stringify(p.functionResponse);
+              return `Function Result: ${p.functionResponse.name}`;
             return "";
           })
           .join("\n"),

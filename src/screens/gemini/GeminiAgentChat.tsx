@@ -23,7 +23,7 @@ const GeminiAgentChat: React.FC = () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMessage: AgenticChatMessage = {
-      role: "user",
+      role: "USER",
       content: inputValue.trim(),
     };
 
@@ -47,14 +47,14 @@ const GeminiAgentChat: React.FC = () => {
         setHistory(response.history);
       } else {
         const errorMessage: AgenticChatMessage = {
-          role: "model",
+          role: "MODEL",
           content: `Error: ${response?.message || "Unknown error"}`,
         };
         setHistory([...newHistory, errorMessage]);
       }
     } catch (error) {
       const errorMessage: AgenticChatMessage = {
-        role: "model",
+        role: "MODEL",
         content: `Connection error: ${error instanceof Error ? error.message : String(error)}`,
       };
       setHistory([...newHistory, errorMessage]);
@@ -82,7 +82,7 @@ const GeminiAgentChat: React.FC = () => {
           <div
             key={index}
             className={`${styles.message} ${
-              msg.role === "user" ? styles.user : styles.model
+              msg.role.toUpperCase() === "USER" ? styles.user : styles.model
             }`}
           >
             {msg.content}

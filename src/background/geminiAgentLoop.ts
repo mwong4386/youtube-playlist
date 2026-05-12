@@ -5,11 +5,11 @@ import {
 import { getTool, getToolsForGemini } from "./geminiAgentRegistry";
 
 export interface GeminiMessage {
-  role: "user" | "model" | "tool";
+  role: "USER" | "MODEL" | "ASSISTANT";
   parts: Array<
     | { text: string }
-    | { functionCall: { name: string; args: any } }
-    | { functionResponse: { name: string; response: any } }
+    | { functionCall: { name: string; args: any; id?: string } }
+    | { functionResponse: { name: string; response: any; id?: string } }
   >;
 }
 
@@ -21,7 +21,7 @@ export async function runAgentLoop(
 ): Promise<{ text: string; history: GeminiMessage[] }> {
   const contents: GeminiMessage[] = [
     ...history,
-    { role: "user", parts: [{ text: userPrompt }] },
+    { role: "USER", parts: [{ text: userPrompt }] },
   ];
 
   const tools = getToolsForGemini();
@@ -35,6 +35,23 @@ export async function runAgentLoop(
     turnCount++;
 
     const requestBody = {
+      system_instruction: {
+        parts: [
+          {
+            text: [
+              "You are an intelligent YouTube Playlist management assistant. Your goal is to help users manage their music while being mindful of execution time and API rate limits.",
+              "",
+              "**Guiding Principles:**",
+              "- **Efficiency:** Analyzing individual videos is slow and consumes significant quota. Consider the scale of the user's request.",
+              "- **Scale:** For single songs or very small batches (e.g., 1-3 songs), individual deep analysis is appropriate. For large tasks (e.g., an entire playlist), individual analysis will likely fail due to rate limits.",
+              "- **Fluidity:** You have multiple tools at your disposal (e.g., generating global profiles, applying profiles, analyzing individual songs). Combine them creatively to solve the user's problem efficiently.",
+              "- **Collaboration:** If a user requests a highly inefficient action, it is acceptable to push back, explain the limitations, or propose a faster alternative.",
+              "",
+              "**Example Scenario:** If a user asks to 'tune the whole playlist for vocals', analyzing 50 videos individually is too slow. A better approach might be to generate a single 'Vocal Focus' EQ profile and apply it to the playlist.",
+            ].join("\n"),
+          },
+        ],
+      },
       contents,
       tools: geminiTools,
     };
@@ -58,6 +75,11 @@ export async function runAgentLoop(
       throw new Error("Gemini returned an empty response.");
     }
 
+    // Force role to uppercase if present
+    if (message.role) {
+      message.role = message.role.toUpperCase();
+    }
+
     contents.push(message);
 
     const functionCalls = message.parts.filter((part: any) => part.functionCall);
@@ -74,13 +96,14 @@ export async function runAgentLoop(
     // Execute function calls
     const functionResponseParts = await Promise.all(
       functionCalls.map(async (part: any) => {
-        const { name, args } = part.functionCall;
+        const { name, args, id } = part.functionCall;
         const tool = getTool(name);
         if (!tool) {
           return {
             functionResponse: {
               name,
               response: { error: `Tool ${name} not found.` },
+              id,
             },
           };
         }
@@ -91,6 +114,7 @@ export async function runAgentLoop(
             functionResponse: {
               name,
               response: result,
+              id,
             },
           };
         } catch (error: any) {
@@ -98,6 +122,7 @@ export async function runAgentLoop(
             functionResponse: {
               name,
               response: { error: error.message || "Unknown error" },
+              id,
             },
           };
         }
@@ -105,7 +130,7 @@ export async function runAgentLoop(
     );
 
     contents.push({
-      role: "tool",
+      role: "USER",
       parts: functionResponseParts as any,
     });
   }

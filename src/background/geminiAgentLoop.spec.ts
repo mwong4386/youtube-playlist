@@ -36,12 +36,13 @@ test("runAgentLoop executes tools and returns final response", async () => {
       candidates: [
         {
           content: {
-            role: "model",
+            role: "MODEL",
             parts: [
               {
                 functionCall: {
                   name: "test_tool",
                   args: { arg1: "World" },
+                  id: "123",
                 },
               },
             ],
@@ -54,7 +55,7 @@ test("runAgentLoop executes tools and returns final response", async () => {
       candidates: [
         {
           content: {
-            role: "model",
+            role: "MODEL",
             parts: [{ text: "The tool said Hello World" }],
           },
         },
@@ -94,10 +95,10 @@ test("runAgentLoop handles multiple function calls in one turn", async () => {
       candidates: [
         {
           content: {
-            role: "model",
+            role: "MODEL",
             parts: [
-              { functionCall: { name: "tool1", args: {} } },
-              { functionCall: { name: "tool2", args: {} } },
+              { functionCall: { name: "tool1", args: {}, id: "id1" } },
+              { functionCall: { name: "tool2", args: {}, id: "id2" } },
             ],
           },
         },
@@ -107,7 +108,7 @@ test("runAgentLoop handles multiple function calls in one turn", async () => {
       candidates: [
         {
           content: {
-            role: "model",
+            role: "MODEL",
             parts: [{ text: "Done both" }],
           },
         },

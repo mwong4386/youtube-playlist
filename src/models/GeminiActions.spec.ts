@@ -10,7 +10,7 @@ test("MsgType.AgenticChatRequest is defined", () => {
 
 test("Agentic types can be instantiated (type check)", () => {
   const message: AgenticChatMessage = {
-    role: "user",
+    role: "USER",
     content: "hello"
   };
 
@@ -22,7 +22,7 @@ test("Agentic types can be instantiated (type check)", () => {
   const response: AgenticChatResponse = {
     ok: true,
     message: "I am fine",
-    history: [message, { role: "model", content: "I am fine" }]
+    history: [message, { role: "MODEL", content: "I am fine" }]
   };
 
   if (!request.userRequest || !response.ok) {
