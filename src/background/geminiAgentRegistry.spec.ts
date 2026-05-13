@@ -111,3 +111,22 @@ test("adjust_volume tool execute returns mock result in test environment", async
   expectEqual(result.ok, true);
   expectEqual(result.message, "Volume set to 50% (mock).");
 });
+
+test("get_all_song_lists tool is registered", async () => {
+  const tool = getTool("get_all_song_lists");
+  if (!tool) {
+    throw new Error("Tool get_all_song_lists not found in registry");
+  }
+
+  expectEqual(tool.name, "get_all_song_lists");
+});
+
+test("get_all_song_lists tool execute returns mock result in test environment", async () => {
+  const tool = getTool("get_all_song_lists");
+  if (!tool) {
+    throw new Error("Tool get_all_song_lists not found in registry");
+  }
+
+  const result = await tool.execute({});
+  expectEqual(result.activeSongListName, "default");
+});

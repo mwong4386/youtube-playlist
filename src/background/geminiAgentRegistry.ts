@@ -310,6 +310,32 @@ export const adjustVolumeTool: AgentTool = {
   },
 };
 
+export const getAllSongListsTool: AgentTool = {
+  name: "get_all_song_lists",
+  description: "Returns all song lists (playlists) and their items.",
+  parameters: { type: "object", properties: {} },
+  execute: async () => {
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return {
+        songLists: { default: { items: [] } },
+        activeSongListName: "default",
+      };
+    }
+
+    const { SONG_LISTS_STORAGE_KEY, ACTIVE_SONG_LIST_NAME_STORAGE_KEY } =
+      await import("../models/SongList.js");
+    const { normalizeSongListsState } = await import("../utils/songLists.js");
+    const { getStorageMap } = await import("../utils/syncStorage.js");
+
+    const result = await getStorageMap([
+      SONG_LISTS_STORAGE_KEY,
+      ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+    ]);
+    return normalizeSongListsState(result);
+  },
+};
+
 registerTool(getPlaylistInfoTool);
 registerTool(createEqProfileTool);
 registerTool(adjustSongEqTool);
@@ -317,3 +343,4 @@ registerTool(addSongToPlaylistTool);
 registerTool(removeSongFromPlaylistTool);
 registerTool(reorderPlaylistTool);
 registerTool(adjustVolumeTool);
+registerTool(getAllSongListsTool);
