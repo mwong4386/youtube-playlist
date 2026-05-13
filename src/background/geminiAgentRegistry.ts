@@ -336,6 +336,86 @@ export const getAllSongListsTool: AgentTool = {
   },
 };
 
+export const addSongsToPlaylistTool: AgentTool = {
+  name: "add_songs_to_playlist",
+  description: "Adds multiple songs to a specific playlist.",
+  parameters: {
+    type: "object",
+    properties: {
+      songs: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            videoId: { type: "string" },
+            title: { type: "string" },
+            channelName: { type: "string" },
+            durationSeconds: { type: "number" },
+          },
+          required: ["videoId", "title", "channelName", "durationSeconds"],
+        },
+      },
+      targetPlaylistName: {
+        type: "string",
+        description: "The name of the playlist to add the songs to.",
+      },
+    },
+    required: ["songs", "targetPlaylistName"],
+  },
+  execute: async ({ songs, targetPlaylistName }) => {
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return { ok: true, message: `Added ${songs.length} songs to "${targetPlaylistName}" (mock).` };
+    }
+
+    const { SONG_LISTS_STORAGE_KEY, ACTIVE_SONG_LIST_NAME_STORAGE_KEY } =
+      await import("../models/SongList.js");
+    const { normalizeSongListsState } = await import("../utils/songLists.js");
+    const { getStorageMap } = await import("../utils/syncStorage.js");
+
+    const storageMap = await getStorageMap([
+      SONG_LISTS_STORAGE_KEY,
+      ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+    ]);
+    const state = normalizeSongListsState(storageMap);
+
+    if (!state.songLists[targetPlaylistName]) {
+      return {
+        ok: false,
+        message: `Playlist "${targetPlaylistName}" not found.`,
+      };
+    }
+
+    const newItems: MPlaylistItem[] = songs.map((s: any) => ({
+      id: uuidv4(),
+      url: `https://www.youtube.com/watch?v=${s.videoId}`,
+      videoId: s.videoId,
+      title: s.title,
+      channelName: s.channelName,
+      timestamp: 0,
+      endTimestamp: undefined,
+      maxDuration: s.durationSeconds,
+      volume: 100,
+      audioEq: { ...DEFAULT_AUDIO_EQ_SETTINGS },
+    }));
+
+    const nextSongLists = { ...state.songLists };
+    nextSongLists[targetPlaylistName] = {
+      ...nextSongLists[targetPlaylistName],
+      items: [...nextSongLists[targetPlaylistName].items, ...newItems],
+    };
+
+    await chrome.storage.sync.set({
+      [SONG_LISTS_STORAGE_KEY]: nextSongLists,
+    });
+
+    return {
+      ok: true,
+      message: `Added ${newItems.length} songs to "${targetPlaylistName}".`,
+    };
+  },
+};
+
 registerTool(getPlaylistInfoTool);
 registerTool(createEqProfileTool);
 registerTool(adjustSongEqTool);
@@ -344,3 +424,4 @@ registerTool(removeSongFromPlaylistTool);
 registerTool(reorderPlaylistTool);
 registerTool(adjustVolumeTool);
 registerTool(getAllSongListsTool);
+registerTool(addSongsToPlaylistTool);

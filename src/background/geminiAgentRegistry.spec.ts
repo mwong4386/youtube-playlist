@@ -130,3 +130,27 @@ test("get_all_song_lists tool execute returns mock result in test environment", 
   const result = await tool.execute({});
   expectEqual(result.activeSongListName, "default");
 });
+
+test("add_songs_to_playlist tool is registered and has correct schema", async () => {
+  const tool = getTool("add_songs_to_playlist");
+  if (!tool) {
+    throw new Error("Tool add_songs_to_playlist not found in registry");
+  }
+
+  expectEqual(tool.name, "add_songs_to_playlist");
+  expectEqual(tool.parameters.required, ["songs", "targetPlaylistName"]);
+});
+
+test("add_songs_to_playlist tool execute returns mock result in test environment", async () => {
+  const tool = getTool("add_songs_to_playlist");
+  if (!tool) {
+    throw new Error("Tool add_songs_to_playlist not found in registry");
+  }
+
+  const result = await tool.execute({
+    songs: [{ videoId: "abc", title: "Test", channelName: "Test", durationSeconds: 100 }],
+    targetPlaylistName: "Target",
+  });
+  expectEqual(result.ok, true);
+  expectEqual(result.message, 'Added 1 songs to "Target" (mock).');
+});
