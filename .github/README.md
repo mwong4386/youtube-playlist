@@ -1,44 +1,108 @@
-# Assumption
+# YouTube Playlist Chrome Extension
 
-1. No Ads in your Youtube
+A Manifest V3 Chrome extension for saving YouTube videos into a personal playlist with custom playback settings. Each saved item can include a start time, optional end time, volume level, and EQ setting so music videos, live sets, and long uploads can sound and begin exactly how you want.
 
-# Description
+## Features
 
-This Chrome extension allows users to bookmark their favorite YouTube music videos and create a playlist from those selections. Simply click the bookmark button on any YouTube video to add it to your playlist
+- Save the current YouTube video from the player controls.
+- Set custom start and end timestamps for each saved video.
+- Store per-song volume levels and EQ settings.
+- Play one video, play the full playlist in order, or play the playlist randomly.
+- Reorder, edit, import, export, and delete playlist items from the popup.
+- Select multiple songs for batch actions.
+- Import YouTube playlists and review detected playlist updates.
+- Configure EQ profiles and optional Gemini-assisted playlist and per-song EQ workflows.
 
-# Incentive
+## Assumption
 
-1. Sometimes, when playing a YouTube playlist, you may be redirected to a video that is not on the playlist.
-1. Some YouTube videos may have long intros/closing that you might want to skip. A Chrome extension let you to set the start and end times for these videos, allowing you to jump straight to the content that you want to listen.
+This extension is designed for YouTube playback without ads interrupting the saved timestamp flow.
 
-# To Start
+## Getting Started
 
-In the project directory, you can run:
+1. Install dependencies:
 
-1. `npm run build`
+   ```sh
+   npm install
+   ```
 
-1. Builds the app to the `build` folder.
+1. Build the extension:
 
-1. go to `chrome://extensions/` or `edge://extensions/`
+   ```sh
+   npm run build
+   ```
 
-1. `load unpacked` the `build` folder
+1. Open `chrome://extensions/` or `edge://extensions/`.
+1. Enable developer mode.
+1. Click `Load unpacked`.
+1. Select the generated `build` folder.
+1. Reopen YouTube tabs after loading or updating the extension.
 
-1. Reopen the browser
+## Development
 
-# How to use
+Run the full test suite:
 
-## Add new video
+```sh
+npm test
+```
 
-1. To add a new video to your YouTube playlist, click the "+" button at the bottom right corner of the video's play bar.<br>
+Build all extension targets:
+
+```sh
+npm run build
+```
+
+Create a build with seeded development playlist data:
+
+```sh
+npm run build:seed
+```
+
+The build command compiles the popup, background service worker, and YouTube content script with separate Vite configs.
+
+## How To Use
+
+### Add a Video
+
+1. Open a YouTube video.
+1. Click the `+` button in the video's player controls.
+
    ![Add new video button](./AddNewVideo.jpg)
-1. When you click the "+" button, a dialog will pop up. You can modify the start and end times for the video by using the options provided in the dialog. When you are finished, click "Confirm" to add the video to your playlist.<br>
-   ![Confirm the time](./ConfirmDialog.jpg)
-1. To track the start and end times you want for your video, you can enable the pin in the settings and use it to select the desired time. The pin position will automatically update the input field in the dialog.<br>
-   ![Enable the pin](./EnablePinSetting.jpg)
-   ![Display the pin](./Pin.jpg)
 
-## Play the playlist
+1. In the dialog, adjust the start time, optional end time, volume, and EQ setting.
+1. Click `Confirm` to save the video to your extension playlist.
+1. To choose timestamps from the video player, enable the pin setting and use the pin while watching the video. The selected time is copied into the dialog field.
 
-1. To start playing the playlist, simply click the play button located in the top left corner. <br>
-   ![Play playlist](./PlayPlaylist.jpg)
-1. To play a specific video, click the play button located on the right side of the listed item.
+### Play The Playlist
+
+1. Open the extension popup.
+1. Click the main play button to start playlist playback.
+1. Use the item-level play button to start a specific video.
+1. Use the menu actions to switch playback mode, manage settings, import/export playlist data, or delete playlist items.
+
+### Edit Saved Items
+
+1. Open the extension popup.
+1. Choose a saved item.
+1. Update its start time, end time, volume, or EQ setting.
+1. Save the changes and replay the item to use the new settings.
+
+### Import And Export
+
+Use the popup menu to export your saved playlist as JSON or import a previously exported playlist. Imported data is validated before it is merged into storage.
+
+## Project Layout
+
+- `public/manifest.json`: Extension manifest, permissions, and entry points.
+- `src/App.tsx`: Popup root.
+- `src/screens/playlist/`: Playlist UI, import/export flows, selection actions, and playback controls.
+- `src/screens/modal/`: Saved-item editing UI.
+- `src/screens/gemini/`: Gemini settings, approval, and assistant-driven playlist/EQ screens.
+- `src/background/`: Playback orchestration, playlist import detection, Gemini requests, and extension message handling.
+- `src/contentScript/`: YouTube page integration, bookmark dialog, player controls, and YouTube DOM helpers.
+- `src/utils/`: Storage, playlist transforms, themes, EQ profiles, and shared helpers.
+
+## Notes
+
+- Saved playlist data is stored with `chrome.storage.sync`.
+- Runtime playback state is stored with `chrome.storage.local`.
+- YouTube DOM changes can affect the content script because the extension integrates directly with the YouTube player page.
