@@ -1,0 +1,93 @@
+.content {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 12px;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--text-color);
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.songList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  flex: 1 1 auto;
+  min-height: 100px;
+  overflow-y: auto;
+  background-color: var(--background-secondary-color, rgba(0, 0, 0, 0.05));
+}
+
+.genericQueue {
+  flex: 1 1 auto;
+  min-height: 100px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  background-color: var(--background-secondary-color, rgba(0, 0, 0, 0.05));
+}
+
+.queueItem {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.queueItem:last-child {
+  border-bottom: none;
+}
+
+.songItem {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.songItem:last-child {
+  border-bottom: none;
+}
+
+.moreItems {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary-color);
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 0;
+  flex: 0 0 auto;
+}
+
+.confirmButton {
+  background-color: var(--success-color, #4caf50);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.cancelButton {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}

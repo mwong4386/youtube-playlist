@@ -35,6 +35,8 @@ import usePlaylistActions from "./usePlaylistActions";
 import usePlaylistScreenState from "./usePlaylistScreenState";
 import usePlaylistStorageSync from "./usePlaylistStorageSync";
 import { DEFAULT_SONG_LIST_NAME } from "../../models/SongList";
+import MsgType from "../../constants/msgType";
+import GeminiApprovalModal from "../gemini/GeminiApprovalModal";
 
 interface Props {
   themePreference: ThemePreference;
@@ -92,9 +94,41 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
     setSelectedItemIds,
     newSongListError,
     setNewSongListError,
+    geminiApprovalQueue,
+    setGeminiApprovalQueue,
     dismissedAnalyzeImportBannerKey,
     dismissAnalyzeImportBanner,
   } = usePlaylistScreenState();
+
+  useEffect(() => {
+    const listener = (message: any, _sender: any, sendResponse: any) => {
+      if (message.type === MsgType.GeminiActionApprovalRequest) {
+        setGeminiApprovalQueue((q) => [
+          ...q,
+          {
+            actionName: message.actionName,
+            params: message.params,
+            resolve: (approved: boolean) => {
+              sendResponse({ approved });
+            },
+          },
+        ]);
+        return true; // Keep message channel open for async response
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
+  }, [setGeminiApprovalQueue]);
+
+  const currentApproval = geminiApprovalQueue[0];
+
+  const handleApprovalResponse = (approved: boolean) => {
+    geminiApprovalQueue.forEach((approval) => {
+      approval.resolve(approved);
+    });
+    setGeminiApprovalQueue([]);
+  };
+
   const playlist = getVisiblePlaylistForActiveList(
     songListsState.songLists,
     activeSongListName,
@@ -545,6 +579,14 @@ const Playlist = ({ themePreference, setThemePreference }: Props) => {
         close={closeDeleteAllModal}
         confirmDeletePlaylist={confirmDeletePlaylist}
       />
+      {geminiApprovalQueue.length > 0 && (
+        <GeminiApprovalModal
+          active={true}
+          queue={geminiApprovalQueue}
+          onConfirm={() => handleApprovalResponse(true)}
+          onCancel={() => handleApprovalResponse(false)}
+        />
+      )}
     </>
   );
 };

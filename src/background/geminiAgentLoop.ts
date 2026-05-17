@@ -93,41 +93,41 @@ export async function runAgentLoop(
       };
     }
 
-    // Execute function calls
-    const functionResponseParts = await Promise.all(
-      functionCalls.map(async (part: any) => {
-        const { name, args, id } = part.functionCall;
-        const tool = getTool(name);
-        if (!tool) {
-          return {
-            functionResponse: {
-              name,
-              response: { error: `Tool ${name} not found.` },
-              id,
-            },
-          };
-        }
+    // Execute function calls sequentially to avoid race conditions in tool-based storage updates
+    const functionResponseParts = [];
+    for (const part of functionCalls) {
+      const { name, args, id } = part.functionCall;
+      const tool = getTool(name);
+      if (!tool) {
+        functionResponseParts.push({
+          functionResponse: {
+            name,
+            response: { error: `Tool ${name} not found.` },
+            id,
+          },
+        });
+        continue;
+      }
 
-        try {
-          const result = await tool.execute(args);
-          return {
-            functionResponse: {
-              name,
-              response: result,
-              id,
-            },
-          };
-        } catch (error: any) {
-          return {
-            functionResponse: {
-              name,
-              response: { error: error.message || "Unknown error" },
-              id,
-            },
-          };
-        }
-      }),
-    );
+      try {
+        const result = await tool.execute(args);
+        functionResponseParts.push({
+          functionResponse: {
+            name,
+            response: result,
+            id,
+          },
+        });
+      } catch (error: any) {
+        functionResponseParts.push({
+          functionResponse: {
+            name,
+            response: { error: error.message || "Unknown error" },
+            id,
+          },
+        });
+      }
+    }
 
     contents.push({
       role: "USER",

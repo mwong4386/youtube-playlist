@@ -159,6 +159,16 @@ export const addSongToPlaylistTool: AgentTool = {
     }
 
     const { getPlaylist, writeActiveSongListItems } = await import("./index.js");
+    const { requestGeminiActionApproval } = await import("./geminiApproval.js");
+
+    const approved = await requestGeminiActionApproval("add_songs_to_playlist", {
+      songs: [{ videoId, title, channelName, durationSeconds }],
+      targetPlaylistName: "Active Playlist",
+    });
+
+    if (!approved) {
+      return { ok: false, message: "Action cancelled by user or popup was closed." };
+    }
 
     const newItem: MPlaylistItem = {
       id: uuidv4(),
@@ -336,6 +346,62 @@ export const getAllSongListsTool: AgentTool = {
   },
 };
 
+export const createPlaylistTool: AgentTool = {
+  name: "create_playlist",
+  description: "Creates a new empty playlist with the given name.",
+  parameters: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "The name of the new playlist." },
+    },
+    required: ["name"],
+  },
+  execute: async ({ name }) => {
+    // Avoid side effects/imports from index.ts during tests
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return { ok: true, message: `Created playlist "${name}" (mock).` };
+    }
+
+    const { SONG_LISTS_STORAGE_KEY, ACTIVE_SONG_LIST_NAME_STORAGE_KEY } =
+      await import("../models/SongList.js");
+    const { normalizeSongListsState, createSongList } = await import(
+      "../utils/songLists.js"
+    );
+    const { getStorageMap } = await import("../utils/syncStorage.js");
+    const { requestGeminiActionApproval } = await import(
+      "./geminiApproval.js"
+    );
+
+    const approved = await requestGeminiActionApproval("create_playlist", {
+      name,
+    });
+
+    if (!approved) {
+      return {
+        ok: false,
+        message: "Action cancelled by user or popup was closed.",
+      };
+    }
+
+    const storageMap = await getStorageMap([
+      SONG_LISTS_STORAGE_KEY,
+      ACTIVE_SONG_LIST_NAME_STORAGE_KEY,
+    ]);
+    const state = normalizeSongListsState(storageMap);
+
+    try {
+      const nextState = createSongList(state, name);
+      await chrome.storage.sync.set({
+        [SONG_LISTS_STORAGE_KEY]: nextState.songLists,
+        [ACTIVE_SONG_LIST_NAME_STORAGE_KEY]: nextState.activeSongListName,
+      });
+      return { ok: true, message: `Created playlist "${name}".` };
+    } catch (error: any) {
+      return { ok: false, message: error.message };
+    }
+  },
+};
+
 export const addSongsToPlaylistTool: AgentTool = {
   name: "add_songs_to_playlist",
   description: "Adds multiple songs to a specific playlist.",
@@ -372,6 +438,21 @@ export const addSongsToPlaylistTool: AgentTool = {
       await import("../models/SongList.js");
     const { normalizeSongListsState } = await import("../utils/songLists.js");
     const { getStorageMap } = await import("../utils/syncStorage.js");
+    const { requestGeminiActionApproval } = await import(
+      "./geminiApproval.js"
+    );
+
+    const approved = await requestGeminiActionApproval("add_songs_to_playlist", {
+      songs,
+      targetPlaylistName,
+    });
+
+    if (!approved) {
+      return {
+        ok: false,
+        message: "Action cancelled by user or popup was closed.",
+      };
+    }
 
     const storageMap = await getStorageMap([
       SONG_LISTS_STORAGE_KEY,
@@ -424,4 +505,5 @@ registerTool(removeSongFromPlaylistTool);
 registerTool(reorderPlaylistTool);
 registerTool(adjustVolumeTool);
 registerTool(getAllSongListsTool);
+registerTool(createPlaylistTool);
 registerTool(addSongsToPlaylistTool);

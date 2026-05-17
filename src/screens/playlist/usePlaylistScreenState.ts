@@ -32,6 +32,7 @@ const usePlaylistScreenState = () => {
   const [isShelfExpanded, setIsShelfExpanded] = useState(false);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [newSongListError, setNewSongListError] = useState("");
+  const [geminiApprovalQueue, setGeminiApprovalQueue] = useState<any[]>([]);
   const [
     dismissedAnalyzeImportBannerKey,
     setDismissedAnalyzeImportBannerKey,
@@ -73,6 +74,8 @@ const usePlaylistScreenState = () => {
     setSelectedItemIds,
     newSongListError,
     setNewSongListError,
+    geminiApprovalQueue,
+    setGeminiApprovalQueue,
     dismissedAnalyzeImportBannerKey,
     dismissAnalyzeImportBanner,
   };

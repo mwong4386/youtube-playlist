@@ -27,6 +27,8 @@ const enum MsgType {
   GenerateEqProfileWithGemini,
   AdjustSongEqWithGemini,
   AgenticChatRequest,
+  GeminiActionApprovalRequest,
+  GeminiActionApprovalResponse,
 }
 
 export default MsgType;
