@@ -8,6 +8,7 @@ import {
 import { readStoredAudioEqProfiles } from "../utils/audioEqProfiles";
 import { DEFAULT_AUDIO_EQ_SETTINGS } from "../models/AudioEq";
 import type MPlaylistItem from "../models/MPlaylistItem";
+import { searchSongsTool } from "../features/playlistSearch/geminiSearchSongsTool";
 
 export interface AgentTool {
   name: string;
@@ -42,13 +43,20 @@ export function getToolsForGemini() {
   }));
 }
 
+const isTestEnvironment = () => {
+  return (
+    typeof chrome === "undefined" ||
+    (typeof process !== "undefined" && process.env.NODE_ENV === "test")
+  );
+};
+
 export const getPlaylistInfoTool: AgentTool = {
   name: "get_playlist_info",
   description: "Returns the current playlist items and playback status.",
   parameters: { type: "object", properties: {} },
   execute: async () => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return {
         playlist: [],
         playbackState: {
@@ -154,7 +162,7 @@ export const addSongToPlaylistTool: AgentTool = {
   },
   execute: async ({ videoId, title, channelName, durationSeconds }) => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return { ok: true, message: `Added "${title}" to the playlist (mock).` };
     }
 
@@ -206,7 +214,7 @@ export const removeSongFromPlaylistTool: AgentTool = {
   },
   execute: async ({ songId }) => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return { ok: true, message: `Removed song with ID ${songId} from the playlist (mock).` };
     }
 
@@ -245,7 +253,7 @@ export const reorderPlaylistTool: AgentTool = {
   },
   execute: async ({ songIds }) => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return { ok: true, message: `Reordered ${songIds.length} songs in the playlist (mock).` };
     }
 
@@ -295,9 +303,8 @@ export const adjustVolumeTool: AgentTool = {
     required: ["volume"],
   },
   execute: async ({ volume, songId, persist = true }) => {
-    console.log("DEBUG: NODE_ENV =", process.env.NODE_ENV);
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return { ok: true, message: `Volume set to ${volume}% (mock).` };
     }
 
@@ -326,7 +333,7 @@ export const getAllSongListsTool: AgentTool = {
   parameters: { type: "object", properties: {} },
   execute: async () => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return {
         songLists: { default: { items: [] } },
         activeSongListName: "default",
@@ -358,7 +365,7 @@ export const createPlaylistTool: AgentTool = {
   },
   execute: async ({ name }) => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return { ok: true, message: `Created playlist "${name}" (mock).` };
     }
 
@@ -430,7 +437,7 @@ export const addSongsToPlaylistTool: AgentTool = {
   },
   execute: async ({ songs, targetPlaylistName }) => {
     // Avoid side effects/imports from index.ts during tests
-    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+    if (isTestEnvironment()) {
       return { ok: true, message: `Added ${songs.length} songs to "${targetPlaylistName}" (mock).` };
     }
 
@@ -507,3 +514,4 @@ registerTool(adjustVolumeTool);
 registerTool(getAllSongListsTool);
 registerTool(createPlaylistTool);
 registerTool(addSongsToPlaylistTool);
+registerTool(searchSongsTool);

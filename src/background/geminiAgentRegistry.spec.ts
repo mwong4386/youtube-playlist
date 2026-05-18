@@ -154,3 +154,19 @@ test("add_songs_to_playlist tool execute returns mock result in test environment
   expectEqual(result.ok, true);
   expectEqual(result.message, 'Added 1 songs to "Target" (mock).');
 });
+
+test("search_songs tool is registered and has correct schema", async () => {
+  const tool = getTool("search_songs");
+  if (!tool) {
+    throw new Error("Tool search_songs not found in registry");
+  }
+
+  expectEqual(tool.name, "search_songs");
+  expectEqual(tool.parameters.type, "object");
+  expectEqual(Object.keys(tool.parameters.properties), [
+    "query",
+    "playlistName",
+    "includeAllPlaylists",
+    "limit",
+  ]);
+});
