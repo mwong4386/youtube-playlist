@@ -4,6 +4,9 @@ import type MPlaylistItem from "../../models/MPlaylistItem";
 import {
   buildSongListMenuItems,
   buildSongListSheetRows,
+  createClosedSongListRenameState,
+  createSavedSongListRenameState,
+  getSongListsAfterVisibleRename,
   getSongListCreationError,
   getSongListOptions,
   getVisiblePlaylistForActiveList,
@@ -194,5 +197,40 @@ test("buildSongListSheetRows swaps one row into inline edit mode", () => {
         cancelIcon: "x",
       },
     ]
+  );
+});
+
+test("createClosedSongListRenameState clears stale inline rename state before reopening", () => {
+  expectDeepEqual(createClosedSongListRenameState(), {
+    editingSongListName: null,
+    songListRenameValue: "",
+    songListRenameError: "",
+  });
+});
+
+test("createSavedSongListRenameState returns to the normal sheet rows after a successful rename", () => {
+  expectDeepEqual(createSavedSongListRenameState(), {
+    editingSongListName: null,
+    songListRenameValue: "",
+    songListRenameError: "",
+  });
+});
+
+test("getSongListsAfterVisibleRename returns renamed rows for an immediate sheet refresh", () => {
+  const record = { items: [{ id: "song-1" } as MPlaylistItem] };
+
+  expectDeepEqual(
+    getSongListsAfterVisibleRename(
+      {
+        default: { items: [] },
+        aimer: record,
+      },
+      "aimer",
+      "  renaud  ",
+    ),
+    {
+      default: { items: [] },
+      renaud: record,
+    },
   );
 });

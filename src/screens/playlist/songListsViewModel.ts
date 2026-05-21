@@ -54,6 +54,50 @@ type SongListSheetInlineEditRow = {
   cancelIcon: "x";
 };
 
+export type SongListRenameState = {
+  editingSongListName: string | null;
+  songListRenameValue: string;
+  songListRenameError: string;
+};
+
+export const createClosedSongListRenameState = (): SongListRenameState => ({
+  editingSongListName: null,
+  songListRenameValue: "",
+  songListRenameError: "",
+});
+
+export const createSavedSongListRenameState = createClosedSongListRenameState;
+
+export const getSongListsAfterVisibleRename = (
+  songLists: Record<string, SongListRecord>,
+  currentName: string,
+  nextName: string,
+): Record<string, SongListRecord> => {
+  const normalizedNextName = normalizeSongListName(nextName);
+
+  if (currentName === normalizedNextName) {
+    return songLists;
+  }
+
+  const currentRecord = songLists[currentName];
+  if (!currentRecord) {
+    return songLists;
+  }
+
+  const nextSongLists: Record<string, SongListRecord> = {};
+
+  for (const [name, record] of Object.entries(songLists)) {
+    if (name === currentName) {
+      nextSongLists[normalizedNextName] = currentRecord;
+      continue;
+    }
+
+    nextSongLists[name] = record;
+  }
+
+  return nextSongLists;
+};
+
 export const buildSongListMenuItems = ({
   activeSongListName,
 }: {

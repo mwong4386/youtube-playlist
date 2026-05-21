@@ -12,7 +12,13 @@ import { ThemePreference } from "../../utils/theme";
 import useActionSheet from "../actionSheet/useActionSheet";
 import { ChevronDownIcon, HomeIcon } from "../icons";
 import styles from "./Playlist.module.css";
-import { buildSongListSheetRows } from "./songListsViewModel";
+import {
+  buildSongListSheetRows,
+  createClosedSongListRenameState,
+  createSavedSongListRenameState,
+  getSongListsAfterVisibleRename,
+  type SongListRenameState,
+} from "./songListsViewModel";
 
 interface props {
   onDelete: () => void;
@@ -143,25 +149,31 @@ const PlaylistHeader = ({
     window.setTimeout(revokeUrl, 1000);
   };
   const resetSongListRenameState = () => {
-    setEditingSongListName(null);
-    setSongListRenameValue("");
-    setSongListRenameError("");
+    const closedState = createClosedSongListRenameState();
+    setEditingSongListName(closedState.editingSongListName);
+    setSongListRenameValue(closedState.songListRenameValue);
+    setSongListRenameError(closedState.songListRenameError);
+    return closedState;
   };
 
   const openSongListSheet = (
-    nextEditingSongListName: string | null = editingSongListName,
-    nextSongListRenameValue = songListRenameValue,
-    nextSongListRenameError = songListRenameError,
+    {
+      editingSongListName: nextEditingSongListName = editingSongListName,
+      songListRenameValue: nextSongListRenameValue = songListRenameValue,
+      songListRenameError: nextSongListRenameError = songListRenameError,
+    }: Partial<SongListRenameState> = {},
     shouldOpen = true,
+    nextSongLists = songLists,
+    nextActiveSongListName = activeSongListName,
   ) => {
     setEditingSongListName(nextEditingSongListName);
     setSongListRenameValue(nextSongListRenameValue);
     setSongListRenameError(nextSongListRenameError);
 
     const items: MActionSheetItem[] = buildSongListSheetRows({
-      activeSongListName,
+      activeSongListName: nextActiveSongListName,
       editingSongListName: nextEditingSongListName,
-      songLists,
+      songLists: nextSongLists,
     }).map((row) => {
       if (row.kind === "song-list-action") {
         return {
@@ -190,7 +202,11 @@ const PlaylistHeader = ({
           onEditValueChange: (value: string) => {
             setSongListRenameValue(value);
             setSongListRenameError("");
-            openSongListSheet(row.songListName, value, "");
+            openSongListSheet({
+              editingSongListName: row.songListName,
+              songListRenameValue: value,
+              songListRenameError: "",
+            });
           },
           onSaveEdit: () => {
             const error = onRenameSongList(
@@ -200,20 +216,33 @@ const PlaylistHeader = ({
 
             if (error) {
               setSongListRenameError(error);
-              openSongListSheet(
-                row.songListName,
-                nextSongListRenameValue,
-                error,
-              );
+              openSongListSheet({
+                editingSongListName: row.songListName,
+                songListRenameValue: nextSongListRenameValue,
+                songListRenameError: error,
+              });
               return;
             }
 
-            resetSongListRenameState();
-            ctx.close();
+            const renamedSongLists = getSongListsAfterVisibleRename(
+              songLists,
+              row.songListName,
+              nextSongListRenameValue,
+            );
+            const nextActiveName =
+              activeSongListName === row.songListName
+                ? nextSongListRenameValue.trim()
+                : activeSongListName;
+
+            openSongListSheet(
+              createSavedSongListRenameState(),
+              true,
+              renamedSongLists,
+              nextActiveName,
+            );
           },
           onCancelEdit: () => {
-            resetSongListRenameState();
-            openSongListSheet();
+            openSongListSheet(resetSongListRenameState());
           },
         };
       }
@@ -235,7 +264,11 @@ const PlaylistHeader = ({
           setEditingSongListName(row.songListName);
           setSongListRenameValue(row.songListName);
           setSongListRenameError("");
-          openSongListSheet(row.songListName, row.songListName, "");
+          openSongListSheet({
+            editingSongListName: row.songListName,
+            songListRenameValue: row.songListName,
+            songListRenameError: "",
+          });
         },
         onOverflow: () => {
           resetSongListRenameState();
@@ -316,7 +349,7 @@ const PlaylistHeader = ({
         leadingIcon: "back",
         callback: () => {
           if (backTarget === "song-list-sheet") {
-            openSongListSheet(null, "", "", false);
+            openSongListSheet(createClosedSongListRenameState(), false);
             return;
           }
 
@@ -554,8 +587,7 @@ const PlaylistHeader = ({
             <button
               type="button"
               onClick={() => {
-                resetSongListRenameState();
-                openSongListSheet();
+                openSongListSheet(resetSongListRenameState());
               }}
               className={`${styles["header-button"]} ${styles["song-list-button"]}`}
               aria-label={`Open song list selector. Current list: ${activeSongListName}`}
